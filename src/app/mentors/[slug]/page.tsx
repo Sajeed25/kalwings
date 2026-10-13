@@ -26,7 +26,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const user = await getUser();
   return (
     <Block>
-      <Link href="/mentors" className="text-sm font-semibold text-teal-700 dark:text-teal">← All mentors</Link>
+      <Link href="/mentors" className="text-sm font-semibold text-accent">← All mentors</Link>
       <div className="mt-6 grid gap-10 md:grid-cols-[320px_1fr]">
         {m.avatarId
           // eslint-disable-next-line @next/next/no-img-element
@@ -35,7 +35,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <div>
           <h1 className="text-4xl font-extrabold md:text-5xl">{m.user.name}</h1>
           <p className="mt-2 text-lg text-ink-soft">{m.roleTitle} · {m.company} · {m.country}</p>
-          <ul className="mt-4 flex flex-wrap items-center gap-2">{asList(m.tags).map((t) => <li key={t}><Badge tone="teal">{t}</Badge></li>)}{m.isSample && <li><SampleTag /></li>}</ul>
+          <ul className="mt-4 flex flex-wrap items-center gap-2">{asList(m.tags).map((t) => <li key={t}><Badge tone="accent">{t}</Badge></li>)}{m.isSample && <li><SampleTag /></li>}</ul>
           {m.bio && <p className="mt-6 text-ink-soft">{m.bio}</p>}
           <h2 className="mt-8 text-xl">Upcoming office hours</h2>
           {m.slots.length ? <ul className="mt-2 text-sm text-ink-soft">{m.slots.map((s) => <li key={s.id}>{fmtTime(s.startsAt)} IST</li>)}</ul> : <p className="mt-2 text-sm text-ink-soft">No open slots right now — you can still send a request and the mentor will suggest a time.</p>}
@@ -46,8 +46,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                   <ActionForm action={requestSession} reset submit="Send request" success="Request sent — track it in your dashboard.">
                     <input type="hidden" name="mentorId" value={m.id} />
                     <fieldset className="space-y-2"><legend className="text-sm font-semibold">Pick a time (IST)</legend>
-                      {m.slots.map((s) => <label key={s.id} className="flex items-center gap-2 text-sm"><input type="radio" name="slotId" value={s.id} className="accent-teal-600" />{fmtTime(s.startsAt)}</label>)}
-                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="slotId" value="" defaultChecked className="accent-teal-600" />No specific time</label>
+                      {m.slots.map((s) => <label key={s.id} className="flex items-center gap-2 text-sm"><input type="radio" name="slotId" value={s.id} className="accent-neon" />{fmtTime(s.startsAt)}</label>)}
+                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="slotId" value="" defaultChecked className="accent-neon" />No specific time</label>
                     </fieldset>
                     <Field label="Topic" name="topic" required minLength={3} maxLength={120} /><Area label="Anything the mentor should know?" name="message" maxLength={500} />
                   </ActionForm></div>)}

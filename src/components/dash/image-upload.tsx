@@ -54,7 +54,7 @@ export function ImageUpload({ kind, projectId, currentUrl, label, maxDim = 1024,
         <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={onPick} aria-label={label} />
         <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => input.current?.click()}>{busy ? "Uploading…" : currentUrl ? `Change ${label.toLowerCase()}` : label}</Button>
         <p className="mt-1 text-xs text-ink-soft">PNG, JPEG or WebP. Resized automatically.</p>
-        {error && <p role="alert" className="mt-1 text-sm font-medium text-red-700 dark:text-red-300">{error}</p>}
+        {error && <p role="alert" className="mt-1 text-sm font-medium text-danger">{error}</p>}
       </div>
     </div>
   );

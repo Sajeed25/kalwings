@@ -17,11 +17,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   return (
     <>
       <PageTitle title="Users" sub="Suspend accounts that break the rules. Suspended users are signed out at once, can't log in, and their profile or listings disappear from public pages. Fully reversible." />
-      <form className="card mb-6 flex gap-3 p-4"><input name="q" defaultValue={q} placeholder="Search name, email or phone" className="h-11 flex-1 rounded-xl border border-line bg-surface px-3" /><button className="h-11 rounded-full bg-navy px-6 font-semibold text-white">Search</button></form>
+      <form className="card mb-6 flex gap-3 p-4"><input name="q" defaultValue={q} placeholder="Search name, email or phone" className="h-11 flex-1 rounded-xl border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-accent px-6 font-semibold text-black">Search</button></form>
       <Panel>{users.length ? <ul className="divide-y divide-line">{users.map((u) => (
         <li key={u.id} className="py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><p className="font-semibold">{u.name} <span className="font-normal text-ink-soft">· {u.role.replace("_", " ").toLowerCase()} · joined {fmt(u.createdAt)}</span></p><p className="text-sm text-ink-soft">{u.email ?? u.phone}</p>{u.suspendedAt && <p className="mt-1 text-sm text-red-700 dark:text-red-300">Suspended {fmt(u.suspendedAt)}: {u.suspendedReason}</p>}</div>
+            <div><p className="font-semibold">{u.name} <span className="font-normal text-ink-soft">· {u.role.replace("_", " ").toLowerCase()} · joined {fmt(u.createdAt)}</span></p><p className="text-sm text-ink-soft">{u.email ?? u.phone}</p>{u.suspendedAt && <p className="mt-1 text-sm text-danger">Suspended {fmt(u.suspendedAt)}: {u.suspendedReason}</p>}</div>
             <div className="flex items-center gap-2">{u.suspendedAt && <Status s="REJECTED" />}{u.suspendedAt ? <ActionButton action={unsuspendUser.bind(null, u.id)}>Restore</ActionButton> : null}</div>
           </div>
           {!u.suspendedAt && u.role !== "PLATFORM_ADMIN" && (

@@ -34,7 +34,7 @@ export function OpportunityBrowser({ items: opportunities, initialQ = "", initia
         <label className="block text-sm font-semibold">Pay<select className={sel + " mt-1.5"} value={pay} onChange={(e) => setPay(e.target.value)}><option value="">Paid &amp; unpaid</option><option value="paid">Paid only</option><option value="unpaid">Unpaid only</option></select></label>
         <label className="block text-sm font-semibold">Graduation year<select className={sel + " mt-1.5"} value={year} onChange={(e) => setYear(e.target.value)}><option value="">Any</option>{["2025", "2026", "2027"].map((y) => <option key={y}>{y}</option>)}</select></label>
         <label className="block text-sm font-semibold">Min. monthly pay: ₹{min.toLocaleString("en-IN")}
-          <input type="range" min={0} max={60000} step={5000} value={min} onChange={(e) => setMin(+e.target.value)} className="mt-2 w-full accent-teal-600" />
+          <input type="range" min={0} max={60000} step={5000} value={min} onChange={(e) => setMin(+e.target.value)} className="mt-2 w-full accent-neon" />
         </label>
       </form>
       <div>

@@ -32,7 +32,7 @@ export default async function Page() {
             <label className="block text-sm font-semibold">Your college
               <select name="collegeId" defaultValue={p.collegeId ?? ""} className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3"><option value="">Not listed / none</option>{colleges.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.city}</option>)}</select>
             </label>
-            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="share" defaultChecked={p.shareWithCollege} className="mt-1 h-4 w-4 accent-teal-600" /><span>Let my college&apos;s placement team see my name, headline and progress. <span className="text-ink-soft">Never your email or phone. You can turn this off any time.</span></span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="share" defaultChecked={p.shareWithCollege} className="mt-1 h-4 w-4 accent-neon" /><span>Let my college&apos;s placement team see my name, headline and progress. <span className="text-ink-soft">Never your email or phone. You can turn this off any time.</span></span></label>
           </ActionForm>
         </Panel>
         <Panel title="Privacy">

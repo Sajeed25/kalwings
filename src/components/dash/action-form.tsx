@@ -19,8 +19,8 @@ export function ActionForm({ action, children, submit = "Save", success = "Saved
       {children}
       <div className="flex items-center gap-3">
         <Button disabled={pending}>{pending ? "Saving…" : submit}</Button>
-        {state.error && <p role="alert" className="text-sm font-medium text-red-700 dark:text-red-300">{state.error}</p>}
-        {state.ok && <p role="status" className="text-sm font-medium text-teal-700 dark:text-teal">{success}</p>}
+        {state.error && <p role="alert" className="text-sm font-medium text-danger">{state.error}</p>}
+        {state.ok && <p role="status" className="text-sm font-medium text-accent">{success}</p>}
       </div>
     </form>
   );

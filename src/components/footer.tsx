@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Github, Instagram, Linkedin, Youtube } from "lucide-react";
-import { Logo } from "@/components/ui/wing";
+import { Logo } from "@/components/ui/brand";
 
 const cols = [
   { title: "Product", links: [["Opportunities", "/opportunities"], ["Challenges", "/challenges"], ["Mentors", "/mentors"], ["Community", "/community"]] },
@@ -19,7 +19,7 @@ const social = [
 
 export function Footer() {
   return (
-    <footer className="on-navy bg-navy text-white">
+    <footer className="on-dark bg-black text-white">
       <div className="container py-16">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-4">

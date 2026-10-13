@@ -16,7 +16,7 @@ export default async function Page() {
       </Panel>
       <Panel title="Email" className="mt-6">
         <ActionForm action={setEmailNotifications} submit="Save" className="space-y-3">
-          <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="email" defaultChecked={u.emailNotifications} className="mt-1 h-4 w-4 accent-teal-600" /><span>Email me about applications, mentor sessions and messages{u.email ? <> at <b>{u.email}</b></> : <span className="text-ink-soft"> (add an email address to your account to receive them)</span>}.</span></label>
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="email" defaultChecked={u.emailNotifications} className="mt-1 h-4 w-4 accent-neon" /><span>Email me about applications, mentor sessions and messages{u.email ? <> at <b>{u.email}</b></> : <span className="text-ink-soft"> (add an email address to your account to receive them)</span>}.</span></label>
         </ActionForm>
       </Panel>
     </>

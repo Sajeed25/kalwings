@@ -6,14 +6,14 @@ import { TalentCard } from "./talent-card";
 export function Hero() {
   return (
     <section className="relative overflow-hidden pb-20 pt-12 md:pb-28 md:pt-20">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px] bg-[radial-gradient(60%_60%_at_80%_0%,rgb(56_189_248/0.16),transparent),radial-gradient(50%_50%_at_10%_10%,rgb(20_184_166/0.12),transparent)]" />
+      <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_80%)]" />
       <div className="container grid items-center gap-16 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm font-medium text-ink-soft shadow-card">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-gradient" />
+          <p className="inline-flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
+            <span className="h-2 w-2 rounded-sm bg-accent" />
             Incubated at T-Hub Hyderabad · 2024
           </p>
-          <h1 className="h-display mt-6">Your potential deserves to be <span className="text-gradient">seen.</span></h1>
+          <h1 className="h-display mt-6">Your potential deserves to be <span className="text-accent">seen.</span></h1>
           <p className="mt-6 max-w-xl text-lg text-ink-soft md:text-xl">
             Build proof of your skills, learn from industry mentors, and get hired by companies that value what you can do.
           </p>

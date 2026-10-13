@@ -18,7 +18,7 @@ export function MentorDirectory({ items: mentors }: { items: Mentor[] }) {
         <select id="d" className={sel} value={domain} onChange={(e) => setDomain(e.target.value)}><option value="">All domains</option>{uniq(mentors.map((m) => m.domain)).map((d) => <option key={d}>{d}</option>)}</select>
         <label className="sr-only" htmlFor="c">Country</label>
         <select id="c" className={sel} value={country} onChange={(e) => setCountry(e.target.value)}><option value="">All countries</option>{uniq(mentors.map((m) => m.country)).map((d) => <option key={d}>{d}</option>)}</select>
-        <label className="flex items-center gap-2 text-[15px]"><input type="checkbox" checked={avail} onChange={(e) => setAvail(e.target.checked)} className="h-4 w-4 accent-teal-600" />Available now</label>
+        <label className="flex items-center gap-2 text-[15px]"><input type="checkbox" checked={avail} onChange={(e) => setAvail(e.target.checked)} className="h-4 w-4 accent-neon" />Available now</label>
       </form>
       <h2 className="sr-only">Mentors</h2>
       <p className="mt-4 text-sm text-ink-soft" aria-live="polite">{list.length} verified mentors</p>
