@@ -29,11 +29,15 @@ Next.js 15 (App Router) · TypeScript · Tailwind CSS · Prisma + MySQL/MariaDB 
 - **Error logging + friendly error pages**, admin *Server errors* page.
 - **Performance/accessibility:** Lighthouse (simulated mobile, production build, local): performance 91–99, accessibility 100, best practices 100 on all public pages; SEO 100 (login/join/Talent Cards are deliberately `noindex`, scoring 66). Real-world numbers on Hostinger will differ, so re-run Lighthouse after deploying.
 
+- **Photos & screenshots:** students and mentors upload a profile photo; students add project screenshots (shown on the public Talent Card; mentor photos show in the directory and profile). Images are **stored in the database** (so they survive Hostinger redeploys), validated by magic bytes (PNG/JPEG/WebP only, never SVG), max 1 MB (the browser downscales first), role- and ownership-checked, rate-limited, CSRF-checked, and replaced/deleted images are removed. Include the database in your backups; expect roughly 100–300 KB per image.
+- **Resilient when the database is down:** public pages still load, listings show a friendly notice, sign-in and the contact form give clear messages (contact falls back to email if configured), and `/api/health` reports the failure category.
+- `db:unseed` removes only sample records (safe order, real users untouched).
+
 ### Platform: what is NOT done
 
 - **Email sign-in codes work via Resend** (`EMAIL_API_KEY`, `EMAIL_FROM`; tested against a mock server, not live Resend). **Mobile/SMS sign-in is not available in production** (no SMS provider). In dev the code is shown on screen. Notifications are in-app only. First admin: set `ADMIN_EMAILS`.
 - **Google sign-in is implemented but untested** (needs real `GOOGLE_CLIENT_ID/SECRET` and the callback URL `/api/auth/google/callback`).
-- **File uploads are not built.** Projects take links only; certificates/screenshots need signed-URL storage with type/size limits.
+- **Uploads are images only** (profile photos, mentor photos, project screenshots). Certificates/PDF/other file types are not supported.
 - No third-party analytics or Sentry. Instead: unhandled server errors are stored (no personal data) and shown to admins at *Server errors*; add Sentry/analytics if you want alerts or traffic stats.
 - Done and tested in production mode: Contact form (stored in DB, honeypot + rate limit, admin inbox, optional email), Open Graph/Twitter image, installable PWA (manifest, PNG icons, safe service worker with offline page — private pages are never cached), Content Security Policy + HSTS.
 - Mentor sessions don't include video links; mentor and student agree the link in messages/email.
@@ -56,7 +60,7 @@ Sample logins (dev only; OTP appears on screen): `admin@sample.kalwings.test`, `
 
 Create a real admin: put your email in `ADMIN_EMAILS` and sign in, or sign in once and run `npm run make-admin -- you@example.com`.
 
-Tests: `npm run test:e2e:prod` smoke-tests a production build (CSP, PWA/offline, OG, contact form; see the header of `e2e/production.mjs`). With the dev server running and the seed loaded, `npm run test:e2e` drives student/mentor/employer/admin through the real UI (~40 checks incl. permission, trust-rule, slot-booking and college-consent checks). Set `E2E_BASE_URL` and `CHROMIUM_PATH` if needed.
+Tests: `npm run test:e2e:prod` smoke-tests a production build (CSP, PWA/offline, OG, contact form; see the header of `e2e/production.mjs`). `node e2e/degraded.mjs` checks the site against an unreachable database (see its header). With the dev server running and the seed loaded, `npm run test:e2e` drives student/mentor/employer/admin through the real UI (~55 checks incl. permission, trust-rule, slot-booking, college-consent and upload-security checks). Set `E2E_BASE_URL` and `CHROMIUM_PATH` if needed.
 
 Node 20+.
 
@@ -69,7 +73,7 @@ Node 20+.
 | Impact numbers (`[X]+`) | `impact` in `src/data/sample.ts`: set `value` to a real number and it counts up. Never publish estimates. |
 | Mentors, opportunities, challenge, stories, community groups | `src/data/sample.ts` |
 | Ecosystem / partner / hiring-company logos | `src/components/home/trust-impact.tsx` (text wordmarks for now; use official greyscale SVGs, with permission) |
-| Photos (mentors, students, events, founder) | Every `<PhotoPlaceholder />` (grep for it). Use `next/image` with real alt text |
+| Photos on the homepage (events, success stories, founder) | Every `<PhotoPlaceholder />` in `src/components/home/` (grep for it). Put images in `public/images/` and use `next/image` with real alt text. Mentor and student photos are uploaded by the people themselves in their dashboards. |
 | Awards & press | `Recognition` in `src/components/home/rest.tsx`: real, linkable entries only |
 | Founder note | `Team` in `src/components/home/rest.tsx` (draft wording for Mohammed Sajeed Khan to edit) |
 | Pricing | `tiers` in `src/app/employers/page.tsx` |
@@ -94,5 +98,5 @@ Pay, work mode, location and eligibility always shown · unpaid roles labelled �
 ## Next steps
 
 1. SMS provider for mobile sign-in; verify Google sign-in against real credentials.
-2. Secure uploads (needs persistent/external storage — Hostinger may wipe local files on redeploy), Sentry/analytics if wanted.
+2. Sentry/analytics if wanted; certificates/PDF uploads would need external object storage.
 3. Real legal copy, real content, `next/image` once photos exist; Lighthouse on real content.

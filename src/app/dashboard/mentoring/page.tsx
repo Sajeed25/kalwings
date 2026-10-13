@@ -5,6 +5,7 @@ import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel, Status, fmt, fmtTime } from "@/components/dash/ui";
 import { cancelSession } from "@/app/actions/student";
+import { ImageUpload } from "@/components/dash/image-upload";
 import { addSlot, deleteSlot, giveEndorsement, respondToSession, saveMentorProfile } from "@/app/actions/mentor";
 
 export default async function Page() {
@@ -32,6 +33,7 @@ async function MentorView({ userId }: { userId: string }) {
       <PageTitle title="Mentor profile" sub={m ? `Status: ${m.status.toLowerCase()}. ${m.status === "PENDING" ? "Admins review new mentors before they're listed." : ""}` : "Tell students who you are."} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Profile">
+          {m && <div className="mb-5"><ImageUpload kind="AVATAR" label="Upload photo" round maxDim={800} currentUrl={m.avatarId ? `/api/files/${m.avatarId}` : null} /></div>}
           <ActionForm action={saveMentorProfile}>
             <Field label="Role" name="roleTitle" defaultValue={m?.roleTitle} required />
             <Field label="Company" name="company" defaultValue={m?.company} required />

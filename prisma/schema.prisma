@@ -73,6 +73,7 @@ model User {
 }
 
 model StudentProfile {
+  avatarId         String? // Upload.id of the profile photo
   shareWithCollege Boolean            @default(false) // consent: name + progress visible to their college admins
   isSample         Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
   id               String             @id @default(cuid())
@@ -101,6 +102,7 @@ model StudentProfile {
 }
 
 model Project {
+  imageId   String? // Upload.id of a project screenshot
   id        String         @id @default(cuid())
   studentId String
   student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -123,6 +125,7 @@ model SkillEvidence {
 }
 
 model MentorProfile {
+  avatarId          String? // Upload.id of the profile photo
   isSample          Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
   id                String             @id @default(cuid())
   userId            String             @unique
@@ -357,4 +360,18 @@ model ErrorLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// Images are stored in the database so they survive redeploys on hosts with ephemeral disks.
+// Only validated PNG/JPEG/WebP, max 1 MB (the browser downscales before upload).
+model Upload {
+  id        String   @id @default(cuid())
+  ownerId   String // User.id of the uploader
+  kind      String   @db.VarChar(20) // AVATAR | PROJECT
+  mime      String   @db.VarChar(40)
+  size      Int
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
 }

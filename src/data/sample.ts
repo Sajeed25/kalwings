@@ -34,6 +34,7 @@ export type Mentor = {
   guided: number;
   available: boolean;
   isSample?: boolean;
+  photo?: string; // /api/files/<id> when the mentor uploaded one
 };
 
 export const mentors: Mentor[] = [

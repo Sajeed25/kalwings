@@ -8,7 +8,10 @@ import { mentorOfTheMonth, mentors, type Mentor } from "@/data/sample";
 export function MentorCard({ m }: { m: Mentor }) {
   return (
     <article className="card card-hover flex h-full flex-col overflow-hidden">
-      <PhotoPlaceholder label="mentor" className="h-44" />
+      {m.photo
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={m.photo} alt={`Photo of ${m.name}`} className="h-44 w-full object-cover" width={400} height={176} loading="lazy" />
+        : <PhotoPlaceholder label="mentor" className="h-44" />}
       <div className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-xl">{m.name}</h3>

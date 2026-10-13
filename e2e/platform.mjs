@@ -175,6 +175,41 @@ await student.uncheck('input[name=share]'); await student.click('button:has-text
 await college.reload(); ok(await college.locator(`text=Test Student ${tag}`).count() === 0, 'withdrawing consent removes the student');
 await college.goto(`${B}/dashboard/moderation`); ok(!/moderation/.test(college.url()), 'college admin cannot open admin pages');
 
+// --- uploads: photos + screenshots stored in the DB, validated server-side
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+const imgSrc = async (page, sel) => page.locator(sel).first().getAttribute('src');
+await student.goto(`${B}/dashboard/profile`);
+await student.setInputFiles('input[type=file][aria-label="Upload photo"]', { name: 'me.png', mimeType: 'image/png', buffer: PNG });
+await student.waitForSelector('img[src^="/api/files/"]');
+const av1 = await imgSrc(student, 'img[src^="/api/files/"]');
+const f1 = await student.request.get(B + av1); ok(f1.status() === 200 && f1.headers()['content-type'] === 'image/jpeg' && /immutable/.test(f1.headers()['cache-control']), 'photo upload works and is served as a cached JPEG');
+await student.reload(); await student.setInputFiles('input[type=file]', { name: 'me2.png', mimeType: 'image/png', buffer: PNG }); await student.waitForTimeout(1500); await student.reload();
+const av2 = await imgSrc(student, 'img[src^="/api/files/"]');
+ok(av2 && av2 !== av1 && (await student.request.get(B + av1)).status() === 404, 'replacing a photo deletes the old file');
+const bad = await student.request.post(`${B}/api/upload`, { multipart: { kind: 'AVATAR', file: { name: 'evil.png', mimeType: 'image/png', buffer: Buffer.from('<script>alert(1)</script>') } } });
+ok(bad.status() === 400, 'a non-image renamed .png is rejected (magic-byte check)');
+const svg = await student.request.post(`${B}/api/upload`, { multipart: { kind: 'AVATAR', file: { name: 'x.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>') } } });
+ok(svg.status() === 400, 'SVG uploads are rejected');
+const big = await student.request.post(`${B}/api/upload`, { multipart: { kind: 'AVATAR', file: { name: 'big.png', mimeType: 'image/png', buffer: Buffer.concat([PNG, Buffer.alloc(1_100_000)]) } } });
+ok(big.status() === 413, 'oversize image is rejected (413)');
+ok((await anon.request.post(`${B}/api/upload`, { multipart: { kind: 'AVATAR', file: { name: 'a.png', mimeType: 'image/png', buffer: PNG } } })).status() === 401, 'anonymous upload refused');
+ok((await employer.request.post(`${B}/api/upload`, { multipart: { kind: 'AVATAR', file: { name: 'a.png', mimeType: 'image/png', buffer: PNG } } })).status() === 403, 'employer cannot upload a profile photo');
+ok((await student.request.post(`${B}/api/upload`, { headers: { Origin: 'https://evil.example' }, multipart: { kind: 'AVATAR', file: { name: 'a.png', mimeType: 'image/png', buffer: PNG } } })).status() === 403, 'cross-site upload (CSRF) refused');
+ok((await student.request.post(`${B}/api/upload`, { multipart: { kind: 'PROJECT', projectId: 'cl000000000000000000000000', file: { name: 'a.png', mimeType: 'image/png', buffer: PNG } } })).status() === 404, "cannot attach an image to someone else's / unknown project");
+ok((await student.request.get(`${B}/api/files/doesnotexist`)).status() === 404, 'unknown file id is 404');
+// project screenshot + Talent Card
+await student.goto(`${B}/dashboard/portfolio`);
+await student.setInputFiles('input[type=file][aria-label="Add screenshot"]', { name: 'shot.png', mimeType: 'image/png', buffer: PNG }); await student.waitForSelector('img[src^="/api/files/"]');
+const shotUrl = await imgSrc(student, 'img[src^="/api/files/"]');
+await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/t\//);
+ok(await student.locator('img[alt^="Photo of Test Student"]').count() === 1 && await student.locator('img[alt^="Screenshot of"]').count() === 1, 'Talent Card shows photo and project screenshot');
+// deleting the project removes its screenshot
+await student.goto(`${B}/dashboard/portfolio`); student.once('dialog', (d) => d.accept()); await student.locator('button:has-text("Delete")').first().click(); await student.waitForTimeout(1200);
+ok((await student.request.get(B + shotUrl)).status() === 404, 'deleting a project deletes its screenshot');
+// mentor photo shows in the public directory
+await mentor.goto(`${B}/dashboard/mentoring`); await mentor.setInputFiles('input[type=file][aria-label="Upload photo"]', { name: 'm.png', mimeType: 'image/png', buffer: PNG }); await mentor.waitForSelector('img[src^="/api/files/"]');
+await student.goto(`${B}/mentors`); ok(await student.locator(`img[alt="Photo of Test Mentor ${tag}"]`).count() === 1, 'mentor photo appears in the directory');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 
