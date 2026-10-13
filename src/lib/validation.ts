@@ -180,3 +180,11 @@ export const postSchema = z.object({
   eventAt: z.union([istDateTime, z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
 });
 export const commentSchema = z.object({ postId: z.string().cuid(), body: text(1000).min(2) });
+
+export const departmentSchema = z.object({ name: text(80).min(2) });
+export const driveSchema = z.object({
+  companyId: z.string().cuid(), title: text(120).min(3), description: text(2000).min(20, "Describe the drive: roles, process and timeline (20+ characters)"),
+  driveDate: z.coerce.date().refine((d) => d.getTime() > Date.now(), "The drive date must be in the future"),
+  gradYears: text(60).optional().default(""), minCompleteness: z.coerce.number().int().min(0).max(100).default(0),
+});
+export const studentDepartmentSchema = z.object({ departmentId: z.string().cuid().optional().or(z.literal("")) });

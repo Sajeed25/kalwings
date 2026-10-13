@@ -25,7 +25,7 @@ const nextConfig = {
   redirects: async () => [
     ["/recruiter/dashboard", "/dashboard"], ["/recruiter/jobs", "/dashboard/roles"], ["/recruiter/candidates", "/dashboard/talent"],
     ["/recruiter/applications", "/dashboard/pipeline"], ["/recruiter/challenges", "/dashboard/challenges"], ["/recruiter/interviews", "/dashboard/interviews"], ["/recruiter/analytics", "/dashboard/analytics"],
-    ["/college/dashboard", "/dashboard"], ["/college/students", "/dashboard/college"], ["/college/drives", "/dashboard/college"], ["/college/reports", "/dashboard/college"],
+    ["/college/dashboard", "/dashboard"], ["/college/students", "/dashboard/college"], ["/college/drives", "/dashboard/drives"], ["/college/reports", "/dashboard/college"],
     ["/admin/dashboard", "/dashboard"], ["/admin/users", "/dashboard/users"], ["/admin/companies", "/dashboard"], ["/admin/opportunities", "/dashboard/moderation"], ["/admin/moderation", "/dashboard/reports"], ["/admin/settings", "/dashboard/audit"],
     ["/assessments", "/dashboard/assessments"], ["/profile", "/dashboard/profile"], ["/portfolio", "/dashboard/portfolio"], ["/applications", "/dashboard/applications"], ["/messages", "/dashboard/applications"],
     ["/notifications", "/dashboard/notifications"], ["/settings", "/dashboard/account"], ["/register", "/join"], ["/forgot-password", "/login"], ["/verify", "/login"],

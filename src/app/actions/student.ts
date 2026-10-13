@@ -64,7 +64,7 @@ export async function saveCollege(_: Result, fd: FormData): Promise<Result> {
   const collegeId = r.data.collegeId || null;
   if (collegeId && !(await db.college.findFirst({ where: { id: collegeId, status: "VERIFIED" } }))) return { error: "Choose a college from the list." };
   // Consent is only meaningful with a college, and is off unless ticked.
-  await db.studentProfile.update({ where: { id: p.id }, data: { collegeId, shareWithCollege: !!collegeId && r.data.share === "on" } });
+  await db.studentProfile.update({ where: { id: p.id }, data: { collegeId, departmentId: collegeId === p.collegeId ? p.departmentId : null, shareWithCollege: !!collegeId && r.data.share === "on" } });
   revalidatePath("/dashboard", "layout");
   return { ok: true };
 }

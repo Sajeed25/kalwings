@@ -281,7 +281,8 @@ await fillCh('only one line'); await employer.waitForSelector('p[role=alert]'); 
 await fillCh('Correctness | 40 | Cleans the data properly\nClarity | 30 | Chart is readable\nWrite-up | 30 | Explains trade-offs'); await employer.waitForSelector('text=Submitted. It goes live');
 await student.goto(`${B}/challenges`); ok(await student.locator(`text=${chTitle}`).count() === 0, 'unmoderated challenge is not public');
 await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: chTitle }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1500);
-await student.goto(`${B}/challenges`); ok(await student.locator(`text=${chTitle}`).count() > 0, 'approved challenge is listed on /challenges');
+let chListed = false; for (let i = 0; i < 8 && !chListed; i++) { await student.goto(`${B}/challenges`); chListed = (await student.locator(`text=${chTitle}`).count()) > 0; if (!chListed) await student.waitForTimeout(1500); }
+ok(chListed, 'approved challenge is listed on /challenges');
 await student.locator(`a:has-text("${chTitle}")`).first().click(); await student.waitForURL(/\/challenges\/[a-z0-9]+$/);
 const chUrl = student.url(); const chOppId = chUrl.split('/').pop();
 ok(await student.locator('text=How it is judged').count() > 0 && await student.locator('td:has-text("Correctness")').count() > 0, 'challenge page shows the brief and rubric');
@@ -372,6 +373,38 @@ await student.goto(B + gHref); ok(await student.locator(`text=Debugging I2C ${ta
 admin.once('dialog', (d) => d.accept()); await admin.goto(B + gHref); await admin.click('button:has-text("Archive group")'); await admin.waitForTimeout(1500);
 ok((await student.goto(B + gHref)).status() === 404, 'archived group is gone for members');
 await anon.goto(`${B}/community`); ok(await anon.locator(`text=${gName}`).count() === 0, 'archived group leaves the directory');
+
+// --- college portal: departments, drives, eligibility, consent, outcomes, reports
+const dept = `Electronics ${tag}`;
+await college.goto(`${B}/dashboard/college`); await college.fill('input[name=name]', dept); await college.click('button:has-text("Add department")'); await college.waitForSelector(`text=${dept}`);
+await student.goto(`${B}/dashboard/profile`); await student.check('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1500);
+await student.reload(); await student.selectOption('select[name=departmentId]', { label: dept }); await student.click('button:has-text("Save department")'); await student.waitForSelector('text=Saved');
+const dTitle = `Campus Drive ${tag}`;
+await college.goto(`${B}/dashboard/drives`); await college.selectOption('select[name=companyId]', { label: `Acme Labs ${tag}` }); await college.fill('input[name=title]', dTitle);
+await college.fill('textarea[name=description]', 'Hiring embedded interns. Aptitude round then interviews on campus.'); await college.fill('input[name=driveDate]', new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10)); await college.fill('input[name=gradYears]', '2026'); await college.check(`input[name=departmentIds]`);
+await college.click('button:has-text("Propose to company")'); await college.waitForSelector('text=Proposed.');
+await college.reload(); await college.locator(`a:has-text("${dTitle}")`).click(); await college.waitForSelector('text=Waiting for Acme Labs');
+ok(await college.locator('button:has-text("Invite eligible students")').count() === 0, 'students cannot be invited before the company confirms');
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator(`text=${dTitle}`).count() === 0, 'no invitation before confirmation');
+await employer.goto(`${B}/dashboard/drives`); await employer.locator('section', { hasText: dTitle }).locator('button:has-text("Confirm")').click(); await employer.waitForTimeout(1500);
+await college.reload(); await college.locator('button:has-text("Invite eligible students")').click(); await college.waitForSelector(`text=Test Student ${tag}`);
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator(`text=${dTitle}`).count() > 0 && await student.locator('button:has-text("Accept and share")').count() > 0, 'opted-in eligible student is invited');
+await student2.goto(`${B}/dashboard/drives`); ok(await student2.locator(`text=${dTitle}`).count() === 0, 'students outside the college or criteria are not invited');
+await employer.goto(`${B}/dashboard/drives`); await employer.locator('section', { hasText: dTitle }).locator('a:has-text("Participants")').click(); ok(await employer.locator(`text=Test Student ${tag}`).count() === 0, 'company sees no student before they accept');
+await student.locator('button:has-text("Accept and share")').click(); await student.waitForTimeout(1500);
+await employer.reload(); ok(await employer.locator(`text=Test Student ${tag}`).count() > 0 && await employer.locator('a:has-text("Talent Passport")').count() > 0, 'company sees a student only after they accept');
+ok(!(await employer.content()).includes(`stu${tag}@example.com`), 'drive participants never expose email');
+await employer.locator('button:text-is("shortlisted")').click(); await employer.waitForTimeout(1500);
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator('text=shortlisted').count() > 0, 'student sees the drive outcome');
+const dUrl = college.url();
+await college.goto(`${B}/dashboard/drives`); await college.locator(`a:has-text("${dTitle}")`).click(); await college.waitForURL(/\/drives\/[a-z0-9]+$/); await college.waitForSelector('text=Declined'); ok(await college.locator('li >> text=shortlisted').count() > 0, 'college sees outcomes for participating students');
+ok((await rec3.goto(`${B}/dashboard/drives/${dUrl.split('/').pop()}`)).status() === 404, 'unrelated recruiter cannot open a drive');
+const rep = await college.request.get(`${B}/api/college/report?type=roster`); const repTxt = await rep.text();
+ok(rep.status() === 200 && (rep.headers()['content-type'] || '').includes('text/csv') && repTxt.includes(`Test Student ${tag}`) && repTxt.includes(dept) && !repTxt.includes('@example.com'), 'roster CSV includes opted-in students, no emails');
+const rep2 = await college.request.get(`${B}/api/college/report?type=drives`); ok((await rep2.text()).includes(dTitle), 'drives CSV lists the drive');
+ok((await student.request.get(`${B}/api/college/report?type=roster`)).status() === 403 && (await anon.request.get(`${B}/api/college/report?type=roster`)).status() === 403, 'reports are blocked for students and anonymous users');
+await student.goto(`${B}/dashboard/profile`); await student.uncheck('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1200);
+const rep3 = await college.request.get(`${B}/api/college/report?type=roster`); ok(!(await rep3.text()).includes(`Test Student ${tag}`), 'withdrawing consent removes the student from reports');
 
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
