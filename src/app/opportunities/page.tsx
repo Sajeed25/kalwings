@@ -9,11 +9,16 @@ export const dynamic = "force-dynamic";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; location?: string }> }) {
   const sp = await searchParams;
-  const items = await publicOpportunities();
+  let items: Awaited<ReturnType<typeof publicOpportunities>> = [];
+  let unavailable = false;
+  try { items = await publicOpportunities(); } catch (e) { unavailable = true; console.error("[opportunities] load failed:", e instanceof Error ? e.message : e); }
   return (
     <>
       <PageHero eyebrow="Opportunities" title="Roles that show you the pay." lead="Every listing shows pay, work mode, location and eligibility. Unpaid roles are labelled clearly. Nothing here is a guaranteed job." />
-      <Block><OpportunityBrowser items={items} initialQ={sp.q ?? ""} initialLocation={sp.location ?? ""} /></Block>
+      <Block>
+        {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">Listings are temporarily unavailable. Please check back in a few minutes.</p>}
+        <OpportunityBrowser items={items} initialQ={sp.q ?? ""} initialLocation={sp.location ?? ""} />
+      </Block>
     </>
   );
 }

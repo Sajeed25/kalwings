@@ -10,11 +10,16 @@ export const metadata: Metadata = { title: "Mentors", description: "Learn from i
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const items = await publicMentors();
+  let items: Awaited<ReturnType<typeof publicMentors>> = [];
+  let unavailable = false;
+  try { items = await publicMentors(); } catch (e) { unavailable = true; console.error("[mentors] load failed:", e instanceof Error ? e.message : e); }
   return (
     <>
       <PageHero eyebrow="Mentor Network" title="Learn from people who've done it." lead="Book office hours, get portfolio reviews and earn endorsements that are backed by real work." />
-      <Block><MentorDirectory items={items} /></Block>
+      <Block>
+        {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">The mentor directory is temporarily unavailable. Please check back in a few minutes.</p>}
+        <MentorDirectory items={items} />
+      </Block>
       <Block className="bg-muted">
         <div id="become-a-mentor" className="mx-auto max-w-2xl scroll-mt-28 text-center">
           <h2 className="text-3xl font-extrabold md:text-4xl">Become a mentor</h2>

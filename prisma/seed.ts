@@ -10,10 +10,27 @@ const db = new PrismaClient();
 const modeMap = { Remote: "REMOTE", Hybrid: "HYBRID", "On-site": "ONSITE" } as const;
 const typeMap = { Internship: "INTERNSHIP", Job: "JOB", Challenge: "CHALLENGE" } as const;
 
+/**
+ * Removes ONLY sample data, in an order that respects foreign keys, and detaches (never deletes) real users
+ * who interacted with sample records (e.g. a real student who booked a sample mentor).
+ */
 async function unseed() {
+  const sampleUsers = { email: { endsWith: "@sample.kalwings.test" } };
+  const ids = (await db.user.findMany({ where: sampleUsers, select: { id: true } })).map((u) => u.id);
+  await db.application.deleteMany({ where: { OR: [{ opportunity: { company: { isSample: true } } }, { student: { isSample: true } }] } });
   await db.opportunity.deleteMany({ where: { company: { isSample: true } } });
+  await db.mentorSession.deleteMany({ where: { OR: [{ mentor: { isSample: true } }, { student: { isSample: true } }] } });
+  await db.endorsement.deleteMany({ where: { OR: [{ mentor: { isSample: true } }, { student: { isSample: true } }] } });
+  await db.shortlist.deleteMany({ where: { OR: [{ company: { isSample: true } }, { student: { isSample: true } }] } });
+  await db.studentProfile.updateMany({ where: { college: { name: { startsWith: "Sample " } } }, data: { collegeId: null, shareWithCollege: false } });
+  if (ids.length) {
+    await db.message.deleteMany({ where: { senderId: { in: ids } } });
+    await db.auditLog.deleteMany({ where: { actorId: { in: ids } } });
+    await db.report.updateMany({ where: { reporterId: { in: ids } }, data: { reporterId: null } });
+    await db.upload.deleteMany({ where: { ownerId: { in: ids } } });
+  }
+  await db.user.deleteMany({ where: sampleUsers });
   await db.company.deleteMany({ where: { isSample: true } });
-  await db.user.deleteMany({ where: { email: { endsWith: "@sample.kalwings.test" } } });
   await db.college.deleteMany({ where: { name: { startsWith: "Sample " } } });
 }
 

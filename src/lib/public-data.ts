@@ -16,7 +16,7 @@ export const toCardOpp = (o: DbOpp & { company: Company }): Opportunity & { isSa
 
 export const toCardMentor = (m: MentorProfile & { user: User }, guided: number): Mentor & { id: string; isSample: boolean } => ({
   id: m.id, slug: m.slug, name: m.user.name, role: m.roleTitle, company: m.company, country: m.country, flag: FLAGS[m.country] ?? "🌍", domain: m.domain, tags: asList(m.tags),
-  guided, available: false, isSample: m.isSample,
+  guided, available: false, isSample: m.isSample, photo: m.avatarId ? `/api/files/${m.avatarId}` : undefined,
 });
 
 /** Only verified companies' moderated, unexpired listings are public. */

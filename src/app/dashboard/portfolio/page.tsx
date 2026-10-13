@@ -3,6 +3,7 @@ import { requirePageRole } from "@/lib/session";
 import { ActionForm, Area, Field, ActionButton } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel } from "@/components/dash/ui";
 import { addProject, deleteProject } from "@/app/actions/student";
+import { ImageUpload } from "@/components/dash/image-upload";
 
 export default async function Page() {
   const u = await requirePageRole("STUDENT");
@@ -13,7 +14,7 @@ export default async function Page() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Projects">
           {p.projects.length ? <ul className="space-y-4">{p.projects.map((x) => (
-            <li key={x.id} className="rounded-xl border border-line p-4"><p className="font-semibold">{x.title}</p><p className="mt-1 text-sm text-ink-soft">{x.summary}</p>
+            <li key={x.id} className="rounded-xl border border-line p-4"><p className="font-semibold">{x.title}</p><div className="mt-3"><ImageUpload kind="PROJECT" projectId={x.id} label="Add screenshot" currentUrl={x.imageId ? `/api/files/${x.imageId}` : null} /></div><p className="mt-1 text-sm text-ink-soft">{x.summary}</p>
               <div className="mt-2 flex items-center gap-3 text-sm">{x.githubUrl && <a className="font-semibold underline" href={x.githubUrl} rel="noopener noreferrer" target="_blank">Code</a>}{x.demoUrl && <a className="font-semibold underline" href={x.demoUrl} rel="noopener noreferrer" target="_blank">Demo</a>}<span className="ml-auto"><ActionButton variant="ghost" confirm="Delete this project?" action={deleteProject.bind(null, x.id)}>Delete</ActionButton></span></div></li>))}</ul> : <Empty>No projects yet.</Empty>}
         </Panel>
         <div className="space-y-6">

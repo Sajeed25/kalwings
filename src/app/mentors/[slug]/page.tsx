@@ -28,7 +28,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <Block>
       <Link href="/mentors" className="text-sm font-semibold text-teal-700 dark:text-teal">← All mentors</Link>
       <div className="mt-6 grid gap-10 md:grid-cols-[320px_1fr]">
-        <PhotoPlaceholder label="mentor" className="aspect-[4/5] rounded-card-lg" />
+        {m.avatarId
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={`/api/files/${m.avatarId}`} alt={`Photo of ${m.user.name}`} className="aspect-[4/5] w-full rounded-card-lg object-cover" width={640} height={800} />
+          : <PhotoPlaceholder label="mentor" className="aspect-[4/5] rounded-card-lg" />}
         <div>
           <h1 className="text-4xl font-extrabold md:text-5xl">{m.user.name}</h1>
           <p className="mt-2 text-lg text-ink-soft">{m.roleTitle} · {m.company} · {m.country}</p>

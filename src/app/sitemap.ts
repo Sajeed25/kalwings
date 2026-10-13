@@ -1,8 +1,25 @@
 import type { MetadataRoute } from "next";
+import { db } from "@/lib/db";
 import { site } from "@/lib/site";
 
+export const dynamic = "force-dynamic";
+
 const paths = ["", "/opportunities", "/mentors", "/challenges", "/community", "/students", "/employers", "/colleges", "/about", "/press", "/contact", "/help", "/privacy", "/terms", "/trust"];
-// Sample mentor/opportunity detail pages are noindex and intentionally excluded until real data exists.
-export default function sitemap(): MetadataRoute.Sitemap {
-  return paths.map((p) => ({ url: `${site.url}${p}`, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
+
+/** Static pages plus REAL (non-sample) verified opportunities and mentors. If the database is down, only static pages are listed. */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base: MetadataRoute.Sitemap = paths.map((p) => ({ url: `${site.url}${p}`, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
+  try {
+    const [opps, mentors] = await Promise.all([
+      db.opportunity.findMany({ where: { moderated: "VERIFIED", deadline: { gt: new Date() }, company: { status: "VERIFIED", isSample: false } }, select: { id: true, createdAt: true }, take: 5000 }),
+      db.mentorProfile.findMany({ where: { status: "VERIFIED", isSample: false }, select: { slug: true }, take: 5000 }),
+    ]);
+    return [
+      ...base,
+      ...opps.map((o) => ({ url: `${site.url}/opportunities/${o.id}`, lastModified: o.createdAt, changeFrequency: "daily" as const, priority: 0.6 })),
+      ...mentors.map((m) => ({ url: `${site.url}/mentors/${m.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ];
+  } catch {
+    return base;
+  }
 }

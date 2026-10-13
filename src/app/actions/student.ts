@@ -46,8 +46,11 @@ export async function addProject(_: Result, fd: FormData): Promise<Result> {
 }
 
 export async function deleteProject(id: string) {
-  const { p } = await me();
-  await db.project.deleteMany({ where: { id, studentId: p.id } }); // scoped to owner
+  const { u, p } = await me();
+  const proj = await db.project.findFirst({ where: { id, studentId: p.id } }); // scoped to owner
+  if (!proj) return;
+  await db.project.delete({ where: { id: proj.id } });
+  if (proj.imageId) await db.upload.deleteMany({ where: { id: proj.imageId, ownerId: u.id } });
   await refreshScore(p.id);
   revalidatePath("/dashboard", "layout");
 }

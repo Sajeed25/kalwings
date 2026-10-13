@@ -4,6 +4,7 @@ import { requirePageRole } from "@/lib/session";
 import { ActionForm, Area, Field, ActionButton } from "@/components/dash/action-form";
 import { PageTitle, Panel } from "@/components/dash/ui";
 import { saveCollege, saveProfile, toggleContactVisible } from "@/app/actions/student";
+import { ImageUpload } from "@/components/dash/image-upload";
 
 export default async function Page() {
   const u = await requirePageRole("STUDENT");
@@ -25,6 +26,7 @@ export default async function Page() {
           </ActionForm>
         </Panel>
         <div className="space-y-6">
+        <Panel title="Photo"><ImageUpload kind="AVATAR" label="Upload photo" round maxDim={512} currentUrl={p.avatarId ? `/api/files/${p.avatarId}` : null} /></Panel>
         <Panel title="College">
           <ActionForm action={saveCollege} submit="Save college" className="space-y-3">
             <label className="block text-sm font-semibold">Your college
