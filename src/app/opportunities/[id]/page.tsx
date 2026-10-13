@@ -1,3 +1,4 @@
+import { TYPE_LABEL } from "@/lib/opportunity-types";
 import type { Metadata } from "next";
 import { asList } from "@/lib/lists";
 import Link from "next/link";
@@ -42,7 +43,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
   const closed = !!o.closedAt || o.deadline < new Date();
   const ld = {
-    "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: o.type === "JOB" ? "FULL_TIME" : "INTERN",
+    "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: ["JOB","GRADUATE_TRAINEE","CAMPUS"].includes(o.type) ? "FULL_TIME" : o.type === "FREELANCE" ? "CONTRACTOR" : "INTERN",
     datePosted: o.createdAt.toISOString(), validThrough: o.deadline.toISOString(), hiringOrganization: { "@type": "Organization", name: o.company.name, sameAs: o.company.website },
     jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: o.location, addressCountry: "IN" } }, jobLocationType: o.workMode === "REMOTE" ? "TELECOMMUTE" : undefined,
     url: `${site.url}/opportunities/${o.id}`,
@@ -52,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <Link href="/opportunities" className="text-sm font-semibold text-accent">← All opportunities</Link>
       <div className="mt-6 max-w-3xl">
-        <div className="flex gap-2"><Badge tone="accent">{o.type.toLowerCase()}</Badge>{o.company.isSample && <SampleTag />}</div>
+        <div className="flex gap-2"><Badge tone="accent">{TYPE_LABEL[o.type]}</Badge>{o.company.isSample && <SampleTag />}</div>
         <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{o.title}</h1>
         <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">

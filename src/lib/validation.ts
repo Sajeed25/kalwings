@@ -1,3 +1,4 @@
+import { TYPE_KEYS } from "@/lib/opportunity-types";
 import { z } from "zod";
 
 const text = (max: number) => z.string().trim().max(max);
@@ -33,7 +34,7 @@ export const companySchema = z.object({ name: text(100).min(2), website: url, ab
 // Trust rules: pay, work mode, location and eligibility are mandatory on every listing.
 export const opportunitySchema = z.object({
   title: text(120).min(3),
-  type: z.enum(["INTERNSHIP", "JOB", "CHALLENGE"]),
+  type: z.enum(TYPE_KEYS),
   description: text(3000).min(30),
   unpaid: z.coerce.boolean().default(false),
   payText: text(80).min(2, "Pay is required — say 'Unpaid' if there is none"),

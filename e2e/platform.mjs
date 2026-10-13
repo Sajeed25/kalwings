@@ -86,6 +86,10 @@ await fill('₹18,000 / month', '18000'); await employer.waitForSelector('text=S
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() === 0, 'pending listing not public');
 await admin.goto(`${B}/dashboard/moderation`);
 await admin.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(800);
+await student.goto(`${B}/opportunities?q=${encodeURIComponent('Embedded Intern ' + tag)}`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'search by keyword finds the listing');
+await student.goto(`${B}/opportunities?q=zzz-no-such-${tag}`); ok(await student.locator('text=Nothing matches').count() > 0, 'search with no match shows empty state');
+await student.goto(`${B}/opportunities?type=FREELANCE&q=${encodeURIComponent('Embedded Intern ' + tag)}`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() === 0, 'type filter excludes other types');
+await student.goto(`${B}/opportunities?sort=deadline&page=999&pay=%27;DROP`); ok((await student.locator('h1').count()) > 0 && await student.locator('text=Something went wrong').count() === 0, 'hostile/out-of-range params do not crash');
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'approved listing is public');
 await student.goto(`${B}/mentors`); ok(await student.locator(`text=Test Mentor ${tag}`).count() > 0, 'verified mentor listed');
 

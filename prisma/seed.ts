@@ -62,7 +62,7 @@ async function seed() {
     }
     await db.opportunity.create({
       data: {
-        companyId: companies.get(o.company)!, title: o.role, type: typeMap[o.type], description: `[Sample listing] ${o.role} at ${o.company}. Replace with a real description of the work, the team and how selection works.`,
+        companyId: companies.get(o.company)!, title: o.role, type: typeMap[o.type as keyof typeof typeMap], description: `[Sample listing] ${o.role} at ${o.company}. Replace with a real description of the work, the team and how selection works.`,
         payText: o.pay, unpaid: o.unpaid, monthlyINR: o.monthly, workMode: modeMap[o.mode], location: o.location, eligibility: o.eligibility,
         gradYears: (o.eligibility.match(/20\d\d/g) ?? []).map(Number), skills: o.skills,
         deadline: new Date(Date.now() + 45 * 864e5), moderated: "VERIFIED",
