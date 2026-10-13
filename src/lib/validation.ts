@@ -25,7 +25,10 @@ export const sessionRequestSchema = z.object({ mentorId: z.string().cuid(), slot
 
 export const mentorProfileSchema = z.object({ roleTitle: text(80).min(2), company: text(80).min(2), country: text(60).min(2), domain: text(40).min(2), tags: text(200).optional().default(""), bio: text(600).optional().default("") });
 
-export const slotSchema = z.object({ startsAt: z.coerce.date().refine((d) => d.getTime() > Date.now(), "Must be in the future"), minutes: z.coerce.number().int().min(15).max(120) });
+// <input type="datetime-local"> carries no timezone. Users are in India, so read it as IST regardless of the server's timezone.
+export const istDateTime = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Pick a date and time").transform((v) => new Date(`${v}:00+05:30`));
+
+export const slotSchema = z.object({ startsAt: istDateTime.refine((d) => d.getTime() > Date.now(), "Must be in the future"), minutes: z.coerce.number().int().min(15).max(120) });
 
 export const endorsementSchema = z.object({ studentId: z.string().cuid(), skill: text(60).min(2), text: text(400).min(10), evidence: url });
 
@@ -71,4 +74,22 @@ export const entrySchema = z.object({
   kind: z.enum(["EXPERIENCE", "ACHIEVEMENT", "HACKATHON", "CERTIFICATE"]),
   title: text(120).min(3), org: text(120).optional().default(""), year: z.union([z.coerce.number().int().min(1990).max(2035), z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
   url: optUrl, summary: text(600).optional().default(""),
+});
+
+export const interviewSchema = z.object({
+  applicationId: z.string().cuid(),
+  scheduledAt: istDateTime.refine((d) => d.getTime() > Date.now(), "Pick a time in the future"),
+  minutes: z.coerce.number().int().min(15).max(240),
+  mode: z.enum(["VIDEO", "PHONE", "ONSITE"]),
+  detail: text(300).min(3, "Add the meeting link, phone number or address"),
+  notes: text(500).optional().default(""),
+});
+export const offerSchema = z.object({
+  applicationId: z.string().cuid(),
+  summary: text(400).min(10, "Describe the role, pay and key terms"),
+  joiningDate: z.union([z.coerce.date(), z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
+});
+export const inviteSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
+export const stageLabelsSchema = z.object({
+  UNDER_REVIEW: text(24).optional().default(""), SHORTLISTED: text(24).optional().default(""), INTERVIEW: text(24).optional().default(""), OFFER: text(24).optional().default(""), HIRED: text(24).optional().default(""),
 });

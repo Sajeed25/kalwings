@@ -4,7 +4,7 @@ import { ActionForm, Field } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel, Stat, Status } from "@/components/dash/ui";
 import { createCollege } from "@/app/actions/college";
 
-const RANK = ["APPLIED", "SHORTLISTED", "INTERVIEW", "OFFER"] as const;
+const RANK = ["APPLIED", "UNDER_REVIEW", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED"] as const;
 
 export default async function Page() {
   const u = await requirePageRole("COLLEGE_ADMIN");
@@ -36,7 +36,7 @@ export default async function Page() {
       <PageTitle title={c.name} sub={`${c.city} · verified college`} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Stat label="Students joined" value={students.length} /><Stat label="Avg. profile score" value={`${avg}%`} /><Stat label="With verified evidence" value={students.filter((s) => s._count.skills > 0).length} />
-        <Stat label="Applications" value={all.length} /><Stat label="Offers" value={all.filter((a) => a.stage === "OFFER").length} />
+        <Stat label="Applications" value={all.length} /><Stat label="Offers" value={all.filter((a) => a.stage === "OFFER" || a.stage === "HIRED").length} />
       </div>
       <Panel title={`Students who shared their progress (${roster.length} of ${students.length})`} className="mt-6">
         {roster.length ? (
