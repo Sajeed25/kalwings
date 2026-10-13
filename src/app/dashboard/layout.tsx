@@ -14,7 +14,7 @@ const links: Record<Role, [string, string][]> = {
   MENTOR: [["Overview", "/dashboard"], ["Mentor profile", "/dashboard/mentoring"], ["Community", "/community"]],
   EMPLOYER: [["Overview", "/dashboard"], ["Company", "/dashboard/company"], ["Roles", "/dashboard/roles"], ["Description check", "/dashboard/jd-check"], ["Challenges", "/dashboard/challenges"], ["Assessments", "/dashboard/assessments"], ["Talent search", "/dashboard/talent"], ["Pipeline", "/dashboard/pipeline"], ["Interviews", "/dashboard/interviews"], ["Analytics", "/dashboard/analytics"], ["Campus drives", "/dashboard/drives"]],
   COLLEGE_ADMIN: [["Overview", "/dashboard"], ["College", "/dashboard/college"], ["Placement drives", "/dashboard/drives"]],
-  PLATFORM_ADMIN: [["Overview & queues", "/dashboard"], ["Listing moderation", "/dashboard/moderation"], ["Passport verification", "/dashboard/credentials"], ["Reports", "/dashboard/reports"], ["Users", "/dashboard/users"], ["Contact inbox", "/dashboard/inbox"], ["Server errors", "/dashboard/errors"], ["Audit log", "/dashboard/audit"]],
+  PLATFORM_ADMIN: [["Overview & queues", "/dashboard"], ["Listing moderation", "/dashboard/moderation"], ["Passport verification", "/dashboard/credentials"], ["Employer plans", "/dashboard/plans"], ["Insights", "/dashboard/insights"], ["Reports", "/dashboard/reports"], ["Users", "/dashboard/users"], ["Contact inbox", "/dashboard/inbox"], ["Server errors", "/dashboard/errors"], ["Audit log", "/dashboard/audit"]],
 };
 
 export default async function DashLayout({ children }: { children: React.ReactNode }) {

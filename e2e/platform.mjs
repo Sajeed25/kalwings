@@ -71,6 +71,7 @@ const co = admin.locator('li', { hasText: `Acme Labs ${tag}` }); await co.locato
 await admin.waitForTimeout(800); await admin.reload();
 const mn = admin.locator('li', { hasText: `Test Mentor ${tag}` }); await mn.locator('button:has-text("Verify")').click();
 await admin.waitForTimeout(800);
+await admin.goto(`${B}/dashboard/plans?q=${encodeURIComponent('Acme Labs ' + tag)}`); await admin.locator('li', { hasText: `Acme Labs ${tag}` }).locator('button:text-is("Growth")').click(); await admin.waitForTimeout(1200);
 
 // --- employer posts: validation, then valid
 await employer.goto(`${B}/dashboard/roles`);
@@ -436,6 +437,27 @@ await student.goto(`${B}/dashboard/passport`); await student.selectOption('selec
 await employer.goto(`${B}/dashboard/jd-check`); await employer.fill('textarea#jd', 'Join our team! Pay a registration fee of 500 and we guarantee a job. Message us on WhatsApp.'); await employer.click('button:has-text("Check description")');
 ok(await employer.locator('text=Not allowed').count() >= 2, 'JD check flags fees and guaranteed-job promises');
 await student.goto(`${B}/dashboard/jd-check`); ok(!/jd-check/.test(student.url()), 'students cannot open the recruiter JD check');
+
+// --- plans: limits are enforced server-side; admins assign plans; insights are admin-only
+const lim = await user(); await auth(lim, 'join', `lim${tag}@example.com`, { name: 'Starter Recruiter', role: 'EMPLOYER' });
+await lim.goto(`${B}/dashboard/company`); await lim.fill('input[name=name]', `Starter Co ${tag}`); await lim.fill('input[name=website]', 'https://starter.example.com'); await lim.click('button:has-text("Submit for verification")'); await lim.waitForSelector("text=We'll notify you");
+await admin.goto(`${B}/dashboard`); await admin.locator('li', { hasText: `Starter Co ${tag}` }).locator('button:has-text("Verify")').click(); await admin.waitForTimeout(1200);
+for (let i = 1; i <= 4; i++) {
+  await lim.goto(`${B}/dashboard/roles`); await lim.fill('input[name=title]', `Starter Role ${i} ${tag}`); await lim.fill('textarea[name=description]', 'A small role used to test plan limits, with enough text to pass validation.');
+  await lim.fill('input[name=payText]', '₹10,000 / month'); await lim.fill('input[name=monthlyINR]', '10000'); await lim.fill('input[name=location]', 'Pune'); await lim.fill('input[name=deadline]', '2027-03-01'); await lim.fill('input[name=eligibility]', 'Graduates');
+  await lim.click('button:has-text("Submit for review")');
+  if (i < 4) await lim.waitForSelector('text=Submitted for review'); else { await lim.waitForSelector('form [role=alert]'); ok((await lim.locator('form [role=alert]').innerText()).includes('Starter plan allows 3'), 'Starter plan refuses a 4th active listing'); }
+}
+await lim.goto(`${B}/dashboard/company`); ok(await lim.locator('text=Starter plan').count() > 0 && await lim.locator('text=3 / 3').count() > 0, 'company page shows plan usage');
+await lim.fill('input[name=email]', `a${tag}@example.com`); await lim.click('button:has-text("Send invitation")'); await lim.waitForSelector('text=Invitation saved');
+await lim.fill('input[name=email]', `b${tag}@example.com`); await lim.click('button:has-text("Send invitation")'); await lim.waitForSelector('p[role=alert]'); ok((await lim.locator('p[role=alert]').first().innerText()).includes('Starter plan allows 2'), 'Starter plan caps team size including pending invitations');
+await admin.goto(`${B}/dashboard/plans?q=${encodeURIComponent('Starter Co ' + tag)}`); await admin.locator('li', { hasText: `Starter Co ${tag}` }).locator('button:text-is("Growth")').click(); await admin.waitForTimeout(1200);
+await lim.goto(`${B}/dashboard/roles`); await lim.fill('input[name=title]', `Starter Role 4 ${tag}`); await lim.fill('textarea[name=description]', 'A small role used to test plan limits, with enough text to pass validation.');
+await lim.fill('input[name=payText]', '₹10,000 / month'); await lim.fill('input[name=monthlyINR]', '10000'); await lim.fill('input[name=location]', 'Pune'); await lim.fill('input[name=deadline]', '2027-03-01'); await lim.fill('input[name=eligibility]', 'Graduates'); await lim.click('button:has-text("Submit for review")'); await lim.waitForSelector('text=Submitted for review');
+ok(true, 'upgrading the plan lifts the limit immediately');
+await student.goto(`${B}/dashboard/plans`); ok(!/plans/.test(student.url()), 'students cannot open the plans page'); await employer.goto(`${B}/dashboard/insights`); ok(!/insights/.test(employer.url()), 'recruiters cannot open platform insights');
+await admin.goto(`${B}/dashboard/insights`); ok(await admin.locator('text=Platform insights').count() > 0 && await admin.locator('text=New accounts per week').count() > 0, 'admin insights show real weekly counts');
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Applications per week').count() > 0, 'recruiter analytics include weekly applications');
 
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();

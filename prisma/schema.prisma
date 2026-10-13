@@ -128,6 +128,12 @@ enum DriveOutcome {
   NOT_SELECTED
 }
 
+enum Plan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
 enum InterviewMode {
   VIDEO
   PHONE
@@ -343,6 +349,7 @@ model Company {
   about         String?            @db.Text
   assessments   Assessment[]
   shortlists    Shortlist[]
+  plan          Plan               @default(STARTER) // set by a platform admin; no online payments yet
   stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
   invites       CompanyInvite[]
   members       EmployerMember[]
