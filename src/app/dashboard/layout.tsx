@@ -29,7 +29,7 @@ export default async function DashLayout({ children }: { children: React.ReactNo
           <nav aria-label="Dashboard" className="mt-4 flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
             {links[user.role].map(([l, h]) => <Link key={h} href={h} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-muted hover:text-ink">{l}</Link>)}
             <Link href="/dashboard/account" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-muted hover:text-ink">Account &amp; data</Link>
-            <Link href="/dashboard/notifications" className="flex items-center justify-between whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-ink-soft hover:bg-muted hover:text-ink"><span className="flex items-center gap-2"><Bell className="h-4 w-4" />Notifications</span>{unread > 0 && <span className="rounded-full bg-navy px-2 text-xs text-white">{unread}</span>}</Link>
+            <Link href="/dashboard/notifications" className="flex items-center justify-between whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-ink-soft hover:bg-muted hover:text-ink"><span className="flex items-center gap-2"><Bell className="h-4 w-4" />Notifications</span>{unread > 0 && <span className="rounded-full bg-black px-2 text-xs text-white">{unread}</span>}</Link>
           </nav>
           <form action={logout} className="mt-3 border-t border-line pt-3"><button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-ink-soft hover:bg-muted hover:text-ink"><LogOut className="h-4 w-4" />Log out</button></form>
         </div>

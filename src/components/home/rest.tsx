@@ -3,7 +3,7 @@ import { ArrowRight, Award, Building2, GraduationCap, Newspaper, Users } from "l
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { PhotoPlaceholder, SampleTag } from "@/components/ui/badge";
-import { WingMark } from "@/components/ui/wing";
+import { LogoMark } from "@/components/ui/brand";
 import { communityGroups, stories } from "@/data/sample";
 
 export function Community() {
@@ -75,7 +75,7 @@ export function Recognition() {
         <ul className="mt-6 grid gap-4 md:grid-cols-3">
           {items.map(({ Icon, t, s, ph }) => (
             <li key={t} className={`card flex items-center gap-4 p-5 ${ph ? "border-dashed" : ""}`}>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-saffron-50 text-saffron-700 dark:bg-saffron/15 dark:text-saffron"><Icon className="h-5 w-5" /></span>
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-spot/10 text-spot "><Icon className="h-5 w-5" /></span>
               <div><p className="font-semibold leading-snug">{t}</p><p className="text-sm text-ink-soft">{s}</p></div>
             </li>
           ))}
@@ -103,7 +103,7 @@ export function AudienceSplit() {
           {audiences.map(({ Icon, t, d, cta, href }, i) => (
             <Reveal key={t} delay={i * 0.08}>
               <div className="card card-hover flex h-full flex-col p-8">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy text-white"><Icon className="h-6 w-6" /></span>
+                <span className="grid h-12 w-12 place-items-center rounded-lg bg-black text-white"><Icon className="h-6 w-6" /></span>
                 <h3 className="mt-6 text-2xl">{t}</h3>
                 <p className="mt-2 text-ink-soft">{d}</p>
                 <Button asChild variant={i === 0 ? "primary" : "secondary"} className="mt-8 self-start"><Link href={href}>{cta} <ArrowRight className="h-4 w-4" /></Link></Button>
@@ -129,7 +129,7 @@ export function Team() {
           <p className="mt-5 font-semibold">Mohammed Sajeed Khan</p>
           <p className="text-ink-soft">Co-founder, Kalwings</p>
           <p className="mt-4 text-[15px] text-ink-soft">Built by the team behind Robokalam (DPIIT-recognised deep-tech EdTech) and CareerKalam, and guided by mentors and advisors with global industry experience.</p>
-          <Link href="/about#advisors" className="mt-5 inline-flex items-center gap-1 font-semibold text-teal-700 hover:underline dark:text-teal">Meet our advisors <ArrowRight className="h-4 w-4" /></Link>
+          <Link href="/about#advisors" className="mt-5 inline-flex items-center gap-1 font-semibold text-accent hover:underline ">Meet our advisors <ArrowRight className="h-4 w-4" /></Link>
         </Reveal>
       </div>
     </section>
@@ -140,11 +140,13 @@ export function FinalCta() {
   return (
     <section className="px-6 py-20 md:py-28">
       <Reveal>
-        <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-[32px] bg-brand-gradient px-8 py-20 text-center text-navy md:py-24">
-          <WingMark className="pointer-events-none absolute -right-10 -top-10 h-72 w-72 opacity-20 [&_*]:fill-white" />
-          <h2 className="h-display relative !text-[2.5rem] md:!text-6xl">Show your work. Get hired.</h2>
-          <p className="relative mx-auto mt-4 max-w-md text-lg text-navy/80">Free for students. Always.</p>
-          <Button asChild variant="dark" size="lg" className="relative mt-8"><Link href="/join">Build my profile</Link></Button>
+        <div className="on-dark relative mx-auto max-w-[1200px] overflow-hidden rounded-card-lg border border-line bg-black px-8 py-20 text-center text-white md:py-24">
+          <div aria-hidden className="rule-gradient absolute inset-x-0 top-0" />
+          <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
+          <LogoMark className="pointer-events-none absolute -right-6 -top-8 hidden h-64 opacity-[0.12] md:block" />
+          <h2 className="h-display relative !text-[2rem] md:!text-5xl">Show your work. <span className="text-accent">Get hired.</span></h2>
+          <p className="relative mx-auto mt-4 max-w-md text-lg text-white/70">Free for students. Always.</p>
+          <Button asChild size="lg" className="relative mt-8"><Link href="/join">Build my profile</Link></Button>
         </div>
       </Reveal>
     </section>

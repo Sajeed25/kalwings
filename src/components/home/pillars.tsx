@@ -25,10 +25,9 @@ export function Pillars() {
         <div className="mt-14 grid gap-5 md:grid-cols-6 md:auto-rows-[minmax(150px,auto)]">
           {(tiles as Tile[]).map((t, i) => (
             <Reveal key={t.t} delay={i * 0.05} className={t.cls}>
-              <Link href={t.href} className={cn("card card-hover group relative flex h-full flex-col justify-between overflow-hidden p-7 md:p-8", t.dark && "on-navy border-transparent bg-navy text-white")}>
-                {t.dark && <div aria-hidden className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand-gradient opacity-25 blur-3xl" />}
+              <Link href={t.href} className={cn("card card-hover group relative flex h-full flex-col justify-between overflow-hidden p-7 md:p-8", t.dark && "on-dark border-accent/40 bg-black text-white")}>
                 <div className="relative">
-                  <span className={cn("grid h-11 w-11 place-items-center rounded-xl", t.dark ? "bg-white/10" : "bg-muted")}><t.Icon className="h-5 w-5" /></span>
+                  <span className={cn("grid h-11 w-11 place-items-center rounded-lg", t.dark ? "bg-white/10 text-accent" : "bg-muted text-accent")}><t.Icon className="h-5 w-5" /></span>
                   <h3 className={cn("mt-5", t.dark || t.feature ? "text-3xl" : "text-xl")}>{t.t}</h3>
                   <p className={cn("mt-2 max-w-md text-[15px]", t.dark ? "text-white/75" : "text-ink-soft")}>{t.d}</p>
                 </div>

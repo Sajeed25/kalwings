@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -9,8 +9,9 @@ import { site } from "@/lib/site";
 
 const orgLd = { "@context": "https://schema.org", "@type": "Organization", name: "Kalwings", url: site.url, slogan: site.tagline, description: site.description, address: { "@type": "PostalAddress", addressRegion: "Telangana", addressCountry: "IN" } };
 
-const display = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-display", display: "swap" });
-const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+// BRAND FONT (single swap point). Montserrat is a PLACEHOLDER chosen to sit with the geometric KALWINGS wordmark.
+// To match another font (e.g. the one on os.nexpreneur.com), change ONLY this import/constructor and keep variable "--font-brand".
+const brandFont = Montserrat({ subsets: ["latin"], variable: "--font-brand", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -24,20 +25,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#FAFAF7" }, { media: "(prefers-color-scheme: dark)", color: "#060F26" }],
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
 };
 
 // Sets the theme before first paint to avoid a flash.
-const themeScript = `document.documentElement.classList.add('js');try{var t=localStorage.getItem('kw-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}`;
+const themeScript = `document.documentElement.classList.add('js');try{var t=localStorage.getItem('kw-theme');document.documentElement.dataset.theme=t==='light'?'light':'dark'}catch(e){document.documentElement.dataset.theme='dark'}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang="en-IN" className={brandFont.variable} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} /></head>
       <body>
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-navy focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-black focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
         <Navbar />
         <main id="main">{children}</main>
         <Footer />

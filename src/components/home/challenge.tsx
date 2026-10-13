@@ -24,12 +24,11 @@ export function ChallengeSpotlight() {
     ["Mins", Math.floor(left / 6e4) % 60], ["Secs", Math.floor(left / 1e3) % 60],
   ] as const;
   return (
-    <section className="on-navy relative overflow-hidden bg-navy py-20 text-white md:py-28">
-      <div aria-hidden className="absolute -left-24 top-0 h-96 w-96 rounded-full bg-teal/25 blur-3xl" />
-      <div aria-hidden className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-sky/20 blur-3xl" />
+    <section className="on-dark relative overflow-hidden bg-black py-20 text-white md:py-28">
+      <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
       <div className="container relative grid items-center gap-12 lg:grid-cols-2">
         <Reveal>
-          <p className="eyebrow !text-teal">Challenge-to-Hire</p>
+          <p className="eyebrow !text-accent">Challenge-to-Hire</p>
           <h2 className="h-section mt-3">{novathon.name}</h2>
           <p className="mt-5 max-w-lg text-lg text-white/75">{novathon.brief}</p>
           <p className="mt-4 max-w-lg text-[15px] text-white/75"><span className="font-semibold text-white">The outcome:</span> {novathon.outcome}</p>
@@ -47,7 +46,7 @@ export function ChallengeSpotlight() {
             <p className="text-sm font-semibold uppercase tracking-wider text-white/60">Closes in</p>
             <div className="mt-4 grid grid-cols-4 gap-3" role="timer" aria-live="off">
               {(parts ?? [["Days", 0], ["Hours", 0], ["Mins", 0], ["Secs", 0]]).map(([l, v]) => (
-                <div key={l} className="rounded-2xl bg-white/5 py-5 text-center">
+                <div key={l} className="rounded-lg bg-white/5 py-5 text-center">
                   <div className="font-display text-4xl font-extrabold tabular-nums md:text-5xl">{String(v).padStart(2, "0")}</div>
                   <div className="mt-1 text-xs text-white/60">{l}</div>
                 </div>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/wing";
+import { Logo } from "@/components/ui/brand";
 import { requestOtp, submitOtp, type AuthState } from "@/app/actions/auth";
 
 const f = "mt-1.5 h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px]";
@@ -22,7 +22,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
         <Logo />
         <h1 className="mt-6 text-3xl font-extrabold">{join ? "Join Kalwings" : "Welcome back"}</h1>
         <p className="mt-1 text-ink-soft">{join ? "Free for students. Always." : "Log in with a one-time code."}</p>
-        {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}
+        {error && <p role="alert" className="mt-4 rounded-lg bg-danger/15 p-3 text-sm text-danger">{error}</p>}
 
         {!code ? (
           <form action={a1} className="mt-6 space-y-4">
@@ -41,7 +41,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
           <form action={a2} className="mt-6 space-y-4">
             <input type="hidden" name="identifier" value={s1.identifier} />
             <p className="text-sm text-ink-soft">We sent a 6-digit code to <b className="text-ink">{s1.identifier}</b>.</p>
-            {s1.devCode && <p className="rounded-xl border border-dashed border-saffron/60 bg-saffron-50 p-3 text-sm text-saffron-700">Dev mode — no email/SMS provider is connected. Your code is <b>{s1.devCode}</b>.</p>}
+            {s1.devCode && <p className="rounded-xl border border-dashed border-spot/60 bg-spot/10 p-3 text-sm text-spot">Dev mode — no email/SMS provider is connected. Your code is <b>{s1.devCode}</b>.</p>}
             {join && <label className="block text-sm font-semibold">Your name<input className={f} name="name" defaultValue={s2.name} autoComplete="name" required minLength={2} /></label>}
             {join && <input type="hidden" name="role" value={s1.role} />}
             <label className="block text-sm font-semibold">6-digit code<input className={f} name="code" inputMode="numeric" pattern="\d{6}" maxLength={6} autoComplete="one-time-code" required /></label>

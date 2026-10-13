@@ -22,7 +22,7 @@ export function Stat({ label, value }: { label: string; value: React.ReactNode }
 }
 
 const tone: Record<string, string> = {
-  VERIFIED: "bg-teal/15 text-teal-700 dark:text-teal", PENDING: "bg-saffron-50 text-saffron-700 dark:bg-saffron/15 dark:text-saffron", REJECTED: "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200",
+  VERIFIED: "bg-accent/15 text-accent", PENDING: "bg-spot/10 text-spot ", REJECTED: "bg-danger/15 text-danger",
 };
 export function Status({ s }: { s: string }) {
   return <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", tone[s] ?? "bg-muted text-ink-soft")}>{s.replace("_", " ").toLowerCase()}</span>;

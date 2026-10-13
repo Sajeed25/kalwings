@@ -31,11 +31,11 @@ export default function Page() {
         <div className="mt-6 max-w-2xl"><DraftNotice>Placeholder pricing — set real prices before launch.</DraftNotice></div>
         <ul className="mt-8 grid gap-6 md:grid-cols-3">
           {tiers.map((t) => (
-            <li key={t.n} className={`card flex flex-col p-8 ${t.hl ? "border-teal ring-2 ring-teal/40" : ""}`}>
-              <div className="flex items-center justify-between"><h3 className="text-2xl">{t.n}</h3>{t.hl && <Badge tone="teal">Most popular</Badge>}</div>
+            <li key={t.n} className={`card flex flex-col p-8 ${t.hl ? "border-accent ring-2 ring-accent/40" : ""}`}>
+              <div className="flex items-center justify-between"><h3 className="text-2xl">{t.n}</h3>{t.hl && <Badge tone="accent">Most popular</Badge>}</div>
               <p className="mt-4 font-display text-3xl font-extrabold">{t.p}</p>
               <p className="mt-2 text-ink-soft">{t.d}</p>
-              <ul className="mt-6 space-y-2.5">{t.f.map((x) => <li key={x} className="flex gap-2 text-[15px]"><Check className="mt-1 h-4 w-4 shrink-0 text-teal-700 dark:text-teal" aria-hidden />{x}</li>)}</ul>
+              <ul className="mt-6 space-y-2.5">{t.f.map((x) => <li key={x} className="flex gap-2 text-[15px]"><Check className="mt-1 h-4 w-4 shrink-0 text-accent" aria-hidden />{x}</li>)}</ul>
               <Button asChild variant={t.hl ? "primary" : "secondary"} className="mt-8"><Link href="/contact?topic=employer">Get started</Link></Button>
             </li>
           ))}

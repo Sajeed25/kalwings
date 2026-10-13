@@ -3,19 +3,19 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// Primary = gradient fill with NAVY text (white on teal fails WCAG AA; navy on teal/sky is ~7:1).
+// Primary = solid brand green with BLACK text (14:1 contrast). Flat: no glow, no gradient, no pill.
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-brand-gradient text-navy shadow-glow hover:brightness-105 hover:-translate-y-0.5",
-        secondary: "border border-line bg-surface text-ink hover:border-ink/30 hover:-translate-y-0.5",
+        primary: "bg-neon text-black hover:brightness-110",
+        secondary: "border border-ink/25 text-ink hover:border-accent hover:text-accent",
         ghost: "text-ink hover:bg-muted",
-        dark: "bg-navy text-white hover:bg-navy-700",
-        onNavy: "border border-white/25 text-white hover:bg-white/10",
+        dark: "bg-ink text-bg hover:opacity-90",
+        onNavy: "border border-white/30 text-white hover:border-neon hover:text-neon",
       },
-      size: { sm: "h-9 px-4 text-sm", md: "h-11 px-6 text-[15px]", lg: "h-14 px-8 text-base" },
+      size: { sm: "h-9 px-4 text-sm", md: "h-11 px-5 text-[15px]", lg: "h-[52px] px-7 text-base" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function PageHero({ eyebrow, title, lead, children }: { eyebrow: string; title: React.ReactNode; lead?: string; children?: React.ReactNode }) {
   return (
     <section className="relative overflow-hidden border-b border-line pb-14 pt-14 md:pb-20 md:pt-24">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(50%_80%_at_85%_0%,rgb(56_189_248/0.14),transparent),radial-gradient(40%_60%_at_5%_0%,rgb(20_184_166/0.10),transparent)]" />
+      <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
       <div className="container">
         <Reveal className="max-w-3xl">
           <p className="eyebrow">{eyebrow}</p>
@@ -26,7 +26,7 @@ export function Prose({ children }: { children: React.ReactNode }) {
 }
 
 export function DraftNotice({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-saffron/60 bg-saffron-50 p-4 text-sm text-saffron-700 dark:bg-saffron/10 dark:text-saffron">{children}</p>;
+  return <p className="rounded-xl border border-dashed border-spot/60 bg-spot/10 p-4 text-sm text-spot ">{children}</p>;
 }
 
 export function FeatureGrid({ items, heading = "Highlights" }: { items: { t: string; d: string }[]; heading?: string }) {

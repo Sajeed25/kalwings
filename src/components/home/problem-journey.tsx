@@ -13,14 +13,14 @@ export function Problem() {
       <div className="container">
         <Reveal className="mx-auto max-w-3xl text-center">
           <p className="eyebrow">The problem</p>
-          <h2 className="h-section mt-3">Talent is everywhere. <span className="text-gradient">Proof isn&apos;t.</span></h2>
+          <h2 className="h-section mt-3">Talent is everywhere. <span className="text-accent">Proof isn&apos;t.</span></h2>
           <p className="mt-5 text-lg text-ink-soft">Other platforms list jobs. Kalwings builds the proof that gets you hired.</p>
         </Reveal>
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {problems.map(({ Icon, who, text }, i) => (
             <Reveal key={who} delay={i * 0.08}>
               <div className="card card-hover h-full p-8">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-muted"><Icon className="h-6 w-6" /></span>
+                <span className="grid h-12 w-12 place-items-center rounded-lg bg-muted"><Icon className="h-6 w-6" /></span>
                 <h3 className="mt-6 text-2xl">{who}</h3>
                 <p className="mt-2 text-ink-soft">{text}</p>
               </div>
@@ -51,7 +51,7 @@ export function Journey() {
         <div className="relative mt-16">
           <div aria-hidden className="draw absolute left-[10%] right-[10%] top-6 hidden h-1 lg:block">
             <svg className="h-1 w-full" preserveAspectRatio="none" viewBox="0 0 100 1">
-              <defs><linearGradient id="jl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0"><stop offset="0" stopColor="#14B8A6" /><stop offset="1" stopColor="#38BDF8" /></linearGradient></defs>
+              <defs><linearGradient id="jl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0"><stop offset="0" stopColor="#10F27D" /><stop offset="1" stopColor="#7C2FF6" /></linearGradient></defs>
               <line x1="0" y1=".5" x2="100" y2=".5" stroke="rgb(var(--line))" strokeWidth=".5" />
               <line className="draw-line" x1="0" y1=".5" x2="100" y2=".5" pathLength={1} stroke="url(#jl)" strokeWidth=".5" />
             </svg>
@@ -59,8 +59,8 @@ export function Journey() {
           <ol className="grid gap-10 lg:grid-cols-5">
             {steps.map(({ Icon, t, d }, i) => (
               <Reveal as="li" key={t} delay={i * 0.1} className="relative lg:text-center">
-                <span className="relative z-10 grid h-12 w-12 place-items-center rounded-full bg-navy text-white ring-8 ring-muted lg:mx-auto"><Icon className="h-5 w-5" /></span>
-                <p className="mt-5 text-sm font-semibold text-teal-700 dark:text-teal">Step {i + 1}</p>
+                <span className="relative z-10 grid h-12 w-12 place-items-center rounded-full bg-black text-white ring-8 ring-muted lg:mx-auto"><Icon className="h-5 w-5" /></span>
+                <p className="mt-5 text-sm font-semibold text-accent">Step {i + 1}</p>
                 <h3 className="mt-1 text-xl">{t}</h3>
                 <p className="mt-1 text-[15px] text-ink-soft">{d}</p>
               </Reveal>

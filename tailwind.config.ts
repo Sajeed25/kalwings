@@ -7,41 +7,34 @@ const config: Config = {
     container: { center: true, padding: "1.5rem", screens: { "2xl": "1200px" } },
     extend: {
       colors: {
-        // Semantic tokens → CSS variables (see globals.css). Light/dark swap happens there.
+        // Semantic tokens → CSS variables (see globals.css). Dark/light swap happens there.
         bg: "rgb(var(--bg) / <alpha-value>)",
         surface: "rgb(var(--surface) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
         ink: "rgb(var(--ink) / <alpha-value>)",
         "ink-soft": "rgb(var(--ink-soft) / <alpha-value>)",
         line: "rgb(var(--line) / <alpha-value>)",
-        // Brand constants
-        navy: { DEFAULT: "#0B1B3F", 900: "#060F26", 800: "#0B1B3F", 700: "#14295A" },
-        teal: { DEFAULT: "#14B8A6", 600: "#0D9488", 700: "#0F766E" },
-        sky: { DEFAULT: "#38BDF8", 600: "#0284C7" },
-        saffron: { DEFAULT: "#F59E0B", 700: "#B45309", 50: "#FFFBEB" },
+        accent: "rgb(var(--accent) / <alpha-value>)", // brand green (text-safe in both themes)
+        danger: "rgb(var(--danger) / <alpha-value>)",
+        spot: "rgb(var(--spot) / <alpha-value>)",     // brand purple (text-safe in both themes)
+        purple: "rgb(var(--purple) / <alpha-value>)", // brand purple for graphics / buttons
+        // Fixed brand colours (logo)
+        neon: "#10F27D",
+        violet: "#7C2FF6",
       },
       fontFamily: {
-        display: ["var(--font-display)", "system-ui", "sans-serif"],
-        sans: ["var(--font-body)", "system-ui", "sans-serif"],
+        // One family for everything. To change the brand font, edit src/app/layout.tsx (next/font) only.
+        display: ["var(--font-brand)", "system-ui", "sans-serif"],
+        sans: ["var(--font-brand)", "system-ui", "sans-serif"],
       },
-      borderRadius: { card: "20px", "card-lg": "24px" },
-      boxShadow: {
-        card: "0 1px 2px rgb(11 27 63 / 0.04), 0 12px 32px -12px rgb(11 27 63 / 0.10)",
-        lift: "0 2px 4px rgb(11 27 63 / 0.05), 0 28px 56px -16px rgb(11 27 63 / 0.22)",
-        glow: "0 20px 60px -20px rgb(20 184 166 / 0.55)",
-      },
-      backgroundImage: {
-        "brand-gradient": "linear-gradient(120deg, #14B8A6 0%, #38BDF8 100%)",
-      },
+      borderRadius: { card: "12px", "card-lg": "16px" },
       keyframes: {
         marquee: { from: { transform: "translateX(0)" }, to: { transform: "translateX(-50%)" } },
-        float: { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-10px)" } },
-        "card-in": { from: { opacity: "0", transform: "translateY(32px) rotate(2deg)" }, to: { opacity: "1", transform: "none" } },
+        "card-in": { from: { opacity: "0", transform: "translateY(24px)" }, to: { opacity: "1", transform: "none" } },
       },
       animation: {
         marquee: "marquee 40s linear infinite",
-        float: "float 7s ease-in-out infinite",
-        "card-in": "card-in .9s .15s cubic-bezier(.21,.6,.35,1) both",
+        "card-in": ".7s .1s cubic-bezier(.21,.6,.35,1) both card-in",
       },
     },
   },

@@ -2,55 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens — RGB triplets so Tailwind alpha modifiers work. */
+/*
+ * Brand tokens (RGB triplets so Tailwind alpha modifiers work).
+ * Dark is the default: it matches the Kalwings logo (black field, neon green → purple).
+ * Colour values were read from the logo artwork; contrast checked: accent text 14:1 on black,
+ * body-muted 8:1, purple is used for graphics/buttons only on dark (3.6:1) and as text only in its lighter tint.
+ */
 :root {
-  --bg: 250 250 247;        /* #FAFAF7 off-white */
-  --surface: 255 255 255;
-  --muted: 241 245 249;     /* #F1F5F9 slate */
-  --ink: 11 27 63;          /* #0B1B3F midnight navy */
-  --ink-soft: 71 85 105;    /* #475569 — 7.5:1 on off-white */
-  --line: 226 232 240;      /* #E2E8F0 */
+  --bg: 0 0 0;
+  --surface: 11 11 15;
+  --muted: 20 20 26;
+  --ink: 255 255 255;
+  --ink-soft: 161 161 170;
+  --line: 39 39 48;
+  --accent: 16 242 125;       /* brand green  #10F27D */
+  --spot: 168 120 255;        /* brand purple, text-safe tint on dark */
+  --purple: 124 47 246;       /* brand purple #7C2FF6 (graphics, buttons) */
+  --danger: 248 113 113;      /* errors */
 }
-:root[data-theme="dark"] {
-  --bg: 6 15 38;
-  --surface: 12 27 63;
-  --muted: 16 34 74;
-  --ink: 241 245 249;
-  --ink-soft: 170 184 205;
-  --line: 36 55 100;
+:root[data-theme="light"] {
+  --bg: 255 255 255;
+  --surface: 250 250 251;
+  --muted: 244 244 246;
+  --ink: 10 10 15;
+  --ink-soft: 82 82 91;
+  --line: 228 228 231;
+  --accent: 10 122 60;        /* darker green so text passes AA on white */
+  --spot: 109 40 217;
+  --purple: 124 47 246;
+  --danger: 185 28 28;
 }
 
 @layer base {
-  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body { @apply bg-bg font-sans text-ink antialiased; font-size: 1.0625rem; line-height: 1.6; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; color-scheme: dark; }
+  html[data-theme="light"] { color-scheme: light; }
+  body { @apply bg-bg font-sans text-ink antialiased; font-size: 1rem; line-height: 1.65; }
   h1, h2, h3, h4 { @apply font-display font-bold; letter-spacing: -0.02em; }
-  :focus-visible { outline: 2px solid #0D9488; outline-offset: 3px; border-radius: 6px; }
-  [data-theme="dark"] :focus-visible { outline-color: #38BDF8; }
-  ::selection { background: #14B8A640; }
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 3px; border-radius: 4px; }
+  ::selection { background: rgb(16 242 125 / 0.3); color: inherit; }
 }
 
 @layer components {
   /* content-visibility skips layout/paint of off-screen sections until they near the viewport (big win on mobile). */
-  .section { @apply py-20 md:py-28; content-visibility: auto; contain-intrinsic-size: auto 900px; }              /* 80 / 112px — inside 96–128 brief on desktop */
-  .eyebrow { @apply text-sm font-semibold uppercase tracking-[0.14em] text-teal-700; }
-  [data-theme="dark"] .eyebrow { @apply text-teal; }
-  .h-display { @apply text-[2.5rem] leading-[1.05] md:text-[4.25rem]; font-weight: 800; letter-spacing: -0.03em; }
-  .h-section { @apply text-[2.25rem] leading-[1.1] md:text-5xl; font-weight: 800; }
-  .card { @apply rounded-card border border-line bg-surface shadow-card transition duration-300; }
-  .card-hover { @apply hover:-translate-y-1 hover:shadow-lift; }
-  .text-gradient { background: linear-gradient(120deg, #0D9488, #0284C7); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  [data-theme="dark"] .text-gradient { background: linear-gradient(120deg, #14B8A6, #38BDF8); -webkit-background-clip: text; background-clip: text; }
-  .on-navy .text-gradient { background: linear-gradient(120deg, #14B8A6, #38BDF8); -webkit-background-clip: text; background-clip: text; }
-  .placeholder-img { background:
-      radial-gradient(circle at 30% 20%, rgb(20 184 166 / 0.25), transparent 55%),
-      radial-gradient(circle at 80% 80%, rgb(56 189 248 / 0.25), transparent 55%),
-      rgb(var(--muted)); }
+  .section { @apply py-20 md:py-28; content-visibility: auto; contain-intrinsic-size: auto 900px; }
+  .eyebrow { @apply inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-accent; }
+  .eyebrow::before { content: ""; width: 28px; height: 2px; background: linear-gradient(90deg, rgb(16 242 125), rgb(124 47 246)); }
+  .h-display { @apply text-[2.25rem] leading-[1.08] md:text-[3.5rem]; font-weight: 800; letter-spacing: -0.025em; }
+  .h-section { @apply text-[1.875rem] leading-[1.15] md:text-[2.5rem]; font-weight: 800; letter-spacing: -0.02em; }
+  /* Flat, bordered surfaces: no soft shadows. Hover reveals the accent. */
+  .card { @apply rounded-card border border-line bg-surface transition duration-200; }
+  .card-hover { @apply hover:border-accent/60 hover:-translate-y-0.5; }
+  .text-accent-solid { color: rgb(var(--accent)); }
+  /* Section on a permanently dark background (footer, challenge band, dark tiles) in both themes. */
+  .on-dark { --ink: 255 255 255; --ink-soft: 161 161 170; --line: 39 39 48; --accent: 16 242 125; }
+  .rule-gradient { height: 2px; background: linear-gradient(90deg, rgb(16 242 125), rgb(124 47 246)); }
+  /* Faint circuit-style grid for hero/dark bands. */
+  .grid-bg { background-image: linear-gradient(rgb(var(--ink) / 0.045) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--ink) / 0.045) 1px, transparent 1px); background-size: 48px 48px; }
+  /* Clearly-a-placeholder block for photos that must be replaced. */
+  .placeholder-img { background: repeating-linear-gradient(135deg, rgb(var(--muted)), rgb(var(--muted)) 10px, rgb(var(--surface)) 10px, rgb(var(--surface)) 20px); }
 }
 
 /* Scroll reveal (toggled by <RevealObserver />). Only hides content when JS is running (html.js). */
-html.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.21,.6,.35,1), transform .6s cubic-bezier(.21,.6,.35,1); }
+html.js .reveal { opacity: 0; transform: translateY(20px); transition: opacity .5s cubic-bezier(.21,.6,.35,1), transform .5s cubic-bezier(.21,.6,.35,1); }
 html.js .reveal.is-visible { opacity: 1; transform: none; }
-html.js .draw .draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s ease-in-out; }
+html.js .draw .draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s ease-in-out; }
 html.js .draw.is-visible .draw-line { stroke-dashoffset: 0; }
 
 @media (prefers-reduced-motion: reduce) {

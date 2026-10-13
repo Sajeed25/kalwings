@@ -23,7 +23,7 @@ export default async function Page() {
               <label className="block text-sm font-semibold">Work mode<select name="workMode" className={sel}><option value="REMOTE">Remote</option><option value="HYBRID">Hybrid</option><option value="ONSITE">On-site</option></select></label>
             </div>
             <Area label="Description" name="description" required minLength={30} />
-            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="unpaid" value="true" className="h-4 w-4 accent-teal-600" />This role is unpaid (will be labelled clearly)</label>
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="unpaid" value="true" className="h-4 w-4 accent-neon" />This role is unpaid (will be labelled clearly)</label>
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Pay (as shown to students)" name="payText" required placeholder="₹20,000 / month · or: certificate only" /><Field label="Monthly amount (₹) for filters" name="monthlyINR" type="number" min={0} defaultValue={0} /></div>
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Location" name="location" required /><Field label="Deadline" name="deadline" type="date" required /></div>
             <Field label="Eligibility" name="eligibility" required placeholder="2026 graduates, any branch" />

@@ -43,13 +43,13 @@ export function MentorWall() {
         </Reveal>
 
         <Reveal className="mt-12">
-          <figure className="relative overflow-hidden rounded-card-lg border border-saffron/40 bg-saffron-50 p-8 dark:bg-saffron/10 md:p-10">
+          <figure className="relative overflow-hidden rounded-card-lg border border-spot/40 bg-spot/10 p-8 md:p-10">
             <div className="grid items-center gap-8 md:grid-cols-[220px_1fr]">
-              <PhotoPlaceholder label="Mentor of the Month" className="h-52 rounded-2xl" />
+              <PhotoPlaceholder label="Mentor of the Month" className="h-52 rounded-lg" />
               <div>
-                <Badge tone="saffron">★ Mentor of the Month · Sample</Badge>
-                <blockquote className="mt-4 font-display text-2xl font-bold leading-snug tracking-tight text-navy dark:text-ink md:text-3xl">
-                  <Quote aria-hidden className="mb-2 h-6 w-6 text-saffron-700 dark:text-saffron" />
+                <Badge tone="spot">★ Mentor of the Month · Sample</Badge>
+                <blockquote className="mt-4 font-display text-2xl font-bold leading-snug tracking-tight text-ink md:text-3xl">
+                  <Quote aria-hidden className="mb-2 h-6 w-6 text-spot" />
                   {quote}
                 </blockquote>
                 <figcaption className="mt-4 text-[15px] text-ink-soft">{mentor.name} · {mentor.role}, {mentor.company}</figcaption>

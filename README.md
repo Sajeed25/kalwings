@@ -87,11 +87,12 @@ Sample detail pages (`/mentors/[slug]`, `/opportunities/[id]`) are `noindex` and
 
 ## Design system
 
-- Tokens: `tailwind.config.ts` (brand colours, radii, shadows) and CSS variables in `src/app/globals.css` (light/dark semantic colours).
-- Components: `src/components/ui/` — `Button`, `Badge` / `SampleTag` / `PhotoPlaceholder`, `Reveal`, `CountUp`, `Marquee`, `Logo` / `WingMark` / `WingDivider`.
-- Accessibility: white text on the teal→sky gradient fails WCAG AA, so primary buttons use **navy text** on the gradient. Teal as *text* on light backgrounds uses `teal-700` (`#0F766E`).
+- Tokens: `tailwind.config.ts` and CSS variables in `src/app/globals.css` (dark by default, light via the navbar toggle). Palette from the logo: black, neon green `#10F27D`, violet `#7C2FF6`. Flat bordered cards, no shadows/glows/gradient text.
+- Components: `src/components/ui/` — `Button`, `Badge` / `SampleTag` / `PhotoPlaceholder`, `Reveal`, `CountUp`, `Marquee`, `Logo` / `LogoMark` / `Divider`.
+- Accessibility: the neon-green primary button uses **black text** (white on neon fails WCAG AA).
 - Motion respects `prefers-reduced-motion` (CSS and Framer Motion).
-- Dark mode: navbar toggle, saved in `localStorage`, defaults to the OS setting.
+- Brand font: one swap point in `src/app/layout.tsx` (`--font-brand`). **Montserrat is a placeholder**; swap to the os.nexpreneur.com font. The logo mark (`src/components/ui/brand.tsx`, `public/brand/`) is an approximate redraw: replace with the official artwork.
+- Theme: navbar toggle, saved in `localStorage`, defaults to dark.
 
 ## Trust rules built into the UI
 

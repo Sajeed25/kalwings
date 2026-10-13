@@ -30,14 +30,14 @@ export function Wizard({ name, hasProfile }: { name: string; hasProfile: boolean
   return (
     <>
       <PageTitle title="Let's build your Talent Card" sub="Three quick steps. You can edit everything later." />
-      <ol className="mb-6 flex gap-2 text-sm font-semibold">{steps.map((s, i) => <li key={s} className={`rounded-full px-3 py-1 ${i + 1 === step ? "bg-navy text-white" : i + 1 < step ? "bg-teal/15 text-teal-700 dark:text-teal" : "bg-muted text-ink-soft"}`}>{i + 1}. {s}</li>)}</ol>
+      <ol className="mb-6 flex gap-2 text-sm font-semibold">{steps.map((s, i) => <li key={s} className={`rounded-full px-3 py-1 ${i + 1 === step ? "bg-black text-white" : i + 1 < step ? "bg-accent/15 text-accent" : "bg-muted text-ink-soft"}`}>{i + 1}. {s}</li>)}</ol>
       <Panel>
         {step === 1 && (
           <form action={(fd) => { set(fd); setStep(2); }} className="space-y-4">
             <Field label="Full name" name="name" defaultValue={draft.name} required minLength={2} />
             <Field label="Headline" name="headline" defaultValue={draft.headline} required minLength={3} maxLength={120} placeholder="e.g. ECE final-year · embedded & Python" />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Graduation year" name="graduationYear" type="number" min={2020} max={2032} defaultValue={draft.graduationYear} required /><Field label="City" name="city" defaultValue={draft.city} /></div>
-            <button className="h-11 rounded-full bg-brand-gradient px-6 font-semibold text-navy">Next</button>
+            <button className="h-11 rounded-lg bg-accent px-6 font-semibold text-black">Next</button>
           </form>
         )}
         {step === 2 && (

@@ -50,9 +50,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <Block>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
-      <Link href="/opportunities" className="text-sm font-semibold text-teal-700 dark:text-teal">← All opportunities</Link>
+      <Link href="/opportunities" className="text-sm font-semibold text-accent">← All opportunities</Link>
       <div className="mt-6 max-w-3xl">
-        <div className="flex gap-2"><Badge tone="teal">{o.type.toLowerCase()}</Badge>{o.company.isSample && <SampleTag />}</div>
+        <div className="flex gap-2"><Badge tone="accent">{o.type.toLowerCase()}</Badge>{o.company.isSample && <SampleTag />}</div>
         <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{o.title}</h1>
         <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">
@@ -66,7 +66,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           {closed ? <Badge>Applications closed</Badge>
             : !user ? <Button asChild size="lg"><Link href="/login">Log in to apply</Link></Button>
             : user.role !== "STUDENT" ? <Badge>Only students can apply</Badge>
-            : applied ? <Badge tone="teal">You&apos;ve applied — track it in your dashboard</Badge>
+            : applied ? <Badge tone="accent">You&apos;ve applied — track it in your dashboard</Badge>
             : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id)}>Apply with my Talent Card</ActionButton>}
           {user?.role === "STUDENT" && <ActionButton variant="secondary" size="md" action={toggleSave.bind(null, o.id)}>{saved ? "Saved ✓" : "Save role"}</ActionButton>}
         </div>
