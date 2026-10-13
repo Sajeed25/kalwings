@@ -73,6 +73,7 @@ hPanel → **Websites → Add website → Node.js Apps** → **Import Git reposi
 | `EMAIL_API_KEY`, `EMAIL_FROM` | Resend key; a sender on your verified domain |
 | `ADMIN_EMAILS` | your email — you become platform admin when you first sign in |
 | `CONTACT_TO` | (optional) inbox for contact-form emails; defaults to `EMAIL_FROM` |
+| `SANDBOX_URL`, `SANDBOX_TOKEN` | (optional) isolated Judge0-compatible code runner for coding assessments. Leave empty to keep them off. Never point it at the app server. |
 
 Connect your domain and enable SSL, then deploy. Builds need roughly 2 GB RAM.
 
@@ -121,4 +122,5 @@ The Dockerfile, compose file and deploy workflow are **untested** (no Docker in 
 - [ ] No sample users: `npm run db:unseed` against production if you ever ran the seed there.
 - [ ] Mobile sign-in is **not available in production** (no SMS provider) — the form says so.
 - [ ] Replace placeholders (README → "Where to replace placeholders"); lawyer-review Privacy/Terms.
-- [ ] Schedule database backups (hPanel has backup tools for MySQL, or `mariadb-dump` on a cron).
+- [ ] Schedule database backups: see `docs/OPERATIONS.md` (`npm run backup`) and test a restore.
+- [ ] Read `docs/SECURITY.md` ("Before launch"): rotate any secret that was ever shown in a screenshot.
