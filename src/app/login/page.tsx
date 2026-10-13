@@ -5,5 +5,5 @@ export const metadata: Metadata = { title: "Log in", robots: { index: false } };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ role?: string; error?: string }> }) {
   const sp = await searchParams;
-  return <AuthCard mode="login" initialRole={(sp.role ?? "").toUpperCase()} errorCode={sp.error} />;
+  return <AuthCard mode="login" initialRole={(sp.role ?? "").toUpperCase()} errorCode={sp.error} googleEnabled={!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET} />;
 }
