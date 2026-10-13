@@ -71,6 +71,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             : applied ? <Badge tone="accent">You&apos;ve applied — track it in your dashboard</Badge>
             : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id)}>Apply with my Talent Card</ActionButton>}
           {user?.role === "STUDENT" && <ActionButton variant="secondary" size="md" action={toggleSave.bind(null, o.id)}>{saved ? "Saved ✓" : "Save role"}</ActionButton>}
+          {user?.role === "STUDENT" && <Link href={`/dashboard/copilot?listing=${o.id}`} className="text-sm font-semibold text-accent underline">How well do I match?</Link>}
         </div>
         {user && (
           <details className="mt-10 text-sm"><summary className="cursor-pointer font-semibold text-ink-soft">Report this listing</summary>
