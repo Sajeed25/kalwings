@@ -2,7 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
-import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, csv } from "@/lib/validation";
+import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, privacySchema, entrySchema, csv } from "@/lib/validation";
+import { usernameSchema } from "@/lib/passport";
 import { completeness } from "@/lib/completeness";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
@@ -145,5 +146,51 @@ export async function cancelSession(id: string) {
 export async function markNotificationsRead() {
   const u = await requireActionRole();
   await db.notification.updateMany({ where: { userId: u.id, readAt: null }, data: { readAt: new Date() } });
+  revalidatePath("/dashboard", "layout");
+}
+
+export async function saveUsername(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = usernameSchema.safeParse(String(fd.get("username") ?? ""));
+  if (!r.success) return { error: r.error.issues[0]?.message ?? "Invalid username", fieldErrors: { username: r.error.issues[0]?.message ?? "Invalid" } };
+  const taken = await db.studentProfile.findFirst({ where: { OR: [{ username: r.data }, { slug: r.data }], NOT: { id: p.id } }, select: { id: true } });
+  if (taken) return { error: "That username is taken." };
+  try { await db.studentProfile.update({ where: { id: p.id }, data: { username: r.data } }); } catch { return { error: "That username is taken." }; }
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function savePrivacy(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = privacySchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  await db.studentProfile.update({ where: { id: p.id }, data: r.data });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function addEntry(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = entrySchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  if ((await db.passportEntry.count({ where: { studentId: p.id } })) >= 40) return { error: "Entry limit reached (40)." };
+  const d = r.data;
+  await db.passportEntry.create({ data: { studentId: p.id, kind: d.kind, title: d.title, org: d.org || null, year: d.year ?? null, url: d.url ?? null, summary: d.summary || null } });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function deleteEntry(id: string) {
+  const { p } = await me();
+  await db.passportEntry.deleteMany({ where: { id, studentId: p.id } }); // scoped to owner
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Verification needs evidence: an admin checks the URL. Nothing is verified automatically. */
+export async function requestEntryVerification(id: string) {
+  const { p } = await me();
+  const e = await db.passportEntry.findFirst({ where: { id, studentId: p.id, status: "PENDING" } });
+  if (!e || !e.url) return;
+  await db.passportEntry.update({ where: { id: e.id }, data: { verifyRequested: true } });
   revalidatePath("/dashboard", "layout");
 }

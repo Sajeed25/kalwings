@@ -64,3 +64,11 @@ export const contactSchema = z.object({
 
 export const collegeSchema = z.object({ name: text(120).min(3), city: text(60).min(2) });
 export const studentCollegeSchema = z.object({ collegeId: z.string().cuid().optional().or(z.literal("")), share: z.string().optional() });
+
+const vis = z.enum(["PUBLIC", "RECRUITERS", "PRIVATE"]);
+export const privacySchema = z.object({ passportVisibility: vis, projectsVisibility: vis, endorsementsVisibility: vis, entriesVisibility: vis });
+export const entrySchema = z.object({
+  kind: z.enum(["EXPERIENCE", "ACHIEVEMENT", "HACKATHON", "CERTIFICATE"]),
+  title: text(120).min(3), org: text(120).optional().default(""), year: z.union([z.coerce.number().int().min(1990).max(2035), z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
+  url: optUrl, summary: text(600).optional().default(""),
+});

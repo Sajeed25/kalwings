@@ -82,3 +82,13 @@ export async function unsuspendUser(id: string) {
   await notify(id, "Your Kalwings account was restored");
   revalidatePath("/dashboard", "layout");
 }
+
+/** Admin checks the evidence URL on a Passport entry. Only this action can mark an entry VERIFIED. */
+export async function reviewEntry(id: string, d: Decision) {
+  const a = await requireActionRole("PLATFORM_ADMIN");
+  if (!ok(d)) throw new Error("Invalid");
+  const e = await db.passportEntry.update({ where: { id }, data: { status: d, verifiedAt: d === "VERIFIED" ? new Date() : null, verifyRequested: false }, include: { student: true } });
+  await audit(a.id, `entry.${d.toLowerCase()}`, `${e.title} (${id})`);
+  await notify(e.student.userId, `Passport entry ${d.toLowerCase()}`, e.title);
+  revalidatePath("/dashboard", "layout");
+}

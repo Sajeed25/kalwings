@@ -56,6 +56,19 @@ enum SessionStatus {
   CANCELLED
 }
 
+enum Visibility {
+  PUBLIC
+  RECRUITERS
+  PRIVATE
+}
+
+enum EntryKind {
+  EXPERIENCE
+  ACHIEVEMENT
+  HACKATHON
+  CERTIFICATE
+}
+
 model User {
   suspendedReason    String?   @db.VarChar(300)
   suspendedAt        DateTime? // set by an admin; suspended users are signed out everywhere and hidden
@@ -79,32 +92,58 @@ model User {
 }
 
 model StudentProfile {
-  avatarId         String? // Upload.id of the profile photo
-  shareWithCollege Boolean            @default(false) // consent: name + progress visible to their college admins
-  isSample         Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
-  id               String             @id @default(cuid())
-  userId           String             @unique
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug             String             @unique // public Talent Card URL
-  headline         String?
-  bio              String?            @db.Text
-  city             String?
-  githubUrl        String?            @db.VarChar(400)
-  skillsClaimed    Json?
-  lookingFor       String?            @db.Text
-  graduationYear   Int?
-  collegeId        String?
-  college          College?           @relation(fields: [collegeId], references: [id])
+  avatarId               String? // Upload.id of the profile photo
+  username               String?            @unique @db.VarChar(30) // public Passport URL /talent/<username>; falls back to slug
+  passportVisibility     Visibility         @default(PUBLIC)
+  projectsVisibility     Visibility         @default(PUBLIC)
+  endorsementsVisibility Visibility         @default(PUBLIC)
+  entriesVisibility      Visibility         @default(PUBLIC)
+  entries                PassportEntry[]
+  shareWithCollege       Boolean            @default(false) // consent: name + progress visible to their college admins
+  isSample               Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id                     String             @id @default(cuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                   String             @unique // public Talent Card URL
+  headline               String?
+  bio                    String?            @db.Text
+  city                   String?
+  githubUrl              String?            @db.VarChar(400)
+  skillsClaimed          Json?
+  lookingFor             String?            @db.Text
+  graduationYear         Int?
+  collegeId              String?
+  college                College?           @relation(fields: [collegeId], references: [id])
   // Contact details live on User and are NEVER returned by public queries.
-  contactVisible   Boolean            @default(false)
-  completeness     Int                @default(0) // 0–100 profile completeness score
-  projects         Project[]
-  skills           SkillEvidence[]
-  applications     Application[]
-  savedRoles       SavedOpportunity[]
-  sessions         MentorSession[]
-  endorsements     Endorsement[]
-  shortlistedBy    Shortlist[]
+  contactVisible         Boolean            @default(false)
+  completeness           Int                @default(0) // 0–100 profile completeness score
+  projects               Project[]
+  skills                 SkillEvidence[]
+  applications           Application[]
+  savedRoles             SavedOpportunity[]
+  sessions               MentorSession[]
+  endorsements           Endorsement[]
+  shortlistedBy          Shortlist[]
+}
+
+// Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL.
+model PassportEntry {
+  id              String             @id @default(cuid())
+  studentId       String
+  student         StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  kind            EntryKind
+  title           String             @db.VarChar(120)
+  org             String?            @db.VarChar(120)
+  year            Int?
+  url             String?            @db.VarChar(400)
+  summary         String?            @db.Text
+  verifyRequested Boolean            @default(false)
+  status          VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  createdAt       DateTime           @default(now())
+
+  @@index([studentId])
+  @@index([verifyRequested, status])
 }
 
 model Project {
