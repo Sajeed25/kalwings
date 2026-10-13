@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
-import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, privacySchema, entrySchema, csv } from "@/lib/validation";
+import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, privacySchema, entrySchema, submissionSchema, csv } from "@/lib/validation";
 import { usernameSchema } from "@/lib/passport";
 import { WITHDRAWABLE } from "@/lib/stages";
 import { completeness } from "@/lib/completeness";
@@ -206,5 +206,35 @@ export async function respondOffer(applicationId: string, accept: boolean) {
     ...(accept ? [] : [db.application.update({ where: { id: app.id }, data: { stage: "WITHDRAWN" } })]),
   ]);
   await Promise.all(app.opportunity.company.members.map((m) => notify(m.userId, accept ? "Offer accepted" : "Offer declined", `${u.name} · ${app.opportunity.title}`)));
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Submit (or resubmit before review) work for a challenge. One submission per student per challenge. */
+export async function submitWork(_: Result, fd: FormData): Promise<Result> {
+  const { u, p } = await me();
+  const r = submissionSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const ch = await db.challenge.findUnique({ where: { id: r.data.challengeId }, include: { opportunity: { include: { company: { include: { members: true } } } } } });
+  const o = ch?.opportunity;
+  if (!ch || !o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) return { error: "This challenge isn't open for submissions." };
+  if (!p.headline) return { error: "Complete your profile before submitting." };
+  if (r.data.teamNote && !ch.allowTeams) return { error: "This challenge is individual. Remove the team note." };
+  const key = { challengeId_studentId: { challengeId: ch.id, studentId: p.id } };
+  const existing = await db.submission.findUnique({ where: key });
+  if (existing && existing.status !== "SUBMITTED" && existing.status !== "WITHDRAWN") return { error: "This submission has already been reviewed or withdrawn." };
+  const data = { title: r.data.title, summary: r.data.summary, workUrl: r.data.workUrl, teamNote: r.data.teamNote || null, status: "SUBMITTED" as const };
+  if (existing) await db.submission.update({ where: key, data });
+  else {
+    await db.submission.create({ data: { ...data, challengeId: ch.id, studentId: p.id } });
+    await Promise.all(o.company.members.map((m) => notify(m.userId, "New challenge submission", `${u.name} submitted to ${o.title}`)));
+  }
+  revalidatePath("/dashboard", "layout");
+  revalidatePath(`/challenges/${o.id}`);
+  return { ok: true };
+}
+
+export async function withdrawSubmission(id: string) {
+  const { p } = await me();
+  await db.submission.updateMany({ where: { id, studentId: p.id, status: "SUBMITTED" }, data: { status: "WITHDRAWN" } });
   revalidatePath("/dashboard", "layout");
 }

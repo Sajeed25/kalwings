@@ -2,7 +2,7 @@ import { TYPE_LABEL } from "@/lib/opportunity-types";
 import type { Metadata } from "next";
 import { asList } from "@/lib/lists";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import { Block } from "@/components/pages/shell";
@@ -32,6 +32,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const o = await load(id);
   if (!o) notFound();
+  if (o.type === "CHALLENGE") redirect(`/challenges/${o.id}`);
   const user = await getUser();
   let applied = false, saved = false;
   if (user?.role === "STUDENT") {
