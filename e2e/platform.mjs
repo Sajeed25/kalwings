@@ -210,6 +210,69 @@ ok((await student.request.get(B + shotUrl)).status() === 404, 'deleting a projec
 await mentor.goto(`${B}/dashboard/mentoring`); await mentor.setInputFiles('input[type=file][aria-label="Upload photo"]', { name: 'm.png', mimeType: 'image/png', buffer: PNG }); await mentor.waitForSelector('img[src^="/api/files/"]');
 await student.goto(`${B}/mentors`); ok(await student.locator(`img[alt="Photo of Test Mentor ${tag}"]`).count() === 1, 'mentor photo appears in the directory');
 
+// --- employer closes / reopens a listing
+await student.goto(`${B}/opportunities`);
+const oppHref = await student.locator('article', { hasText: `Embedded Intern ${tag}` }).locator('a:has-text("View details")').getAttribute('href');
+await employer.goto(`${B}/dashboard/roles`); employer.once('dialog', (d) => d.accept());
+await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Close")').click(); await employer.waitForTimeout(1200);
+await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() === 0, 'closed listing disappears from search');
+await student.goto(B + oppHref); ok(await student.locator('text=Applications closed').count() > 0 && await student.locator('button:has-text("Apply with my Talent Card")').count() === 0, 'closed listing shows "Applications closed" and no Apply button');
+await employer.goto(`${B}/dashboard/roles`);
+await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Reopen")').click(); await employer.waitForTimeout(1200);
+await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'reopened listing is searchable again');
+
+// --- admin suspends / restores users
+await student.goto(`${B}/dashboard`); const cardHref = await student.locator('a:has-text("View my Talent Card")').getAttribute('href');
+const suspend = async (who, reason) => {
+  await admin.goto(`${B}/dashboard/users?q=${who}`);
+  const row = admin.locator('li', { hasText: who }).first(); await row.locator('summary:has-text("Suspend")').click();
+  await row.locator('input[name=reason]').fill(reason); await row.locator('button:has-text("Suspend account")').click(); await admin.waitForSelector('text=Suspended');
+};
+await admin.goto(`${B}/dashboard/users?q=admin@sample`); ok(await admin.locator('li', { hasText: 'admin@sample.kalwings.test' }).locator('summary:has-text("Suspend")').count() === 0, 'platform admins have no suspend control');
+await suspend(`stu${tag}@example.com`, 'Posting fake projects (test)');
+await student.goto(`${B}/dashboard`); ok(/\/login/.test(student.url()), 'suspended user is signed out immediately (existing session invalid)');
+await student.fill('input[name=identifier]', `stu${tag}@example.com`); await student.click('button:has-text("Send one-time code")'); await student.waitForSelector('input[name=code]');
+await student.fill('input[name=code]', (await student.locator('text=Your code is').locator('b').innerText()).trim()); await student.click('button:has-text("Log in")'); await student.waitForSelector('p[role=alert]');
+ok((await student.locator('p[role=alert]').innerText()).includes('suspended'), 'suspended user cannot log in (clear message)');
+const cardResp = await anon.goto(B + cardHref); ok(cardResp.status() === 404, "suspended user's public Talent Card is hidden (404)");
+await admin.goto(`${B}/dashboard/users?q=stu${tag}@example.com`); await admin.locator('li', { hasText: `stu${tag}@example.com` }).locator('button:has-text("Restore")').click(); await admin.waitForTimeout(1200);
+await auth(student, 'login', `stu${tag}@example.com`); ok(/dashboard/.test(student.url()), 'restored user can log in again');
+ok((await (await anon.goto(B + cardHref)).status()) === 200, 'Talent Card is back after restore');
+// a suspended mentor disappears from the public directory
+await suspend(`men${tag}@example.com`, 'Spam (test)');
+await anon.goto(`${B}/mentors`); ok(await anon.locator(`text=Test Mentor ${tag}`).count() === 0, 'suspended mentor is hidden from the directory');
+await admin.goto(`${B}/dashboard/users?q=men${tag}@example.com`); await admin.locator('li', { hasText: `men${tag}@example.com` }).locator('button:has-text("Restore")').click(); await admin.waitForTimeout(1200);
+await anon.goto(`${B}/mentors`); ok(await anon.locator(`text=Test Mentor ${tag}`).count() > 0, 'restored mentor is listed again');
+
+// --- data export
+const ex = await student.request.get(`${B}/api/account/export`);
+const exText = await ex.text(); const exJson = JSON.parse(exText);
+ok(ex.status() === 200 && /attachment/.test(ex.headers()['content-disposition'] ?? '') && exJson.account.email === `stu${tag}@example.com`, 'data export downloads the user\'s own data as JSON');
+ok(exJson.studentProfile.applications.length >= 1, 'export includes applications');
+ok(!exText.includes(`emp${tag}@example.com`) && !/codeHash/.test(exText), "export has no other users' emails and no sign-in code hashes");
+ok((await anon.request.get(`${B}/api/account/export`)).status() === 401, 'export requires sign-in');
+
+// --- account deletion (a throwaway student with a profile, photo and application)
+const leaver = await user(); await auth(leaver, 'join', `leaver${tag}@example.com`, { name: `Leaver ${tag}`, role: 'STUDENT' });
+await leaver.goto(`${B}/dashboard/profile`); await leaver.fill('input[name=headline]', 'Temporary profile'); await leaver.fill('input[name=graduationYear]', '2026'); await leaver.click('button:has-text("Save"):not(:has-text("college"))'); await leaver.waitForSelector('text=Saved');
+await leaver.setInputFiles('input[type=file][aria-label="Upload photo"]', { name: 'l.png', mimeType: 'image/png', buffer: PNG }); await leaver.waitForSelector('img[src^="/api/files/"]');
+const leaverPhoto = await leaver.locator('img[src^="/api/files/"]').first().getAttribute('src');
+await leaver.goto(B + oppHref); await leaver.click('button:has-text("Apply with my Talent Card")'); await leaver.waitForSelector("text=You've applied");
+await leaver.goto(`${B}/dashboard`); const leaverCard = await leaver.locator('a:has-text("View my Talent Card")').getAttribute('href');
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator(`text=Leaver ${tag}`).count() > 0, 'throwaway student is in the employer pipeline before deleting');
+await leaver.goto(`${B}/dashboard/account`);
+await leaver.fill('input[name=confirm]', 'delete'); await leaver.click('button:has-text("Delete everything")'); await leaver.waitForSelector('[role=alert]:has-text("DELETE")');
+ok(true, 'lower-case "delete" is not accepted as confirmation');
+await leaver.fill('input[name=confirm]', 'DELETE'); await leaver.click('button:has-text("Delete everything")'); await leaver.waitForURL(`${B}/`);
+await leaver.goto(`${B}/dashboard`); ok(/\/login/.test(leaver.url()), 'deleted user is signed out');
+await leaver.fill('input[name=identifier]', `leaver${tag}@example.com`); await leaver.click('button:has-text("Send one-time code")'); await leaver.waitForSelector('input[name=code]');
+await leaver.fill('input[name=code]', (await leaver.locator('text=Your code is').locator('b').innerText()).trim()); await leaver.click('button:has-text("Log in")'); await leaver.waitForSelector('p[role=alert]');
+ok((await leaver.locator('p[role=alert]').innerText()).includes('No account'), 'the account no longer exists');
+ok((await (await anon.goto(B + leaverCard)).status()) === 404, 'deleted user\'s Talent Card is gone');
+ok((await anon.request.get(B + leaverPhoto)).status() === 404, 'deleted user\'s uploaded photo is gone');
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator(`text=Leaver ${tag}`).count() === 0, "deleted student's application disappears from the employer pipeline");
+await admin.goto(`${B}/dashboard/account`); ok(await admin.locator('text=can\'t be deleted from here').count() > 0 && await admin.locator('input[name=confirm]').count() === 0, 'platform admins cannot self-delete');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 

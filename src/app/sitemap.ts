@@ -11,8 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base: MetadataRoute.Sitemap = paths.map((p) => ({ url: `${site.url}${p}`, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
   try {
     const [opps, mentors] = await Promise.all([
-      db.opportunity.findMany({ where: { moderated: "VERIFIED", deadline: { gt: new Date() }, company: { status: "VERIFIED", isSample: false } }, select: { id: true, createdAt: true }, take: 5000 }),
-      db.mentorProfile.findMany({ where: { status: "VERIFIED", isSample: false }, select: { slug: true }, take: 5000 }),
+      db.opportunity.findMany({ where: { moderated: "VERIFIED", closedAt: null, deadline: { gt: new Date() }, company: { status: "VERIFIED", isSample: false, members: { none: { user: { suspendedAt: { not: null } } } } } }, select: { id: true, createdAt: true }, take: 5000 }),
+      db.mentorProfile.findMany({ where: { status: "VERIFIED", isSample: false, user: { suspendedAt: null } }, select: { slug: true }, take: 5000 }),
     ]);
     return [
       ...base,

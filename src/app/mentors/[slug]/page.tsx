@@ -12,7 +12,7 @@ import { requestSession } from "@/app/actions/student";
 import { fmtTime } from "@/components/dash/ui";
 
 export const dynamic = "force-dynamic";
-const load = (slug: string) => db.mentorProfile.findFirst({ where: { slug, status: "VERIFIED" }, include: { user: true, slots: { where: { startsAt: { gt: new Date() }, sessionId: null }, orderBy: { startsAt: "asc" }, take: 10 } } });
+const load = (slug: string) => db.mentorProfile.findFirst({ where: { slug, status: "VERIFIED", user: { suspendedAt: null } }, include: { user: true, slots: { where: { startsAt: { gt: new Date() }, sessionId: null }, orderBy: { startsAt: "asc" }, take: 10 } } });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const m = await load((await params).slug);

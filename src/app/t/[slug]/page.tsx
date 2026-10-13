@@ -17,9 +17,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // Explicit select: email/phone can never leak onto this public page.
   const p = await db.studentProfile.findUnique({
     where: { slug },
-    select: { avatarId: true, headline: true, bio: true, city: true, graduationYear: true, githubUrl: true, skillsClaimed: true, isSample: true, user: { select: { name: true } }, projects: true, skills: true, endorsements: { include: { mentor: { include: { user: { select: { name: true } } } } } } },
+    select: { avatarId: true, headline: true, bio: true, city: true, graduationYear: true, githubUrl: true, skillsClaimed: true, isSample: true, user: { select: { name: true, suspendedAt: true } }, projects: true, skills: true, endorsements: { include: { mentor: { include: { user: { select: { name: true } } } } } } },
   });
-  if (!p || !p.headline) notFound();
+  if (!p || !p.headline || p.user.suspendedAt) notFound();
   const url = `${site.url}/t/${slug}`;
   const qr = await QRCode.toString(url, { type: "svg", margin: 1, color: { dark: "#0B1B3F", light: "#FFFFFF" } });
   return (

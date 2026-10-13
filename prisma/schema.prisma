@@ -53,14 +53,16 @@ enum SessionStatus {
 }
 
 model User {
-  emailNotifications Boolean  @default(true)
-  id                 String   @id @default(cuid())
-  email              String?  @unique
-  phone              String?  @unique
-  googleId           String?  @unique
+  suspendedReason    String?   @db.VarChar(300)
+  suspendedAt        DateTime? // set by an admin; suspended users are signed out everywhere and hidden
+  emailNotifications Boolean   @default(true)
+  id                 String    @id @default(cuid())
+  email              String?   @unique
+  phone              String?   @unique
+  googleId           String?   @unique
   name               String
-  role               Role     @default(STUDENT)
-  createdAt          DateTime @default(now())
+  role               Role      @default(STUDENT)
+  createdAt          DateTime  @default(now())
 
   student       StudentProfile?
   mentor        MentorProfile?
@@ -201,6 +203,7 @@ model EmployerMember {
 }
 
 model Opportunity {
+  closedAt     DateTime? // employer closed it: no new applications, hidden from search
   id           String             @id @default(cuid())
   companyId    String
   company      Company            @relation(fields: [companyId], references: [id])
