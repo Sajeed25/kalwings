@@ -76,6 +76,19 @@ enum SubmissionStatus {
   WITHDRAWN
 }
 
+enum AssessmentKind {
+  CODING
+  WRITTEN
+}
+
+enum AttemptStatus {
+  PASSED
+  FAILED
+  ERROR
+  PENDING_REVIEW
+  REVIEWED
+}
+
 enum InterviewMode {
   VIDEO
   PHONE
@@ -140,30 +153,30 @@ model User {
 
 model StudentProfile {
   avatarId               String? // Upload.id of the profile photo
-  username               String?            @unique @db.VarChar(30) // public Passport URL /talent/<username>; falls back to slug
-  passportVisibility     Visibility         @default(PUBLIC)
-  projectsVisibility     Visibility         @default(PUBLIC)
-  endorsementsVisibility Visibility         @default(PUBLIC)
-  entriesVisibility      Visibility         @default(PUBLIC)
+  username               String?             @unique @db.VarChar(30) // public Passport URL /talent/<username>; falls back to slug
+  passportVisibility     Visibility          @default(PUBLIC)
+  projectsVisibility     Visibility          @default(PUBLIC)
+  endorsementsVisibility Visibility          @default(PUBLIC)
+  entriesVisibility      Visibility          @default(PUBLIC)
   entries                PassportEntry[]
-  shareWithCollege       Boolean            @default(false) // consent: name + progress visible to their college admins
-  isSample               Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
-  id                     String             @id @default(cuid())
-  userId                 String             @unique
-  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug                   String             @unique // public Talent Card URL
+  shareWithCollege       Boolean             @default(false) // consent: name + progress visible to their college admins
+  isSample               Boolean             @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id                     String              @id @default(cuid())
+  userId                 String              @unique
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                   String              @unique // public Talent Card URL
   headline               String?
-  bio                    String?            @db.Text
+  bio                    String?             @db.Text
   city                   String?
-  githubUrl              String?            @db.VarChar(400)
+  githubUrl              String?             @db.VarChar(400)
   skillsClaimed          Json?
-  lookingFor             String?            @db.Text
+  lookingFor             String?             @db.Text
   graduationYear         Int?
   collegeId              String?
-  college                College?           @relation(fields: [collegeId], references: [id])
+  college                College?            @relation(fields: [collegeId], references: [id])
   // Contact details live on User and are NEVER returned by public queries.
-  contactVisible         Boolean            @default(false)
-  completeness           Int                @default(0) // 0–100 profile completeness score
+  contactVisible         Boolean             @default(false)
+  completeness           Int                 @default(0) // 0–100 profile completeness score
   projects               Project[]
   skills                 SkillEvidence[]
   applications           Application[]
@@ -172,6 +185,7 @@ model StudentProfile {
   endorsements           Endorsement[]
   shortlistedBy          Shortlist[]
   submissions            Submission[]
+  assessmentAttempts     AssessmentAttempt[]
 }
 
 // Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL.
@@ -280,6 +294,7 @@ model Company {
   status        VerificationStatus @default(PENDING) // no posting/search access until VERIFIED
   verifiedAt    DateTime?
   about         String?            @db.Text
+  assessments   Assessment[]
   shortlists    Shortlist[]
   stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
   invites       CompanyInvite[]
@@ -374,6 +389,45 @@ model Submission {
 
   @@unique([challengeId, studentId])
   @@index([challengeId, status])
+}
+
+// CODING: items = [{input, expected, hidden}] run in an isolated sandbox. WRITTEN: items = [{prompt, max}] scored by a human.
+model Assessment {
+  id           String              @id @default(cuid())
+  companyId    String
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind         AssessmentKind
+  title        String              @db.VarChar(120)
+  instructions String              @db.Text
+  languages    Json?
+  items        Json
+  timeLimitMs  Int                 @default(2000)
+  memoryMb     Int                 @default(128)
+  closesAt     DateTime?
+  closedAt     DateTime?
+  attempts     AssessmentAttempt[]
+  createdAt    DateTime            @default(now())
+}
+
+model AssessmentAttempt {
+  id           String         @id @default(cuid())
+  assessmentId String
+  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  language     String?        @db.VarChar(20)
+  code         String?        @db.Text
+  answers      Json?
+  status       AttemptStatus
+  results      Json? // coding: per-test outcome (hidden tests never expose input or expected output)
+  scores       Json? // written: [{prompt, points, comment}] from the reviewer
+  passed       Int?
+  total        Int?
+  feedback     String?        @db.Text
+  reviewedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([assessmentId, studentId, createdAt])
 }
 
 model Interview {

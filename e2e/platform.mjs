@@ -303,6 +303,41 @@ await student.goto(`${B}/dashboard/passport`); const key2 = (await student.locat
 ok(await anon.locator('li:has-text("Data Viz")').count() > 0 && (await anon.locator('summary:has-text("Why these are shown")').count()) > 0, 'awarded skill appears on the Passport as evidence-backed with a reason');
 await student.goto(chUrl); ok(await student.locator('text=Your submission was reviewed').count() > 0 && await student.locator('button:has-text("Update submission")').count() === 0, 'reviewed submissions cannot be edited');
 
+// --- assessments: written (always) and coding (needs E2E_SANDBOX=1 with SANDBOX_URL -> e2e/mock-sandbox.mjs)
+const wTitle = `Churn Case ${tag}`;
+await employer.goto(`${B}/dashboard/assessments`);
+await employer.fill('input[name=title]', wTitle); await employer.fill('textarea[name=instructions]', 'Answer each question in a few sentences. We are looking for clear reasoning, not buzzwords.');
+await employer.fill('textarea[name=items]', 'How would you reduce churn for a student app? | 20\nWhat would you measure first? | 10'); await employer.click('button:has-text("Publish assessment")'); await employer.waitForSelector('text=Published');
+await student.goto(`${B}/dashboard/assessments`); ok(await student.locator(`text=${wTitle}`).count() > 0, 'student sees the open written assessment');
+await student.locator(`a:has-text("${wTitle}")`).click(); await student.waitForSelector('text=Your answers'); const asmId = student.url().split('/').pop();
+await student.fill('textarea[name=a0]', 'Find where students drop off, talk to them, and fix the onboarding step that loses most people.'); await student.fill('textarea[name=a1]', 'Day-7 retention and the share of profiles completed.'); await student.click('button:has-text("Submit answers")'); await student.waitForSelector('text=Submitted');
+await student.reload(); ok(await student.locator('text=You have submitted this assessment').count() > 0, 'written assessment can be submitted only once');
+ok((await rec3.goto(`${B}/dashboard/assessments/${asmId}`)).status() === 404, 'unrelated recruiter cannot open another company\'s assessment');
+await employer.goto(`${B}/dashboard/assessments/${asmId}`); await employer.locator('summary:has-text("Read and score")').click();
+await employer.fill('input[name=p0]', '15'); await employer.fill('input[name=p1]', '8'); await employer.fill('textarea[name=feedback]', 'Solid reasoning; next time quantify the drop-off.'); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('text=Saved');
+await student.goto(`${B}/dashboard/assessments/${asmId}`); ok((await student.locator('body').innerText()).includes('23/30') && (await student.locator('body').innerText()).includes('quantify the drop-off'), 'candidate sees score and feedback for a written assessment');
+if (process.env.E2E_SANDBOX) {
+  const cTitle = `Sum Two ${tag}`;
+  await employer.goto(`${B}/dashboard/assessments`); await employer.selectOption('select[name=kind]', 'CODING');
+  await employer.fill('input[name=title]', cTitle); await employer.fill('textarea[name=instructions]', 'Read two integers from standard input and print their sum on one line.');
+  await employer.fill('textarea[name=items]', '3 4\n=>\n7\n###\n[hidden]\n10 5\n=>\n15'); await employer.check('input[value=javascript]'); await employer.click('button:has-text("Publish assessment")'); await employer.waitForSelector('text=Published');
+  await student.goto(`${B}/dashboard/assessments`); await student.locator(`a:has-text("${cTitle}")`).click(); await student.waitForSelector('textarea#code');
+  ok(await student.locator('text=Hidden tests never show').count() > 0 && (await student.locator('body').innerText()).includes('3 4') && !(await student.locator('body').innerText()).includes('10 5'), 'sample tests visible, hidden test inputs never shown');
+  await student.fill('textarea#code', 'console.log("wrong")'); await student.click('button:has-text("Run samples")'); await student.waitForSelector('text=0/1 tests passed');
+  ok(await student.locator('text=Wrong answer').count() > 0 && await student.locator('text=expected').count() > 0, 'failing sample shows expected vs got');
+  await student.fill('textarea#code', 'while(true){}'); await student.click('button:has-text("Run samples")'); await student.waitForSelector('text=Time limit exceeded');
+  ok(true, 'infinite loop is stopped by the time limit');
+  await student.fill('textarea#code', 'const [a,b]=require("fs").readFileSync(0,"utf8").trim().split(/\\s+/).map(Number);console.log(a+b)');
+  await student.click('button:has-text("Submit (runs all tests)")'); await student.waitForSelector('text=2/2 tests passed'); await student.waitForSelector('text=Attempt saved');
+  ok(!(await student.locator('body').innerText()).includes('10 5'), 'hidden test results never reveal input after submit');
+  await student.reload(); ok((await student.locator('body').innerText()).includes('2/2'), 'attempt appears in submission history');
+  await employer.goto(`${B}/dashboard/assessments`); await employer.locator(`a:has-text("${cTitle}")`).click(); await employer.waitForSelector('text=View code');
+  ok(await employer.locator('text=2/2').count() > 0, 'employer sees the candidate result and code');
+} else {
+  await employer.goto(`${B}/dashboard/assessments`); ok(await employer.locator('option[value=CODING]').count() === 0, 'coding assessments cannot be created when no sandbox is configured');
+  await student.goto(`${B}/dashboard/assessments`); ok(await student.locator('text=switched off until a secure code runner').count() > 0, 'students are told coding is off without a sandbox');
+}
+
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
 await student.goto(`${B}/dashboard/passport`);
