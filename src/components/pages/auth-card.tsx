@@ -8,7 +8,7 @@ import { requestOtp, submitOtp, type AuthState } from "@/app/actions/auth";
 const f = "mt-1.5 h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px]";
 const errs: Record<string, string> = { "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified." };
 
-export function AuthCard({ mode, initialRole, errorCode }: { mode: "join" | "login"; initialRole: string; errorCode?: string }) {
+export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean }) {
   const join = mode === "join";
   const [role, setRole] = useState(["STUDENT", "MENTOR", "EMPLOYER", "COLLEGE_ADMIN"].includes(initialRole) ? initialRole : "STUDENT");
   const [s1, a1, p1] = useActionState(requestOtp, { step: "identify", mode } as AuthState);
@@ -35,7 +35,7 @@ export function AuthCard({ mode, initialRole, errorCode }: { mode: "join" | "log
             )}
             <label className="block text-sm font-semibold">Email or mobile number<input className={f} name="identifier" autoComplete="username" required /></label>
             <Button size="lg" className="w-full" disabled={p1}>{p1 ? "Sending…" : "Send one-time code"}</Button>
-            <Button asChild size="lg" variant="secondary" className="w-full"><a href={`/api/auth/google?role=${role}`}>Continue with Google</a></Button>
+            {googleEnabled && <Button asChild size="lg" variant="secondary" className="w-full"><a href={`/api/auth/google?role=${role}`}>Continue with Google</a></Button>}
           </form>
         ) : (
           <form action={a2} className="mt-6 space-y-4">
