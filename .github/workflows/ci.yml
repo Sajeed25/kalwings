@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: mysql-8, image: "mysql:8.0", drift: true }
+          - { name: mariadb-10.11, image: "mariadb:10.11", drift: false }
+    services:
+      mysql:
+        image: ${{ matrix.image }}   # Hostinger runs MySQL or MariaDB; test both
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kalwings
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: kalwings
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent" --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/kalwings
+      AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Prisma schema is valid and migrations apply cleanly
+        run: |
+          npx prisma validate
+          npx prisma migrate deploy
+      # MariaDB reports JSON columns as longtext, so this drift check is only meaningful on real MySQL.
+      - name: Schema and migrations are in sync (fails if someone edited schema.prisma without a migration)
+        if: ${{ matrix.drift }}
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -e "CREATE DATABASE kalwings_shadow"
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "mysql://root:root@127.0.0.1:3306/kalwings_shadow" --exit-code
+      - name: Rate limiter is atomic and survives a process restart
+        run: |
+          npx tsx e2e/ratelimit.ts fill
+          npx tsx e2e/ratelimit.ts check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Smoke test (health endpoint)
+        run: |
+          npm start &
+          for i in $(seq 1 30); do curl -fs http://localhost:3000/api/health && exit 0; sleep 2; done
+          echo "health check failed"; exit 1

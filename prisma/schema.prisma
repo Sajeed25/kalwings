@@ -1,0 +1,360 @@
+// Kalwings data model. MySQL / MariaDB (Hostinger-compatible).
+// Lists (skills, tags, …) are stored as JSON arrays; read them with asList() from src/lib/lists.ts.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  EMPLOYER
+  COLLEGE_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum OpportunityType {
+  INTERNSHIP
+  JOB
+  CHALLENGE
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum ApplicationStage {
+  APPLIED
+  SHORTLISTED
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum SessionStatus {
+  REQUESTED
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  emailNotifications Boolean  @default(true)
+  id                 String   @id @default(cuid())
+  email              String?  @unique
+  phone              String?  @unique
+  googleId           String?  @unique
+  name               String
+  role               Role     @default(STUDENT)
+  createdAt          DateTime @default(now())
+
+  student       StudentProfile?
+  mentor        MentorProfile?
+  employer      EmployerMember?
+  college       CollegeAdmin?
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  messages      Message[]
+  reports       Report[]
+}
+
+model StudentProfile {
+  shareWithCollege Boolean            @default(false) // consent: name + progress visible to their college admins
+  isSample         Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug             String             @unique // public Talent Card URL
+  headline         String?
+  bio              String?            @db.Text
+  city             String?
+  githubUrl        String?            @db.VarChar(400)
+  skillsClaimed    Json?
+  lookingFor       String?            @db.Text
+  graduationYear   Int?
+  collegeId        String?
+  college          College?           @relation(fields: [collegeId], references: [id])
+  // Contact details live on User and are NEVER returned by public queries.
+  contactVisible   Boolean            @default(false)
+  completeness     Int                @default(0) // 0–100 profile completeness score
+  projects         Project[]
+  skills           SkillEvidence[]
+  applications     Application[]
+  savedRoles       SavedOpportunity[]
+  sessions         MentorSession[]
+  endorsements     Endorsement[]
+  shortlistedBy    Shortlist[]
+}
+
+model Project {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String         @db.Text
+  githubUrl String?        @db.VarChar(400)
+  demoUrl   String?        @db.VarChar(400)
+  fileKeys  Json? // storage keys (certificates, screenshots)
+}
+
+// A badge/skill is only displayable when backed by evidence or a defined assessment.
+model SkillEvidence {
+  id          String         @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill       String
+  basis       String // "assessment:<id>" | "project:<id>" | "challenge:<id>" | "endorsement:<id>"
+  explanation String         @db.Text // shown on badge hover
+  awardedAt   DateTime       @default(now())
+}
+
+model MentorProfile {
+  isSample          Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug              String             @unique
+  roleTitle         String
+  company           String
+  country           String
+  domain            String
+  tags              Json?
+  bio               String?            @db.Text
+  status            VerificationStatus @default(PENDING)
+  verifiedAt        DateTime?
+  slots             OfficeHourSlot[]
+  sessions          MentorSession[]
+  endorsementsGiven Endorsement[]
+}
+
+model OfficeHourSlot {
+  sessionId String?        @unique // set while a request holds/books this slot
+  session   MentorSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  id        String         @id @default(cuid())
+  mentorId  String
+  mentor    MentorProfile  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  startsAt  DateTime
+  endsAt    DateTime
+}
+
+model MentorSession {
+  slot      OfficeHourSlot?
+  id        String          @id @default(cuid())
+  mentorId  String
+  mentor    MentorProfile   @relation(fields: [mentorId], references: [id])
+  studentId String
+  student   StudentProfile  @relation(fields: [studentId], references: [id])
+  topic     String
+  message   String?         @db.Text
+  createdAt DateTime        @default(now())
+  status    SessionStatus   @default(REQUESTED)
+  startsAt  DateTime?
+}
+
+model Endorsement {
+  id        String         @id @default(cuid())
+  mentorId  String
+  mentor    MentorProfile  @relation(fields: [mentorId], references: [id])
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  text      String         @db.Text
+  evidence  String         @db.VarChar(400) // required: link/reference to the work being endorsed
+  createdAt DateTime       @default(now())
+}
+
+model Company {
+  isSample      Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id            String             @id @default(cuid())
+  name          String
+  website       String?            @db.VarChar(400)
+  status        VerificationStatus @default(PENDING) // no posting/search access until VERIFIED
+  verifiedAt    DateTime?
+  about         String?            @db.Text
+  shortlists    Shortlist[]
+  members       EmployerMember[]
+  opportunities Opportunity[]
+}
+
+model EmployerMember {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+}
+
+model Opportunity {
+  id           String             @id @default(cuid())
+  companyId    String
+  company      Company            @relation(fields: [companyId], references: [id])
+  title        String
+  type         OpportunityType
+  description  String             @db.Text
+  // Trust rules: pay, mode, location, eligibility are REQUIRED.
+  payMinINR    Int? // monthly (internship) or annual (job); null only when unpaid
+  payMaxINR    Int?
+  payText      String // human-readable, always displayed
+  monthlyINR   Int                @default(0)
+  unpaid       Boolean            @default(false)
+  workMode     WorkMode
+  location     String
+  eligibility  String
+  gradYears    Json?
+  skills       Json?
+  deadline     DateTime
+  sponsored    Boolean            @default(false) // must be labelled "Sponsored"; never implies verification
+  moderated    VerificationStatus @default(PENDING)
+  applications Application[]
+  saved        SavedOpportunity[]
+  createdAt    DateTime           @default(now())
+}
+
+model Application {
+  id            String           @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity      @relation(fields: [opportunityId], references: [id])
+  studentId     String
+  student       StudentProfile   @relation(fields: [studentId], references: [id])
+  stage         ApplicationStage @default(APPLIED)
+  employerNotes String?          @db.Text
+  messages      Message[]
+  createdAt     DateTime         @default(now())
+
+  @@unique([opportunityId, studentId])
+}
+
+model SavedOpportunity {
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunityId String
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, opportunityId])
+}
+
+model College {
+  status    VerificationStatus @default(PENDING) // students can pick it only once VERIFIED
+  createdAt DateTime           @default(now())
+  id        String             @id @default(cuid())
+  name      String
+  city      String?
+  students  StudentProfile[]
+  admins    CollegeAdmin[]
+}
+
+model CollegeAdmin {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?   @db.Text
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Report {
+  reporterId String?
+  reporter   User?     @relation(fields: [reporterId], references: [id])
+  id         String    @id @default(cuid())
+  targetType String
+  targetId   String
+  reason     String    @db.Text
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String
+  target    String
+  createdAt DateTime @default(now())
+}
+
+// One-time passcodes (hashed). Rate-limited per identifier.
+model OtpCode {
+  id         String   @id @default(cuid())
+  identifier String // normalised email or phone
+  codeHash   String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, createdAt])
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User        @relation(fields: [senderId], references: [id])
+  body          String      @db.Text
+  createdAt     DateTime    @default(now())
+}
+
+model Shortlist {
+  id        String         @id @default(cuid())
+  companyId String
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  note      String?
+  createdAt DateTime       @default(now())
+
+  @@unique([companyId, studentId])
+}
+
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String    @db.Text
+  createdAt DateTime  @default(now())
+  handledAt DateTime?
+}
+
+// Persistent rate limiting (survives restarts, shared by all processes).
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+// Unhandled server errors (no personal data: path without query string, truncated message/stack).
+model ErrorLog {
+  id        String   @id @default(cuid())
+  message   String   @db.VarChar(500)
+  digest    String?
+  path      String?  @db.VarChar(300)
+  stack     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

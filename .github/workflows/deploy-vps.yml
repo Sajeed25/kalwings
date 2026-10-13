@@ -1,0 +1,30 @@
+# OPTIONAL — only for Option B (Hostinger VPS with Docker). Does nothing unless you set
+# the repository variable DEPLOY_VPS=true and add the secrets below.
+# Hostinger's Node.js Web Apps plan does NOT need this: it deploys from GitHub by itself.
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ vars.DEPLOY_VPS == 'true' }}
+    runs-on: ubuntu-latest
+    concurrency: deploy-vps
+    steps:
+      - name: Pull, rebuild, restart on the server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd ${{ secrets.VPS_APP_DIR }}
+            git fetch origin ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+            docker compose up -d --build
+            for i in $(seq 1 30); do curl -fs http://localhost:3000/api/health && exit 0; sleep 2; done
+            echo "health check failed"; docker compose logs --tail=50 app; exit 1

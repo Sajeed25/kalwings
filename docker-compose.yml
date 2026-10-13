@@ -1,0 +1,31 @@
+# Option B (VPS): app + MariaDB on one box.  docker compose up -d --build
+# Put secrets in a .env file next to this one (DB_PASSWORD, AUTH_SECRET, NEXT_PUBLIC_SITE_URL, EMAIL_*, ADMIN_EMAILS).
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      MARIADB_DATABASE: kalwings
+      MARIADB_USER: kalwings
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes: [dbdata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: mysql://kalwings:${DB_PASSWORD}@db:3306/kalwings
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    ports: ["3000:3000"]
+volumes:
+  dbdata:

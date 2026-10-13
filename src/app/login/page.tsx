@@ -1,0 +1,9 @@
+import type { Metadata } from "next";
+import { AuthCard } from "@/components/pages/auth-card";
+
+export const metadata: Metadata = { title: "Log in", robots: { index: false } };
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ role?: string; error?: string }> }) {
+  const sp = await searchParams;
+  return <AuthCard mode="login" initialRole={(sp.role ?? "").toUpperCase()} errorCode={sp.error} />;
+}

@@ -1,0 +1,28 @@
+import type { Metadata } from "next";
+import { PageHero, Block } from "@/components/pages/shell";
+import { ActionForm, Area, Field, inputCls } from "@/components/dash/action-form";
+import { sendContact } from "@/app/actions/contact";
+
+export const metadata: Metadata = { title: "Contact" };
+
+export default function Page() {
+  return (
+    <>
+      <PageHero eyebrow="Contact" title="Let's talk." lead="Students, employers, colleges, mentors or press — tell us what you need." />
+      <Block>
+        <div className="max-w-xl">
+          <ActionForm action={sendContact} reset submit="Send message" success="Thanks — we'll get back to you soon.">
+            <Field label="Name" name="name" required minLength={2} autoComplete="name" />
+            <Field label="Email" name="email" type="email" required autoComplete="email" />
+            <label className="block text-sm font-semibold">I am a…
+              <select name="topic" className={inputCls}><option>Student</option><option>Employer</option><option>College</option><option>Mentor</option><option>Press</option></select>
+            </label>
+            <Area label="Message" name="message" required minLength={10} maxLength={2000} />
+            {/* Honeypot — hidden from people and assistive tech */}
+            <div aria-hidden className="absolute -left-[9999px]"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
+          </ActionForm>
+        </div>
+      </Block>
+    </>
+  );
+}

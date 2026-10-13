@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — RGB triplets so Tailwind alpha modifiers work. */
+:root {
+  --bg: 250 250 247;        /* #FAFAF7 off-white */
+  --surface: 255 255 255;
+  --muted: 241 245 249;     /* #F1F5F9 slate */
+  --ink: 11 27 63;          /* #0B1B3F midnight navy */
+  --ink-soft: 71 85 105;    /* #475569 — 7.5:1 on off-white */
+  --line: 226 232 240;      /* #E2E8F0 */
+}
+:root[data-theme="dark"] {
+  --bg: 6 15 38;
+  --surface: 12 27 63;
+  --muted: 16 34 74;
+  --ink: 241 245 249;
+  --ink-soft: 170 184 205;
+  --line: 36 55 100;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-bg font-sans text-ink antialiased; font-size: 1.0625rem; line-height: 1.6; }
+  h1, h2, h3, h4 { @apply font-display font-bold; letter-spacing: -0.02em; }
+  :focus-visible { outline: 2px solid #0D9488; outline-offset: 3px; border-radius: 6px; }
+  [data-theme="dark"] :focus-visible { outline-color: #38BDF8; }
+  ::selection { background: #14B8A640; }
+}
+
+@layer components {
+  /* content-visibility skips layout/paint of off-screen sections until they near the viewport (big win on mobile). */
+  .section { @apply py-20 md:py-28; content-visibility: auto; contain-intrinsic-size: auto 900px; }              /* 80 / 112px — inside 96–128 brief on desktop */
+  .eyebrow { @apply text-sm font-semibold uppercase tracking-[0.14em] text-teal-700; }
+  [data-theme="dark"] .eyebrow { @apply text-teal; }
+  .h-display { @apply text-[2.5rem] leading-[1.05] md:text-[4.25rem]; font-weight: 800; letter-spacing: -0.03em; }
+  .h-section { @apply text-[2.25rem] leading-[1.1] md:text-5xl; font-weight: 800; }
+  .card { @apply rounded-card border border-line bg-surface shadow-card transition duration-300; }
+  .card-hover { @apply hover:-translate-y-1 hover:shadow-lift; }
+  .text-gradient { background: linear-gradient(120deg, #0D9488, #0284C7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  [data-theme="dark"] .text-gradient { background: linear-gradient(120deg, #14B8A6, #38BDF8); -webkit-background-clip: text; background-clip: text; }
+  .on-navy .text-gradient { background: linear-gradient(120deg, #14B8A6, #38BDF8); -webkit-background-clip: text; background-clip: text; }
+  .placeholder-img { background:
+      radial-gradient(circle at 30% 20%, rgb(20 184 166 / 0.25), transparent 55%),
+      radial-gradient(circle at 80% 80%, rgb(56 189 248 / 0.25), transparent 55%),
+      rgb(var(--muted)); }
+}
+
+/* Scroll reveal (toggled by <RevealObserver />). Only hides content when JS is running (html.js). */
+html.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s cubic-bezier(.21,.6,.35,1), transform .6s cubic-bezier(.21,.6,.35,1); }
+html.js .reveal.is-visible { opacity: 1; transform: none; }
+html.js .draw .draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s ease-in-out; }
+html.js .draw.is-visible .draw-line { stroke-dashoffset: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .reveal { opacity: 1; transform: none; }
+  html.js .draw .draw-line { stroke-dashoffset: 0; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
