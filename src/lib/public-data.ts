@@ -21,11 +21,11 @@ export const toCardMentor = (m: MentorProfile & { user: User }, guided: number):
 
 /** Only verified companies' moderated, unexpired listings are public. */
 export async function publicOpportunities() {
-  const rows = await db.opportunity.findMany({ where: { moderated: "VERIFIED", deadline: { gt: new Date() }, company: { status: "VERIFIED" } }, include: { company: true }, orderBy: { createdAt: "desc" } });
+  const rows = await db.opportunity.findMany({ where: { moderated: "VERIFIED", closedAt: null, deadline: { gt: new Date() }, company: { status: "VERIFIED", members: { none: { user: { suspendedAt: { not: null } } } } } }, include: { company: true }, orderBy: { createdAt: "desc" } });
   return rows.map(toCardOpp);
 }
 
 export async function publicMentors() {
-  const rows = await db.mentorProfile.findMany({ where: { status: "VERIFIED" }, include: { user: true, slots: { where: { startsAt: { gt: new Date() }, sessionId: null }, take: 1 }, sessions: { where: { status: "COMPLETED" }, select: { studentId: true } } } });
+  const rows = await db.mentorProfile.findMany({ where: { status: "VERIFIED", user: { suspendedAt: null } }, include: { user: true, slots: { where: { startsAt: { gt: new Date() }, sessionId: null }, take: 1 }, sessions: { where: { status: "COMPLETED" }, select: { studentId: true } } } });
   return rows.map((m) => ({ ...toCardMentor(m, new Set(m.sessions.map((s) => s.studentId)).size), available: m.slots.length > 0 }));
 }

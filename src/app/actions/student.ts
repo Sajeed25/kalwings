@@ -76,7 +76,7 @@ export async function toggleContactVisible() {
 export async function applyTo(opportunityId: string) {
   const { u, p } = await me();
   const o = await db.opportunity.findUnique({ where: { id: opportunityId }, include: { company: { include: { members: true } } } });
-  if (!o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.deadline < new Date()) throw new Error("This opportunity isn't open for applications.");
+  if (!o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) throw new Error("This opportunity isn't open for applications.");
   if (!p.headline) throw new Error("Complete your profile before applying.");
   const existing = await db.application.findUnique({ where: { opportunityId_studentId: { opportunityId, studentId: p.id } } });
   if (existing) return;

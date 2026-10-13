@@ -53,6 +53,7 @@ export async function submitOtp(prev: AuthState, fd: FormData): Promise<AuthStat
         },
       });
     }
+    if (user.suspendedAt) return { ...prev, step: "identify", error: "This account has been suspended. Please contact support." };
     user = await maybePromoteAdmin(user);
     await createSession(user.id);
     dest = user.role === "STUDENT" && prev.mode === "join" ? "/dashboard/onboarding" : "/dashboard";

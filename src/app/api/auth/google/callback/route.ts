@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     const role = (req.cookies.get("kw_oauth_role")?.value ?? "STUDENT") as Exclude<Role, "PLATFORM_ADMIN">;
     user = await db.user.create({ data: { email, googleId: claims.sub, name: claims.name ?? email.split("@")[0], role, ...(role === "STUDENT" ? { student: { create: { slug: uniqueSlug(claims.name ?? "student") } } } : {}) } });
   }
+  if (user.suspendedAt) return fail("suspended");
   user = await maybePromoteAdmin(user);
   await createSession(user.id);
   const res = NextResponse.redirect(new URL(isNew && user.role === "STUDENT" ? "/dashboard/onboarding" : "/dashboard", req.url));

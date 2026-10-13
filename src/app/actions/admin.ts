@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
 import { audit, notify } from "@/lib/audit";
+import type { Result } from "./_shared";
 
 type Decision = "VERIFIED" | "REJECTED";
 const ok = (d: string): d is Decision => d === "VERIFIED" || d === "REJECTED";
@@ -55,5 +56,29 @@ export async function markContactHandled(id: string) {
   const a = await requireActionRole("PLATFORM_ADMIN");
   await db.contactMessage.update({ where: { id }, data: { handledAt: new Date() } });
   await audit(a.id, "contact.handled", id);
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Suspension signs the user out everywhere immediately, blocks login, and hides their public profile/listings. Reversible. */
+export async function suspendUser(_: Result, fd: FormData): Promise<Result> {
+  const a = await requireActionRole("PLATFORM_ADMIN");
+  const id = String(fd.get("userId") ?? "");
+  const reason = String(fd.get("reason") ?? "").trim().slice(0, 300);
+  if (reason.length < 5) return { error: "Give a reason (at least 5 characters)." };
+  const t = await db.user.findUnique({ where: { id } });
+  if (!t) return { error: "User not found." };
+  if (t.id === a.id || t.role === "PLATFORM_ADMIN") return { error: "Platform admins can't be suspended here." };
+  await db.user.update({ where: { id }, data: { suspendedAt: new Date(), suspendedReason: reason } });
+  await audit(a.id, "user.suspended", `${t.name} (${id}): ${reason}`.slice(0, 190));
+  await notify(id, "Your Kalwings account was suspended", reason);
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function unsuspendUser(id: string) {
+  const a = await requireActionRole("PLATFORM_ADMIN");
+  const t = await db.user.update({ where: { id }, data: { suspendedAt: null, suspendedReason: null } });
+  await audit(a.id, "user.unsuspended", `${t.name} (${id})`.slice(0, 190));
+  await notify(id, "Your Kalwings account was restored");
   revalidatePath("/dashboard", "layout");
 }

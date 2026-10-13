@@ -46,6 +46,21 @@ export async function postOpportunity(_: Result, fd: FormData): Promise<Result> 
   return { ok: true };
 }
 
+/** Closing stops new applications and hides the listing from search; existing applicants stay in the pipeline. */
+export async function closeOpportunity(id: string) {
+  const { company } = await verifiedCompany();
+  await db.opportunity.updateMany({ where: { id, companyId: company.id, closedAt: null }, data: { closedAt: new Date() } });
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/opportunities");
+}
+
+export async function reopenOpportunity(id: string) {
+  const { company } = await verifiedCompany();
+  await db.opportunity.updateMany({ where: { id, companyId: company.id, closedAt: { not: null } }, data: { closedAt: null } });
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/opportunities");
+}
+
 const STAGES: ApplicationStage[] = ["APPLIED", "SHORTLISTED", "INTERVIEW", "OFFER", "REJECTED"];
 
 export async function setStage(applicationId: string, stage: ApplicationStage) {

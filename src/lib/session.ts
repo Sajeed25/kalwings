@@ -33,7 +33,8 @@ export async function getUser() {
   try {
     const { payload } = await jwtVerify(token, key());
     if (!payload.sub) return null;
-    return await db.user.findUnique({ where: { id: payload.sub } });
+    const u = await db.user.findUnique({ where: { id: payload.sub } });
+    return u && !u.suspendedAt ? u : null; // suspension takes effect immediately, even for existing sessions
   } catch {
     return null;
   }

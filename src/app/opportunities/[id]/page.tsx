@@ -16,13 +16,15 @@ export const dynamic = "force-dynamic";
 const MODE = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" } as const;
 
 async function load(id: string) {
-  const o = await db.opportunity.findUnique({ where: { id }, include: { company: true } });
-  return o && o.moderated === "VERIFIED" && o.company.status === "VERIFIED" ? o : null;
+  return db.opportunity.findFirst({
+    where: { id, moderated: "VERIFIED", company: { status: "VERIFIED", members: { none: { user: { suspendedAt: { not: null } } } } } },
+    include: { company: true },
+  });
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const o = await load((await params).id);
-  return { title: o ? `${o.title} at ${o.company.name}` : "Opportunity", robots: o?.company.isSample ? { index: false } : undefined };
+  return { title: o ? `${o.title} at ${o.company.name}` : "Opportunity", robots: o && (o.company.isSample || o.closedAt || o.deadline < new Date()) ? { index: false } : undefined };
 }
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +40,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       saved = !!(await db.savedOpportunity.findUnique({ where: { studentId_opportunityId: { studentId: sp.id, opportunityId: id } } }));
     }
   }
-  const closed = o.deadline < new Date();
+  const closed = !!o.closedAt || o.deadline < new Date();
   const ld = {
     "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: o.type === "JOB" ? "FULL_TIME" : "INTERN",
     datePosted: o.createdAt.toISOString(), validThrough: o.deadline.toISOString(), hiringOrganization: { "@type": "Organization", name: o.company.name, sameAs: o.company.website },
