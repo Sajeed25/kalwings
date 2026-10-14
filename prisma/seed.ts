@@ -43,7 +43,7 @@ async function seed() {
     await db.user.create({
       data: {
         email: `${m.slug}@sample.kalwings.test`, name: m.name, role: "MENTOR",
-        mentor: { create: { slug: m.slug, roleTitle: m.role, company: m.company, country: m.country, domain: m.domain, tags: m.tags, bio: "[Sample bio] Replace with the mentor's own words.", status: "VERIFIED", verifiedAt: new Date(), isSample: true } },
+        mentor: { create: { slug: m.slug, roleTitle: m.role, company: m.company, country: m.country, domain: m.domain, tags: m.tags, bio: "Sample mentor profile used for demos.", status: "VERIFIED", verifiedAt: new Date(), isSample: true } },
       },
     });
   }
@@ -75,7 +75,7 @@ async function seed() {
   await db.user.create({
     data: {
       email: "student@sample.kalwings.test", name: "Sample Student", role: "STUDENT",
-      student: { create: { slug: "sample-student", isSample: true, collegeId: college.id, shareWithCollege: true, headline: "ECE final-year · embedded & Python", bio: "[Sample] Replace me — a short story about what you like building.", city: "Hyderabad", graduationYear: 2026, skillsClaimed: ["Embedded C", "Python", "Circuit design"] } },
+      student: { create: { slug: "sample-student", isSample: true, collegeId: college.id, shareWithCollege: true, headline: "CSE final-year · Java, Spring Boot & React", bio: "Sample profile for demos: builds small full-stack projects in Java and React.", city: "Hyderabad", graduationYear: 2026, skillsClaimed: ["Java", "Spring Boot", "React"] } },
     },
   });
   console.log("Seeded sample data. Sample logins (dev OTP prints to the server console): admin@/student@/college@/sample-mentor-1@/sample-co-a@ + sample.kalwings.test");

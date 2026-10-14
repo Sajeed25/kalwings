@@ -1,60 +1,58 @@
-"use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { novathon } from "@/data/sample";
+import { Countdown } from "@/components/home/countdown";
+import { db } from "@/lib/db";
 
-function useCountdown(iso: string) {
-  const [left, setLeft] = useState<number | null>(null);
-  useEffect(() => {
-    const t = () => setLeft(Math.max(0, new Date(iso).getTime() - Date.now()));
-    t();
-    const id = setInterval(t, 1000);
-    return () => clearInterval(id);
-  }, [iso]);
-  return left;
+/** The soonest-closing real challenge from a verified company. With none open, we say so and invite employers to host one; there is no fake countdown. */
+async function nextChallenge() {
+  try {
+    return await db.opportunity.findFirst({
+      where: { type: "CHALLENGE", moderated: "VERIFIED", closedAt: null, deadline: { gt: new Date() }, company: { status: "VERIFIED", isSample: false, members: { none: { user: { suspendedAt: { not: null } } } } } },
+      include: { company: true }, orderBy: { deadline: "asc" },
+    });
+  } catch { return null; }
 }
 
-export function ChallengeSpotlight() {
-  const left = useCountdown(novathon.deadline);
-  const parts = left == null ? null : [
-    ["Days", Math.floor(left / 864e5)], ["Hours", Math.floor(left / 36e5) % 24],
-    ["Mins", Math.floor(left / 6e4) % 60], ["Secs", Math.floor(left / 1e3) % 60],
-  ] as const;
+export async function ChallengeSpotlight() {
+  const c = await nextChallenge();
   return (
     <section className="on-dark relative overflow-hidden bg-black py-20 text-white md:py-28">
       <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
       <div className="container relative grid items-center gap-12 lg:grid-cols-2">
         <Reveal>
           <p className="eyebrow !text-accent">Challenge-to-Hire</p>
-          <h2 className="h-section mt-3">{novathon.name}</h2>
-          <p className="mt-5 max-w-lg text-lg text-white/75">{novathon.brief}</p>
-          <p className="mt-4 max-w-lg text-[15px] text-white/75"><span className="font-semibold text-white">The outcome:</span> {novathon.outcome}</p>
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-sm text-white/60">Participating companies:</span>
-            {novathon.companies.map((c) => <Badge key={c} className="bg-white/10 text-white">{c}</Badge>)}
-          </div>
-          <div className="mt-8 flex gap-3">
-            <Button asChild size="lg"><Link href="/challenges">Join the challenge</Link></Button>
-            <Button asChild size="lg" variant="onNavy"><Link href="/challenges">See all challenges</Link></Button>
-          </div>
+          {c ? (
+            <>
+              <h2 className="h-section mt-3">{c.title}</h2>
+              <p className="mt-5 max-w-lg text-lg text-white/75">{c.description.slice(0, 220)}{c.description.length > 220 ? "…" : ""}</p>
+              <p className="mt-4 max-w-lg text-[15px] text-white/75"><span className="font-semibold text-white">The outcome:</span> {c.payText}. A strong result can earn an interview, not a guaranteed job.</p>
+              <div className="mt-6 flex flex-wrap items-center gap-2"><span className="text-sm text-white/60">Hosted by:</span><Badge className="bg-white/10 text-white">{c.company.name}</Badge></div>
+              <div className="mt-8 flex gap-3">
+                <Button asChild size="lg"><Link href={`/challenges/${c.id}`}>Join the challenge</Link></Button>
+                <Button asChild size="lg" variant="onNavy"><Link href="/challenges">See all challenges</Link></Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="h-section mt-3">Prove it with real work.</h2>
+              <p className="mt-5 max-w-lg text-lg text-white/75">Employers post a real problem, students submit their solution, and a human reviewer scores it against a public rubric. Strong results can lead to an interview. No challenge is open right now.</p>
+              <div className="mt-8 flex gap-3">
+                <Button asChild size="lg"><Link href="/employers">Host a challenge</Link></Button>
+                <Button asChild size="lg" variant="onNavy"><Link href="/challenges">How challenges work</Link></Button>
+              </div>
+            </>
+          )}
         </Reveal>
-        <Reveal delay={0.1}>
-          <div className="rounded-card-lg border border-white/10 bg-white/5 p-8 backdrop-blur">
-            <p className="text-sm font-semibold uppercase tracking-wider text-white/60">Closes in</p>
-            <div className="mt-4 grid grid-cols-4 gap-3" role="timer" aria-live="off">
-              {(parts ?? [["Days", 0], ["Hours", 0], ["Mins", 0], ["Secs", 0]]).map(([l, v]) => (
-                <div key={l} className="rounded-lg bg-white/5 py-5 text-center">
-                  <div className="font-display text-4xl font-extrabold tabular-nums md:text-5xl">{String(v).padStart(2, "0")}</div>
-                  <div className="mt-1 text-xs text-white/60">{l}</div>
-                </div>
-              ))}
+        {c && (
+          <Reveal delay={0.1}>
+            <div className="rounded-card-lg border border-white/10 bg-white/5 p-8 backdrop-blur">
+              <p className="text-sm font-semibold uppercase tracking-wider text-white/60">Closes in</p>
+              <Countdown iso={c.deadline.toISOString()} />
             </div>
-            <p className="mt-6 text-sm text-white/60">Sample challenge and deadline — replace in <code>src/data/sample.ts</code>.</p>
-          </div>
-        </Reveal>
+          </Reveal>
+        )}
       </div>
     </section>
   );
