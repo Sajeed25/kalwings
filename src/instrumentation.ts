@@ -8,6 +8,10 @@ export async function register() {
     const site = describeSiteUrl();
     console.log(`[startup] ${site.line}`);
     if (site.problem) console.error(`[startup] NEXT_PUBLIC_SITE_URL problem: ${site.problem}`);
+    if (!d.problem && process.env.AUTO_MIGRATE !== "false") {
+      const { runMigrations } = await import("@/lib/migrate");
+      await runMigrations();
+    }
   }
 }
 
