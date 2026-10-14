@@ -89,6 +89,24 @@ enum AttemptStatus {
   REVIEWED
 }
 
+enum GroupKind {
+  COLLEGE
+  INTEREST
+  PROJECT
+}
+
+enum GroupRole {
+  MEMBER
+  MOD
+}
+
+enum PostKind {
+  DISCUSSION
+  QUESTION
+  PROJECT_CALL
+  EVENT
+}
+
 enum InterviewMode {
   VIDEO
   PHONE
@@ -141,14 +159,19 @@ model User {
   role               Role      @default(STUDENT)
   createdAt          DateTime  @default(now())
 
-  student       StudentProfile?
-  mentor        MentorProfile?
-  employer      EmployerMember?
-  college       CollegeAdmin?
-  notifications Notification[]
-  auditLogs     AuditLog[]
-  messages      Message[]
-  reports       Report[]
+  student          StudentProfile?
+  mentor           MentorProfile?
+  employer         EmployerMember?
+  college          CollegeAdmin?
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  messages         Message[]
+  reports          Report[]
+  groupMemberships GroupMember[]
+  posts            Post[]
+  comments         Comment[]
+  blocksMade       Block[]         @relation("blocker")
+  blocksReceived   Block[]         @relation("blocked")
 }
 
 model StudentProfile {
@@ -428,6 +451,77 @@ model AssessmentAttempt {
   createdAt    DateTime       @default(now())
 
   @@index([assessmentId, studentId, createdAt])
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  slug        String        @unique @db.VarChar(60)
+  name        String        @db.VarChar(80)
+  description String        @db.VarChar(500)
+  kind        GroupKind
+  collegeId   String?
+  createdById String
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  members     GroupMember[]
+  posts       Post[]
+
+  @@index([kind, archivedAt])
+}
+
+model GroupMember {
+  groupId  String
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+// Chronological, no ranking or likes: the feed rewards usefulness, not engagement.
+model Post {
+  id        String    @id @default(cuid())
+  groupId   String
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  kind      PostKind
+  title     String    @db.VarChar(140)
+  body      String    @db.Text
+  tags      Json?
+  eventAt   DateTime?
+  hiddenAt  DateTime?
+  createdAt DateTime  @default(now())
+  comments  Comment[]
+
+  @@index([groupId, createdAt])
+  @@index([kind, createdAt])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String    @db.Text
+  hiddenAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([postId, createdAt])
+}
+
+model Block {
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
 }
 
 model Interview {

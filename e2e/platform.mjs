@@ -338,6 +338,41 @@ if (process.env.E2E_SANDBOX) {
   await student.goto(`${B}/dashboard/assessments`); ok(await student.locator('text=switched off until a secure code runner').count() > 0, 'students are told coding is off without a sandbox');
 }
 
+// --- community: groups, posts, comments, teammates, reports, blocking, moderation
+const gName = `Robotics Club ${tag}`;
+await student.goto(`${B}/community`); await student.fill('input[name=name]', gName); await student.fill('textarea[name=description]', 'Sensors, motors and the bugs we hit while building them.'); await student.click('button:has-text("Create group")'); await student.waitForSelector('text=Group created');
+await anon.goto(`${B}/community`); ok(await anon.locator(`text=${gName}`).count() > 0, 'group directory is public');
+const gHref = await anon.locator(`a:has-text("${gName}")`).first().getAttribute('href');
+await anon.goto(B + gHref); ok(/\/login/.test(anon.url()), 'group posts need sign-in');
+const gp = (pg) => pg.locator('section[aria-label="New post"]');
+await student.goto(B + gHref); await gp(student).locator('select[name=kind]').selectOption('QUESTION'); await gp(student).locator('input[name=title]').fill(`Debugging I2C ${tag}`); await gp(student).locator('textarea[name=body]').fill('My sensor only answers after a power cycle. What should I check first?'); await gp(student).locator('input[name=tags]').fill('I2C, Embedded');
+await gp(student).locator('button:text-is("Post")').click(); await student.waitForSelector(`text=Debugging I2C ${tag}`, { timeout: 15000 });
+await gp(student).locator('select[name=kind]').selectOption('PROJECT_CALL'); await gp(student).locator('input[name=title]').fill(`Need a CAD partner ${tag}`); await gp(student).locator('textarea[name=body]').fill('Building a gripper arm and I need someone who can model the housing.'); await gp(student).locator('input[name=tags]').fill('CAD');
+await gp(student).locator('button:text-is("Post")').click(); await student.waitForSelector(`text=Need a CAD partner ${tag}`, { timeout: 15000 });
+await student2.goto(B + gHref); await student2.click('button:has-text("Join group")'); await student2.waitForSelector('section[aria-label="New post"]', { timeout: 15000 });
+const art = (pg, t) => pg.locator('article', { hasText: t });
+await art(student2, `Debugging I2C ${tag}`).locator('summary:has-text("comment")').click(); await art(student2, `Debugging I2C ${tag}`).locator('textarea[name=body]').fill('Check the pull-up resistors and the address.'); await art(student2, `Debugging I2C ${tag}`).locator('button:text-is("Comment")').click(); await student2.waitForSelector('text=Posted');
+await student2.reload(); ok(await student2.locator('text=1 comment').count() > 0, 'members can comment');
+await employer.goto(B + gHref); ok(await employer.locator(`text=Debugging I2C ${tag}`).count() > 0 && await employer.locator('section[aria-label="New post"]').count() === 0, 'recruiters can read but not post');
+await student2.goto(`${B}/community/teammates?skill=cad`); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() > 0, 'teammate search finds project calls by skill');
+await student2.goto(`${B}/community/teammates?skill=zzzz`); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'teammate search filters by skill');
+// report + admin moderation
+await student2.goto(B + gHref); await art(student2, `Need a CAD partner ${tag}`).locator('summary:text-is("Report")').click(); await art(student2, `Need a CAD partner ${tag}`).locator('textarea[name=reason]').fill('This looks like an advert, not a project.'); await art(student2, `Need a CAD partner ${tag}`).locator('button:has-text("Send report")').click(); await student2.waitForSelector('text=Thanks, our team');
+await admin.goto(`${B}/dashboard/reports`); await admin.locator('li', { hasText: 'This looks like an advert' }).first().locator('button:has-text("Hide content")').click(); await admin.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'hidden post disappears for other members');
+await student.goto(B + gHref); ok(await student.locator(`text=Need a CAD partner ${tag}`).count() > 0 && await student.locator('text=Hidden').count() > 0, 'group moderator still sees hidden content, marked as hidden');
+// moderator hides a comment
+await art(student, `Debugging I2C ${tag}`).locator('summary:has-text("comment")').click(); await art(student, `Debugging I2C ${tag}`).locator('li:has-text("pull-up") button:has-text("Hide")').click(); await student.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator('text=Check the pull-up').count() === 0, 'moderator can hide a comment');
+// blocking
+await art(student2, `Debugging I2C ${tag}`).locator('button:has-text("Block author")').click(); await student2.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator(`text=Debugging I2C ${tag}`).count() === 0, 'blocking an author hides their posts from you');
+await student.goto(B + gHref); ok(await student.locator(`text=Debugging I2C ${tag}`).count() > 0, 'the blocked author still sees their own post');
+// admin archive
+admin.once('dialog', (d) => d.accept()); await admin.goto(B + gHref); await admin.click('button:has-text("Archive group")'); await admin.waitForTimeout(1500);
+ok((await student.goto(B + gHref)).status() === 404, 'archived group is gone for members');
+await anon.goto(`${B}/community`); ok(await anon.locator(`text=${gName}`).count() === 0, 'archived group leaves the directory');
+
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
 await student.goto(`${B}/dashboard/passport`);

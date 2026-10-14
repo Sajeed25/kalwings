@@ -53,7 +53,7 @@ export const opportunitySchema = z.object({
 
 export const noteSchema = z.object({ applicationId: z.string().cuid(), notes: text(1000) });
 export const messageSchema = z.object({ applicationId: z.string().cuid(), body: text(1000).min(1) });
-export const reportSchema = z.object({ targetType: z.enum(["OPPORTUNITY", "MENTOR", "STUDENT", "COMPANY"]), targetId: z.string().cuid(), reason: text(500).min(10) });
+export const reportSchema = z.object({ targetType: z.enum(["OPPORTUNITY", "MENTOR", "STUDENT", "COMPANY", "POST", "COMMENT", "GROUP"]), targetId: z.string().cuid(), reason: text(500).min(10) });
 
 export const csv = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 15);
 
@@ -172,3 +172,11 @@ export const assessmentSchema = z.object({
 export const attemptSchema = z.object({ assessmentId: z.string().cuid(), language: z.string().max(20), code: z.string().min(1, "Write some code first").max(20000, "Code is limited to 20,000 characters") });
 export const writtenAttemptSchema = z.object({ assessmentId: z.string().cuid() });
 export const writtenReviewSchema = z.object({ attemptId: z.string().cuid(), feedback: text(1500).min(10, "Give the candidate some written feedback") });
+
+export const groupSchema = z.object({ name: text(80).min(3), description: text(500).min(10, "Say what the group is for (10+ characters)"), kind: z.enum(["INTEREST", "PROJECT"]) });
+export const postSchema = z.object({
+  groupId: z.string().cuid(), kind: z.enum(["DISCUSSION", "QUESTION", "PROJECT_CALL", "EVENT"]),
+  title: text(140).min(3), body: text(3000).min(10, "Write a little more (10+ characters)"), tags: text(200).optional().default(""),
+  eventAt: z.union([istDateTime, z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
+});
+export const commentSchema = z.object({ postId: z.string().cuid(), body: text(1000).min(2) });
