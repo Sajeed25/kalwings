@@ -725,7 +725,9 @@ await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' }); await ad
 await admin.waitForSelector('form[aria-label="Add a user"] [role=alert]'); ok((await admin.locator('form[aria-label="Add a user"] [role=alert]').innerText()).includes('already exists'), 'a duplicate email is refused');
 await addUser(admin, { name: `Sam HR ${tag}`, email: `hr2${tag}@example.com`, role: 'EMPLOYER', company: `GLOBEX ${tag}` });
 await admin.waitForFunction((t) => document.querySelector('form[aria-label="Add a user"] [role=status]')?.textContent?.includes(`hr2${t}@example.com`), tag); ok(!(await admin.locator('form[aria-label="Add a user"] [role=status]').innerText()).includes('(new, verified)'), 'a second HR joins the existing company instead of creating a duplicate');
-const hr = await user(); await auth(hr, 'login', hrEmail);
+// own forwarded IP so this late sign-in is not counted against the per-IP code limit the earlier logins used up
+const hrCtx = await b.newContext({ viewport: { width: 1300, height: 900 }, extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.50' } }); const hr = await hrCtx.newPage(); hr.on('pageerror', (e) => { console.log('PAGEERROR', e.message); fails++; });
+await auth(hr, 'login', hrEmail);
 await hr.goto(`${B}/dashboard/company`, { waitUntil: 'networkidle' });
 ok(await hr.locator(`h2:has-text("Globex ${tag}")`).count() > 0 && await hr.locator('text=Recruiting team').count() > 0 && await hr.locator(`text=Sam HR ${tag}`).count() > 0, 'the added HR signs in with an email code and lands in the verified company with their colleague');
 await hr.goto(`${B}/dashboard/roles`); ok(await hr.locator('button:has-text("Submit for review")').count() === 1, 'the HR can post roles straight away (company is verified)');
