@@ -90,6 +90,7 @@ const admin: Section[] = [
     { label: "Contact inbox", icon: "inbox", href: "/dashboard/inbox", desc: "Messages from the contact form." },
   ] },
   { title: "Operations", items: [
+    { label: "Launch readiness", icon: "shield", href: "/dashboard/launch", desc: "What still needs doing before and after going live, read live from your data." },
     { label: "Audit log", icon: "log", href: "/dashboard/audit", desc: "Who did what, and when." },
     { label: "Server errors", icon: "alert", href: "/dashboard/errors", desc: "Errors recorded by the server." },
   ] },

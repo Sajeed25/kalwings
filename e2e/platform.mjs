@@ -829,6 +829,10 @@ await admin.goto(`${B}/dashboard/mentors?q=${encodeURIComponent('Bulk Mentor ' +
 const badFile = await admin.request.post(`${B}/api/admin/bulk`, { multipart: { kind: 'students', mode: 'preview', file: { name: 'x.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') } } }); ok(badFile.status() === 400, 'a non-Excel/CSV file is refused');
 const bulkNonAdmin = await student.request.post(`${B}/api/admin/bulk`, { multipart: { kind: 'students', mode: 'preview', file: { name: 'x.csv', mimeType: 'text/csv', buffer: Buffer.from('name,email\r\nA,a@b.co') } } }); ok(bulkNonAdmin.status() === 403, 'only platform admins can bulk upload');
 
+// --- launch readiness: admin-only, read from real data
+await admin.goto(`${B}/dashboard/launch`, { waitUntil: 'networkidle' }); ok(await admin.locator('h1:has-text("Launch readiness")').count() === 1 && await admin.locator('text=Real companies added').count() === 1, 'admin sees the launch readiness checklist');
+await employer.goto(`${B}/dashboard/launch`); ok(!/\/dashboard\/launch/.test(employer.url()), 'only platform admins can open launch readiness');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 
