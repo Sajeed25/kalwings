@@ -136,7 +136,7 @@ await mentor.fill('input[name=skill]', 'Embedded C'); await mentor.fill('textare
 await mentor.click('button:has-text("Endorse")'); await mentor.waitForSelector('text=Endorsement published');
 
 // --- talent card
-await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/t\//); await student.waitForSelector('text=Verified skills');
+await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/talent\//); await student.waitForSelector('text=Evidence-backed skills');
 const card = await student.content();
 ok(card.includes('Embedded C') && card.includes('Clean firmware'), 'Talent Card shows verified skill + endorsement');
 ok(!card.includes(`stu${tag}@example.com`), 'Talent Card does not leak email');
@@ -205,7 +205,7 @@ ok((await student.request.get(`${B}/api/files/doesnotexist`)).status() === 404, 
 await student.goto(`${B}/dashboard/portfolio`);
 await student.setInputFiles('input[type=file][aria-label="Add screenshot"]', { name: 'shot.png', mimeType: 'image/png', buffer: PNG }); await student.waitForSelector('img[src^="/api/files/"]');
 const shotUrl = await imgSrc(student, 'img[src^="/api/files/"]');
-await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/t\//);
+await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/talent\//);
 ok(await student.locator('img[alt^="Photo of Test Student"]').count() === 1 && await student.locator('img[alt^="Screenshot of"]').count() === 1, 'Talent Card shows photo and project screenshot');
 // deleting the project removes its screenshot
 await student.goto(`${B}/dashboard/portfolio`); student.once('dialog', (d) => d.accept()); await student.locator('button:has-text("Delete")').first().click(); await student.waitForTimeout(1200);
@@ -224,6 +224,39 @@ await student.goto(B + oppHref); ok(await student.locator('text=Applications clo
 await employer.goto(`${B}/dashboard/roles`);
 await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Reopen")').click(); await employer.waitForTimeout(1200);
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'reopened listing is searchable again');
+
+// --- Talent Passport: username, evidence labels, verification, privacy, resume
+const uname = `pp${tag}`.toLowerCase();
+await student.goto(`${B}/dashboard/passport`);
+await student.fill('input[name=username]', 'admin'); await student.click('button:has-text("Save username")'); await student.waitForSelector('p[role=alert]');
+ok((await student.locator('p[role=alert]').first().innerText()).includes('reserved'), 'reserved username refused');
+await student.fill('input[name=username]', uname); await student.click('button:has-text("Save username")'); await student.waitForSelector('text=Saved');
+const pRes = await anon.goto(`${B}/talent/${uname}`); ok(pRes.status() === 200, 'Passport reachable at /talent/<username>');
+const legacy = await anon.goto(`${B}/t/${uname}`); ok(legacy.url().endsWith(`/talent/${uname}`), 'legacy /t/ link redirects to Passport');
+const s2 = await user(); await auth(s2, 'join', `stu3${tag}@example.com`, { name: `Third Student ${tag}`, role: 'STUDENT' });
+await s2.goto(`${B}/dashboard/passport`); await s2.fill('input[name=username]', uname); await s2.click('button:has-text("Save username")'); await s2.waitForSelector('p[role=alert]');
+ok((await s2.locator('p[role=alert]').first().innerText()).includes('taken'), 'duplicate username refused');
+await student.selectOption('select[name=kind]', 'CERTIFICATE'); await student.fill('input[name=title]', `Cloud Basics ${tag}`); await student.fill('input[name=org]', 'Example Academy'); await student.fill('input[name=url]', 'https://example.com/cert/123');
+await student.click('button:has-text("Add entry")'); await student.waitForSelector(`text=Cloud Basics ${tag}`);
+await anon.goto(`${B}/talent/${uname}`);
+ok(await anon.locator('text=External certificate · not verified by Kalwings').count() > 0 && await anon.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('text="Verified by Kalwings"').count() === 0, 'unverified certificate is labelled external, not verified');
+await student.reload(); await student.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('button:has-text("Request verification")').click(); await student.waitForSelector('text=Verification requested');
+await admin.goto(`${B}/dashboard/credentials`); await admin.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('button:has-text("Verify")').click(); await admin.waitForTimeout(1200);
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('text="Verified by Kalwings"').count() > 0, 'admin verification shows the verified badge');
+const nonAdmin = await student.goto(`${B}/dashboard/credentials`); ok(!/credentials/.test(student.url()) || (await student.locator('text=Passport verification').count()) === 0, 'students cannot open the verification queue');
+await student.goto(`${B}/dashboard/passport`);
+await student.selectOption('select[name=entriesVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator(`text=Cloud Basics ${tag}`).count() === 0, 'private entries hidden from public');
+await student.goto(`${B}/talent/${uname}`); ok(await student.locator(`text=Cloud Basics ${tag}`).count() > 0, 'owner still sees private entries');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'RECRUITERS'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator('text=This Talent Passport is limited').count() > 0 && await anon.locator(`text=Test Student`).count() === 0, 'recruiter-only Passport is gated and hides the name from the public');
+await employer.goto(`${B}/talent/${uname}`); ok(await employer.locator('h1:has-text("Test Student")').count() > 0, 'verified employer can open a recruiter-only Passport');
+const rr = await anon.goto(`${B}/talent/${uname}/resume`); ok(rr.status() === 404, 'resume respects recruiter-only visibility');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}/resume`); const rtxt = await anon.locator('article').innerText(); ok(rtxt.includes('Test Student') && !rtxt.includes(`stu${tag}@example.com`) && !rtxt.includes('Cloud Basics'), 'resume shows profile, hides email and private entries');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+ok((await (await anon.goto(`${B}/talent/${uname}`)).status()) === 404, 'private Passport is 404 to everyone else');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.selectOption('select[name=entriesVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
 
 // --- admin suspends / restores users
 await student.goto(`${B}/dashboard`); const cardHref = await student.locator('a:has-text("View my Talent Card")').getAttribute('href');

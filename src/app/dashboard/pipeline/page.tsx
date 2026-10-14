@@ -29,7 +29,7 @@ export default async function Page() {
                 <article key={a.id} className="card p-4 text-sm">
                   <p className="font-display font-bold">{a.student.user.name}</p><p className="text-ink-soft">{a.opportunity.title}</p>
                   {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email ?? a.student.user.phone}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private — use messages</p>}
-                  <a href={`/t/${a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Card</a>
+                  <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Card</a>
                   <div className="mt-3 flex flex-wrap gap-2">{next && <ActionButton variant="primary" action={setStage.bind(null, a.id, next)}>Move to {COLS[ci + 1].label}</ActionButton>}<ActionButton confirm="Reject this candidate?" action={setStage.bind(null, a.id, "REJECTED")}>Reject</ActionButton></div>
                   <details className="mt-3"><summary className="cursor-pointer font-semibold">Notes & messages</summary>
                     <ActionForm action={saveNotes} submit="Save notes" success="Saved" className="mt-2 space-y-2"><input type="hidden" name="applicationId" value={a.id} /><Field label="Private notes" name="notes" defaultValue={a.employerNotes ?? ""} maxLength={1000} /></ActionForm>
