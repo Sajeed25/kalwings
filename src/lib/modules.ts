@@ -81,6 +81,7 @@ const admin: Section[] = [
     { label: "Colleges", icon: "school", href: "/dashboard/colleges", desc: "Add colleges and verify the ones students can pick." },
     { label: "Mentors", icon: "sparkles", href: "/dashboard/mentors", desc: "Add mentors with full profile details, or edit them." },
     { label: "Users", icon: "users", href: "/dashboard/users", desc: "Add people, find, suspend or restore accounts." },
+    { label: "Bulk upload", icon: "file", href: "/dashboard/bulk", desc: "Add many students, companies or mentors from an Excel or CSV file." },
   ] },
   { title: "Platform", items: [
     { label: "Employer plans", icon: "card", href: "/dashboard/plans", desc: "Rename plans, change prices and limits, assign plans." },

@@ -23,7 +23,7 @@ Freshers cannot show what they can do, and employers cannot see it. Everything b
 | Mentor | Mentoring | Profile, availability, session requests, community |
 | College | Placements | Departments, shared student progress, drives, reports |
 | Platform admin | Reviews | Listing moderation, profile verification, abuse reports |
-| Platform admin | Directory | Companies (add, verify, plan, logo, HR, post listings), colleges, mentors (full details), users (add, change role, suspend) |
+| Platform admin | Directory | Companies (add, verify, plan, logo, HR, post listings), colleges, mentors (full details), users (add, change role, suspend), bulk upload of students, companies and mentors from Excel or CSV |
 | Platform admin | Platform | Employer plans (rename, price, limits, add), site settings (banner, support email, who can sign up), insights, contact inbox |
 | Platform admin | Operations | Audit log, server errors |
 
