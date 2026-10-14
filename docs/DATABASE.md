@@ -4,7 +4,7 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (46)
+## Models (47)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [Company](#company) |  | assessments, shortlists, invites, members, drives, opportunities, templates |
 | [EmployerMember](#employermember) |  | user, company |
 | [Opportunity](#opportunity) |  | company, questions, challenge, applications, saved |
-| [Application](#application) |  | opportunity, student, referrer, messages, interviews, events, answers, offer |
+| [Application](#application) |  | opportunity, student, referrer, messages, interviews, events, tags, answers, offer |
 | [Challenge](#challenge) | Details of an Opportunity whose type is CHALLENGE. Rubric: [{criterion, max, description}]. Scoring is by a human reviewer. | opportunity, submissions |
 | [Submission](#submission) |  | challenge, student |
 | [Assessment](#assessment) | CODING: items = [{input, expected, hidden}] run in an isolated sandbox. WRITTEN: items = [{prompt, max}] scored by a human. | company, attempts |
@@ -35,7 +35,8 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [DriveInvite](#driveinvite) |  | drive, student |
 | [Interview](#interview) |  | application, feedback |
 | [ApplicationEvent](#applicationevent) | Stage history: one row per move, so a candidate timeline and time-in-stage / time-to-hire can be shown. | application |
-| [JobQuestion](#jobquestion) | Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone. | opportunity, answers |
+| [CandidateTag](#candidatetag) | Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone. | application |
+| [JobQuestion](#jobquestion) |  | opportunity, answers |
 | [ApplicationAnswer](#applicationanswer) |  | application, question |
 | [InterviewFeedback](#interviewfeedback) | Interviewer scorecard. Private to the hiring team: candidates never see it, and it never moves anyone between stages by itself. | interview, author |
 | [MessageTemplate](#messagetemplate) |  | company |
@@ -320,6 +321,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | messages | Message[] |  |  |
 | interviews | Interview[] |  |  |
 | events | ApplicationEvent[] |  |  |
+| tags | CandidateTag[] |  |  |
 | answers | ApplicationAnswer[] |  |  |
 | offer | Offer? |  |  |
 | createdAt | DateTime | @default(now()) |  |
@@ -578,9 +580,22 @@ Stage history: one row per move, so a candidate timeline and time-in-stage / tim
 
 Indexes and constraints: `@@index([applicationId, createdAt])`
 
-### JobQuestion
+### CandidateTag
 
 Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone.
+Private labels the hiring team puts on a candidate (e.g. "strong portfolio", "call back"). Never shown to candidates and never used to score or filter automatically.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| applicationId | String |  |  |
+| application | Application | @relation(fields: [applicationId], references: [id], onDelete: Cascade) |  |
+| label | String | @db.VarChar(30) |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@unique([applicationId, label])`
+
+### JobQuestion
 
 | Field | Type | Constraints | Note |
 | --- | --- | --- | --- |

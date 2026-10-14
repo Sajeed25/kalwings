@@ -646,6 +646,30 @@ await sc.locator('summary:has-text("Screening answers")').click(); ok(await sc.l
 // speed analytics
 await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=How fast you move').count() > 0 && await employer.locator('text=time to hire').count() > 0, 'analytics shows time to hire');
 
+// --- bulk actions and tags
+await employer.goto(`${B}/dashboard/pipeline`, { waitUntil: 'networkidle' });
+const bulk = employer.locator('form[aria-label="Bulk actions"]');
+await bulk.locator('select[name=action]').selectOption('UNDER_REVIEW'); await bulk.locator('button:text-is("Apply")').click();
+await bulk.locator('[role=alert]').waitFor(); ok((await bulk.locator('[role=alert]').innerText()).includes('Select at least one'), 'bulk action with nobody selected is refused');
+await employer.check(`input[aria-label^="Select Linkedin Lead ${tag}"]`); await employer.check(`input[aria-label^="Select Referred Friend ${tag}"]`);
+await bulk.locator('select[name=action]').selectOption('ADD_TAG'); await bulk.locator('input[name=tag]').fill('  Strong   Portfolio '); await bulk.locator('button:text-is("Apply")').click();
+await bulk.locator('text=Tagged 2 candidates').waitFor(); ok(true, 'bulk tag applies to every selected candidate');
+await employer.goto(`${B}/dashboard/pipeline?tag=${encodeURIComponent('strong portfolio')}`);
+ok(await employer.locator(`article:has-text("Linkedin Lead ${tag}")`).count() > 0 && await employer.locator(`article:has-text("Referred Friend ${tag}")`).count() > 0 && await employer.locator(`article:has-text("Weird Source ${tag}")`).count() === 0, 'tag filter shows only tagged candidates, and tags are normalised');
+await employer.goto(`${B}/dashboard/pipeline`, { waitUntil: 'networkidle' });
+await employer.check(`input[aria-label^="Select Linkedin Lead ${tag}"]`); await employer.check(`input[aria-label^="Select Referred Friend ${tag}"]`);
+await bulk.locator('select[name=action]').selectOption('SHORTLISTED'); await bulk.locator('button:text-is("Apply")').click(); await bulk.locator('text=Moved 2 candidates').waitFor();
+await employer.reload(); ok(await employer.locator(`section[aria-label=Shortlisted] >> text=Linkedin Lead ${tag}`).count() > 0 && await employer.locator(`section[aria-label=Shortlisted] >> text=Referred Friend ${tag}`).count() > 0, 'bulk move puts every selected candidate in the new stage');
+const ll = employer.locator('article').filter({ hasText: new RegExp(`^\\s*Linkedin Lead ${tag}`) }).first();
+await ll.locator('button:has-text("remove tag")').click(); await employer.waitForTimeout(1200); await employer.reload();
+ok(await employer.locator(`article:has-text("Linkedin Lead ${tag}") a:text-is("strong portfolio")`).count() === 0 && await employer.locator(`article:has-text("Referred Friend ${tag}") a:text-is("strong portfolio")`).count() > 0, 'a tag can be removed from one candidate');
+await employer.check(`input[aria-label^="Select Test Student ${tag}, Embedded Intern"]`);
+await bulk.locator('select[name=action]').selectOption('SHORTLISTED'); await bulk.locator('button:text-is("Apply")').click(); await bulk.locator('text=Skipped 1').waitFor();
+ok(await employer.locator(`section[aria-label=Hired] >> text=Test Student ${tag}`).count() > 0, 'bulk moves skip candidates in Offer or Hired');
+await employer.reload(); await employer.check(`input[aria-label^="Select Weird Source ${tag}"]`);
+employer.once('dialog', (d) => d.accept()); await bulk.locator('select[name=action]').selectOption('REJECTED'); await bulk.locator('button:text-is("Apply")').click(); await bulk.locator('text=Moved 1 candidate').waitFor();
+await employer.reload(); ok(await employer.locator(`article:has-text("Weird Source ${tag}")`).count() === 0, 'bulk reject asks for confirmation, then removes the candidate from the board');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 
