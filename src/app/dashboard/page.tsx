@@ -29,7 +29,7 @@ async function StudentHome({ userId, name }: { userId: string; name: string }) {
         <Panel title="Profile completeness" className="md:col-span-2">
           <div className="flex items-center gap-4"><div className="h-3 flex-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={score} aria-valuemin={0} aria-valuemax={100} aria-label="Profile completeness"><div className="h-full rounded-full bg-accent" style={{ width: `${score}%` }} /></div><b className="font-display text-2xl">{score}%</b></div>
           {todo.length ? <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-ink-soft">{todo.map((t) => <li key={t}>{t}</li>)}</ul> : <p className="mt-4 text-sm text-ink-soft">Your profile is complete. Keep adding projects.</p>}
-          <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href="/dashboard/profile">Edit profile</Link></Button><Button asChild variant="secondary"><Link href={`/t/${p.slug}`}>View my Talent Card</Link></Button></div>
+          <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href="/dashboard/profile">Edit profile</Link></Button><Button asChild variant="secondary"><Link href={`/talent/${p.username ?? p.slug}`}>View my Talent Card</Link></Button></div>
         </Panel>
         <Stat label="Projects" value={p.projects.length} />
       </div>

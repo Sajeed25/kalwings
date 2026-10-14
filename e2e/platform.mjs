@@ -71,6 +71,7 @@ const co = admin.locator('li', { hasText: `Acme Labs ${tag}` }); await co.locato
 await admin.waitForTimeout(800); await admin.reload();
 const mn = admin.locator('li', { hasText: `Test Mentor ${tag}` }); await mn.locator('button:has-text("Verify")').click();
 await admin.waitForTimeout(800);
+await admin.goto(`${B}/dashboard/plans?q=${encodeURIComponent('Acme Labs ' + tag)}`); await admin.locator('li', { hasText: `Acme Labs ${tag}` }).locator('button:text-is("Growth")').click(); await admin.waitForTimeout(1200);
 
 // --- employer posts: validation, then valid
 await employer.goto(`${B}/dashboard/roles`);
@@ -86,6 +87,10 @@ await fill('₹18,000 / month', '18000'); await employer.waitForSelector('text=S
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() === 0, 'pending listing not public');
 await admin.goto(`${B}/dashboard/moderation`);
 await admin.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(800);
+await student.goto(`${B}/opportunities?q=${encodeURIComponent('Embedded Intern ' + tag)}`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'search by keyword finds the listing');
+await student.goto(`${B}/opportunities?q=zzz-no-such-${tag}`); ok(await student.locator('text=Nothing matches').count() > 0, 'search with no match shows empty state');
+await student.goto(`${B}/opportunities?type=FREELANCE&q=${encodeURIComponent('Embedded Intern ' + tag)}`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() === 0, 'type filter excludes other types');
+await student.goto(`${B}/opportunities?sort=deadline&page=999&pay=%27;DROP`); ok((await student.locator('h1').count()) > 0 && await student.locator('text=Something went wrong').count() === 0, 'hostile/out-of-range params do not crash');
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'approved listing is public');
 await student.goto(`${B}/mentors`); ok(await student.locator(`text=Test Mentor ${tag}`).count() > 0, 'verified mentor listed');
 
@@ -98,12 +103,14 @@ ok(true, 'student applied');
 await employer.goto(`${B}/dashboard/pipeline`);
 ok(await employer.locator(`text=Test Student ${tag}`).count() > 0, 'employer sees applicant');
 ok(await employer.locator('text=Contact private').count() > 0, 'student contact private by default');
+await employer.click('button:has-text("Move to Under review")'); await employer.waitForTimeout(800);
+await employer.reload();
 await employer.click('button:has-text("Move to Shortlisted")'); await employer.waitForTimeout(800);
 await employer.reload();
 ok(await employer.locator(`section[aria-label=Shortlisted] >> text=Test Student ${tag}`).count() > 0, 'moved to Shortlisted');
 if (MAIL) fs.rmSync(MAIL, { force: true });
 await employer.locator('summary:has-text("Notes")').click();
-await employer.fill('input[name=body]', 'Hi! Could we schedule a call?'); await employer.click('button:has-text("Send")'); await employer.waitForSelector('text=Sent');
+await employer.fill('input[name=body]', 'Hi! Could we schedule a call?'); await employer.click('button:text-is("Send")'); await employer.waitForSelector('text=Sent');
 await student.goto(`${B}/dashboard/applications`);
 ok(await student.locator('text=Could we schedule a call').count() > 0, 'student sees employer message');
 if (MAIL) {
@@ -115,7 +122,7 @@ if (MAIL) {
   ok((await student.content()).includes("isn't valid") || (await student.content()).includes('isn&#x27;t valid'), 'forged unsubscribe token is rejected');
   await student.goto(link); await student.click('button:has-text("Turn off notification emails")'); await student.waitForTimeout(1000);
   fs.rmSync(MAIL, { force: true });
-  await employer.fill('input[name=body]', 'Following up on my message.'); await employer.click('button:has-text("Send")'); await employer.waitForTimeout(1200);
+  await employer.fill('input[name=body]', 'Following up on my message.'); await employer.click('button:text-is("Send")'); await employer.waitForTimeout(1200);
   ok(lastMail() === null, 'no email after unsubscribing (in-app notification still created)');
   await student.goto(`${B}/dashboard/applications`);
 }
@@ -132,7 +139,7 @@ await mentor.fill('input[name=skill]', 'Embedded C'); await mentor.fill('textare
 await mentor.click('button:has-text("Endorse")'); await mentor.waitForSelector('text=Endorsement published');
 
 // --- talent card
-await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/t\//); await student.waitForSelector('text=Verified skills');
+await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/talent\//); await student.waitForSelector('text=Evidence-backed skills');
 const card = await student.content();
 ok(card.includes('Embedded C') && card.includes('Clean firmware'), 'Talent Card shows verified skill + endorsement');
 ok(!card.includes(`stu${tag}@example.com`), 'Talent Card does not leak email');
@@ -201,7 +208,7 @@ ok((await student.request.get(`${B}/api/files/doesnotexist`)).status() === 404, 
 await student.goto(`${B}/dashboard/portfolio`);
 await student.setInputFiles('input[type=file][aria-label="Add screenshot"]', { name: 'shot.png', mimeType: 'image/png', buffer: PNG }); await student.waitForSelector('img[src^="/api/files/"]');
 const shotUrl = await imgSrc(student, 'img[src^="/api/files/"]');
-await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/t\//);
+await student.goto(`${B}/dashboard`); await student.click('a:has-text("View my Talent Card")'); await student.waitForURL(/\/talent\//);
 ok(await student.locator('img[alt^="Photo of Test Student"]').count() === 1 && await student.locator('img[alt^="Screenshot of"]').count() === 1, 'Talent Card shows photo and project screenshot');
 // deleting the project removes its screenshot
 await student.goto(`${B}/dashboard/portfolio`); student.once('dialog', (d) => d.accept()); await student.locator('button:has-text("Delete")').first().click(); await student.waitForTimeout(1200);
@@ -221,12 +228,276 @@ await employer.goto(`${B}/dashboard/roles`);
 await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Reopen")').click(); await employer.waitForTimeout(1200);
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'reopened listing is searchable again');
 
+// --- hiring workspace: interviews, offers, hired, team, labels, analytics, aliases
+const hcard = () => employer.locator('article', { hasText: `Test Student ${tag}` }).first();
+await employer.goto(`${B}/dashboard/pipeline`);
+await hcard().locator('summary:text-is("Interview")').click();
+await hcard().locator('input[name=scheduledAt]').fill('2020-01-01T10:00'); await hcard().locator('input[name=detail]').fill('https://meet.example.com/x'); await hcard().locator('button:has-text("Schedule")').click();
+await hcard().locator('p[role=alert]').waitFor(); ok((await hcard().locator('p[role=alert]').innerText()).includes('future'), 'interview in the past is refused');
+await hcard().locator('input[name=scheduledAt]').fill('2030-01-15T10:00'); await hcard().locator('button:has-text("Schedule")').click(); await employer.waitForTimeout(1800);
+await employer.reload(); ok(await employer.locator(`section[aria-label=Interview] >> text=Test Student ${tag}`).count() > 0, 'scheduling an interview moves the candidate to Interview');
+await student.goto(`${B}/dashboard/interviews`); ok(await student.locator('text=https://meet.example.com/x').count() > 0, 'student sees the interview details');
+const icsHref = await student.locator('a:has-text("Add to calendar")').first().getAttribute('href');
+const icsRes = await student.request.get(B + icsHref); const icsTxt = await icsRes.text(); ok(icsRes.status() === 200 && icsTxt.includes('BEGIN:VCALENDAR') && icsTxt.includes('DTSTART:20300115T043000Z'), 'interview .ics is correct (10:00 IST = 04:30 UTC)');
+ok((await anon.request.get(B + icsHref)).status() === 401, 'anonymous cannot download interview .ics');
+ok((await mentor.request.get(B + icsHref)).status() === 404, 'unrelated user cannot download interview .ics');
+await employer.goto(`${B}/dashboard/pipeline`); await hcard().locator('summary:text-is("Extend offer")').click();
+await hcard().locator('textarea[name=summary]').fill('Embedded engineer, 6 LPA, Hyderabad, start Jan 2030'); await hcard().locator('button:has-text("Send offer")').click(); await employer.waitForTimeout(1800);
+await student.goto(`${B}/dashboard/applications`); ok(await student.locator('text=Embedded engineer, 6 LPA').count() > 0 && await student.locator('button:has-text("Accept")').count() > 0, 'student sees the offer with Accept / Decline');
+ok(await employer.locator('button:has-text("Mark hired")').count() === 0, 'cannot mark hired before the offer is accepted');
+student.once('dialog', (d) => d.accept()); await student.locator('button:has-text("Accept")').first().click(); await student.waitForTimeout(1500);
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator('button:has-text("Mark hired")').count() > 0, 'accepted offer enables Mark hired');
+employer.once('dialog', (d) => d.accept()); await employer.locator('button:has-text("Mark hired")').first().click(); await employer.waitForTimeout(1500);
+await employer.reload(); ok(await employer.locator(`section[aria-label=Hired] >> text=Test Student ${tag}`).count() > 0, 'candidate reaches Hired');
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Offers accepted').count() > 0 && await employer.locator('text=By listing').count() > 0, 'analytics shows real funnel numbers');
+// team
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=email]', `team${tag}@example.com`); await employer.click('button:has-text("Send invitation")'); await employer.waitForSelector('text=Invitation saved');
+const rec2 = await user(); await auth(rec2, 'join', `team${tag}@example.com`, { name: `Team Member ${tag}`, role: 'EMPLOYER' });
+await rec2.goto(`${B}/dashboard/company`); await rec2.click(`button:has-text("Join")`); await rec2.waitForSelector('text=Recruiting team');
+await rec2.goto(`${B}/dashboard/pipeline`); ok(await rec2.locator('section[aria-label=Hired]').count() > 0, 'invited recruiter joins the company and sees its pipeline');
+const rec3 = await user(); await auth(rec3, 'join', `nobody${tag}@example.com`, { name: 'Outside Recruiter', role: 'EMPLOYER' });
+await rec3.goto(`${B}/dashboard/pipeline`); ok(await rec3.locator(`text=Test Student ${tag}`).count() === 0, 'recruiter from another company cannot see this pipeline');
+await employer.goto(`${B}/dashboard/company`); employer.once('dialog', (d) => d.accept()); await employer.locator('li', { hasText: `Team Member ${tag}` }).locator('button:has-text("Remove")').click(); await employer.waitForTimeout(1500);
+await rec2.goto(`${B}/dashboard/pipeline`); ok(await rec2.locator(`text=Test Student ${tag}`).count() === 0, 'removed recruiter loses access');
+// custom stage names
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=UNDER_REVIEW]', 'Screening'); await employer.click('button:has-text("Save names")'); await employer.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator('section[aria-label=Screening]').count() > 0, 'custom stage names show in the pipeline');
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=UNDER_REVIEW]', ''); await employer.click('button:has-text("Save names")'); await employer.waitForSelector('text=Saved');
+// route aliases
+await anon.goto(`${B}/recruiter/analytics`); ok(/\/login/.test(anon.url()), '/recruiter/analytics forwards to the protected dashboard (login first)');
+await anon.goto(`${B}/jobs`); ok(anon.url().includes('/opportunities?type=JOB'), '/jobs forwards to filtered opportunities');
+
+// --- challenge-to-hire: create, moderate, discover, submit, review, shortlist, evidence
+const chTitle = `Sensor Dashboard ${tag}`; const chDeadline = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+await employer.goto(`${B}/dashboard/roles`); ok(await employer.locator('option[value=CHALLENGE]').count() === 0, 'challenges are created under Challenges, not the plain role form');
+await employer.goto(`${B}/dashboard/challenges`);
+const fillCh = async (rubric) => {
+  await employer.fill('input[name=title]', chTitle); await employer.fill('textarea[name=description]', 'Build a small dashboard that visualises noisy sensor data and explains the trade-offs you made.');
+  await employer.fill('textarea[name=brief]', 'You get a CSV of temperature readings with gaps and spikes. Clean it, chart it, and explain your approach in a short write-up.');
+  await employer.fill('textarea[name=rubric]', rubric); await employer.fill('input[name=skillTag]', 'Data Viz');
+  await employer.check('input[name=unpaid]'); await employer.fill('input[name=payText]', 'Unpaid, certificate only'); await employer.fill('input[name=location]', 'Pan-India'); await employer.fill('input[name=eligibility]', 'Final-year and recent graduates'); await employer.fill('input[name=deadline]', chDeadline);
+  await employer.click('button:has-text("Submit for moderation")');
+};
+await fillCh('only one line'); await employer.waitForSelector('p[role=alert]'); ok((await employer.locator('p[role=alert]').first().innerText()).toLowerCase().includes('rubric') || (await employer.locator('p[role=alert]').first().innerText()).includes('criteri'), 'rubric with fewer than 2 criteria is refused');
+await fillCh('Correctness | 40 | Cleans the data properly\nClarity | 30 | Chart is readable\nWrite-up | 30 | Explains trade-offs'); await employer.waitForSelector('text=Submitted. It goes live');
+await student.goto(`${B}/challenges`); ok(await student.locator(`text=${chTitle}`).count() === 0, 'unmoderated challenge is not public');
+await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: chTitle }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1500);
+let chListed = false; for (let i = 0; i < 8 && !chListed; i++) { await student.goto(`${B}/challenges`); chListed = (await student.locator(`text=${chTitle}`).count()) > 0; if (!chListed) await student.waitForTimeout(1500); }
+ok(chListed, 'approved challenge is listed on /challenges');
+await student.locator(`a:has-text("${chTitle}")`).first().click(); await student.waitForURL(/\/challenges\/[a-z0-9]+$/);
+const chUrl = student.url(); const chOppId = chUrl.split('/').pop();
+ok(await student.locator('text=How it is judged').count() > 0 && await student.locator('td:has-text("Correctness")').count() > 0, 'challenge page shows the brief and rubric');
+await student.goto(`${B}/opportunities/${chOppId}`); ok(student.url().endsWith(`/challenges/${chOppId}`), 'opportunity URL for a challenge redirects to the challenge page');
+await student.fill('input[name=title]', 'My dashboard'); await student.fill('textarea[name=summary]', 'I interpolated the gaps, removed spikes with a rolling median, and charted the result with annotations.'); await student.fill('input[name=workUrl]', 'https://github.com/example/dashboard');
+await student.click('button:has-text("Submit")'); await student.waitForSelector('text=Submission saved');
+await student.fill('input[name=title]', 'My dashboard v2'); await student.click('button:has-text("Update submission")'); await student.waitForSelector('text=Submission saved');
+await employer.goto(`${B}/dashboard/challenges`); await employer.locator(`a:has-text("${chTitle}")`).click(); await employer.waitForSelector('text=My dashboard v2');
+ok(await employer.locator('text=1 submission').count() > 0, 'resubmitting updates the same submission (one per candidate)');
+const rec3b = await rec3.goto(`${B}/dashboard/challenges/anything`); ok(rec3b.status() === 404 || /dashboard/.test(rec3.url()), 'unrelated recruiter cannot open a challenge review page');
+await employer.locator('summary:has-text("Review and score")').click();
+await employer.fill('input[name=p0]', '999'); await employer.fill('input[name=p1]', '20'); await employer.fill('input[name=p2]', '25'); await employer.fill('textarea[name=feedback]', 'Good cleaning approach; the chart needs clearer axes.');
+await employer.selectOption('select[name=outcome]', 'SHORTLISTED'); await employer.check('input[name=awardSkill]'); await employer.evaluate(() => document.querySelectorAll('input[name=p0]').forEach((i) => i.removeAttribute('max'))); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('p[role=alert]');
+ok((await employer.locator('p[role=alert]').first().innerText()).includes('0 to 40'), 'rubric points above the maximum are refused');
+await employer.fill('input[name=p0]', '35'); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('text=Saved');
+await student.goto(`${B}/dashboard/submissions`); const subTxt = await student.locator('main, body').first().innerText(); ok(subTxt.includes('80/100') && subTxt.includes('chart needs clearer axes'), 'candidate sees rubric score and feedback');
+await student.goto(`${B}/dashboard/applications`); ok(await student.locator(`text=${chTitle}`).count() > 0, 'shortlisting adds the candidate to the hiring pipeline');
+await student.goto(`${B}/dashboard/passport`); const key2 = (await student.locator('a[href^="/talent/"]').first().getAttribute('href')); await anon.goto(B + key2);
+ok(await anon.locator('li:has-text("Data Viz")').count() > 0 && (await anon.locator('summary:has-text("Why these are shown")').count()) > 0, 'awarded skill appears on the Passport as evidence-backed with a reason');
+await student.goto(chUrl); ok(await student.locator('text=Your submission was reviewed').count() > 0 && await student.locator('button:has-text("Update submission")').count() === 0, 'reviewed submissions cannot be edited');
+
+// --- assessments: written (always) and coding (needs E2E_SANDBOX=1 with SANDBOX_URL -> e2e/mock-sandbox.mjs)
+const wTitle = `Churn Case ${tag}`;
+await employer.goto(`${B}/dashboard/assessments`);
+await employer.fill('input[name=title]', wTitle); await employer.fill('textarea[name=instructions]', 'Answer each question in a few sentences. We are looking for clear reasoning, not buzzwords.');
+await employer.fill('textarea[name=items]', 'How would you reduce churn for a student app? | 20\nWhat would you measure first? | 10'); await employer.click('button:has-text("Publish assessment")'); await employer.waitForSelector('text=Published');
+await student.goto(`${B}/dashboard/assessments`); ok(await student.locator(`text=${wTitle}`).count() > 0, 'student sees the open written assessment');
+await student.locator(`a:has-text("${wTitle}")`).click(); await student.waitForSelector('text=Your answers'); const asmId = student.url().split('/').pop();
+await student.fill('textarea[name=a0]', 'Find where students drop off, talk to them, and fix the onboarding step that loses most people.'); await student.fill('textarea[name=a1]', 'Day-7 retention and the share of profiles completed.'); await student.click('button:has-text("Submit answers")'); await student.waitForSelector('text=Submitted');
+await student.reload(); ok(await student.locator('text=You have submitted this assessment').count() > 0, 'written assessment can be submitted only once');
+ok((await rec3.goto(`${B}/dashboard/assessments/${asmId}`)).status() === 404, 'unrelated recruiter cannot open another company\'s assessment');
+await employer.goto(`${B}/dashboard/assessments/${asmId}`); await employer.locator('summary:has-text("Read and score")').click();
+await employer.fill('input[name=p0]', '15'); await employer.fill('input[name=p1]', '8'); await employer.fill('textarea[name=feedback]', 'Solid reasoning; next time quantify the drop-off.'); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('text=Saved');
+await student.goto(`${B}/dashboard/assessments/${asmId}`); ok((await student.locator('body').innerText()).includes('23/30') && (await student.locator('body').innerText()).includes('quantify the drop-off'), 'candidate sees score and feedback for a written assessment');
+if (process.env.E2E_SANDBOX) {
+  const cTitle = `Sum Two ${tag}`;
+  await employer.goto(`${B}/dashboard/assessments`); await employer.selectOption('select[name=kind]', 'CODING');
+  await employer.fill('input[name=title]', cTitle); await employer.fill('textarea[name=instructions]', 'Read two integers from standard input and print their sum on one line.');
+  await employer.fill('textarea[name=items]', '3 4\n=>\n7\n###\n[hidden]\n10 5\n=>\n15'); await employer.check('input[value=javascript]'); await employer.click('button:has-text("Publish assessment")'); await employer.waitForSelector('text=Published');
+  await student.goto(`${B}/dashboard/assessments`); await student.locator(`a:has-text("${cTitle}")`).click(); await student.waitForSelector('textarea#code');
+  ok(await student.locator('text=Hidden tests never show').count() > 0 && (await student.locator('body').innerText()).includes('3 4') && !(await student.locator('body').innerText()).includes('10 5'), 'sample tests visible, hidden test inputs never shown');
+  await student.fill('textarea#code', 'console.log("wrong")'); await student.click('button:has-text("Run samples")'); await student.waitForSelector('text=0/1 tests passed');
+  ok(await student.locator('text=Wrong answer').count() > 0 && await student.locator('text=expected').count() > 0, 'failing sample shows expected vs got');
+  await student.fill('textarea#code', 'while(true){}'); await student.click('button:has-text("Run samples")'); await student.waitForSelector('text=Time limit exceeded');
+  ok(true, 'infinite loop is stopped by the time limit');
+  await student.fill('textarea#code', 'const [a,b]=require("fs").readFileSync(0,"utf8").trim().split(/\\s+/).map(Number);console.log(a+b)');
+  await student.click('button:has-text("Submit (runs all tests)")'); await student.waitForSelector('text=2/2 tests passed'); await student.waitForSelector('text=Attempt saved');
+  ok(!(await student.locator('body').innerText()).includes('10 5'), 'hidden test results never reveal input after submit');
+  await student.reload(); ok((await student.locator('body').innerText()).includes('2/2'), 'attempt appears in submission history');
+  await employer.goto(`${B}/dashboard/assessments`); await employer.locator(`a:has-text("${cTitle}")`).click(); await employer.waitForSelector('text=View code');
+  ok(await employer.locator('text=2/2').count() > 0, 'employer sees the candidate result and code');
+} else {
+  await employer.goto(`${B}/dashboard/assessments`); ok(await employer.locator('option[value=CODING]').count() === 0, 'coding assessments cannot be created when no sandbox is configured');
+  await student.goto(`${B}/dashboard/assessments`); ok(await student.locator('text=switched off until a secure code runner').count() > 0, 'students are told coding is off without a sandbox');
+}
+
+// --- community: groups, posts, comments, teammates, reports, blocking, moderation
+const gName = `Robotics Club ${tag}`;
+await student.goto(`${B}/community`); await student.fill('input[name=name]', gName); await student.fill('textarea[name=description]', 'Sensors, motors and the bugs we hit while building them.'); await student.click('button:has-text("Create group")'); await student.waitForSelector('text=Group created');
+await anon.goto(`${B}/community`); ok(await anon.locator(`text=${gName}`).count() > 0, 'group directory is public');
+const gHref = await anon.locator(`a:has-text("${gName}")`).first().getAttribute('href');
+await anon.goto(B + gHref); ok(/\/login/.test(anon.url()), 'group posts need sign-in');
+const gp = (pg) => pg.locator('section[aria-label="New post"]');
+await student.goto(B + gHref); await gp(student).locator('select[name=kind]').selectOption('QUESTION'); await gp(student).locator('input[name=title]').fill(`Debugging I2C ${tag}`); await gp(student).locator('textarea[name=body]').fill('My sensor only answers after a power cycle. What should I check first?'); await gp(student).locator('input[name=tags]').fill('I2C, Embedded');
+await gp(student).locator('button:text-is("Post")').click(); await student.waitForSelector(`text=Debugging I2C ${tag}`, { timeout: 15000 });
+await gp(student).locator('select[name=kind]').selectOption('PROJECT_CALL'); await gp(student).locator('input[name=title]').fill(`Need a CAD partner ${tag}`); await gp(student).locator('textarea[name=body]').fill('Building a gripper arm and I need someone who can model the housing.'); await gp(student).locator('input[name=tags]').fill('CAD');
+await gp(student).locator('button:text-is("Post")').click(); await student.waitForSelector(`text=Need a CAD partner ${tag}`, { timeout: 15000 });
+await student2.goto(B + gHref); await student2.click('button:has-text("Join group")'); await student2.waitForSelector('section[aria-label="New post"]', { timeout: 15000 });
+const art = (pg, t) => pg.locator('article', { hasText: t });
+await art(student2, `Debugging I2C ${tag}`).locator('summary:has-text("comment")').click(); await art(student2, `Debugging I2C ${tag}`).locator('textarea[name=body]').fill('Check the pull-up resistors and the address.'); await art(student2, `Debugging I2C ${tag}`).locator('button:text-is("Comment")').click(); await student2.waitForSelector('text=Posted');
+await student2.reload(); ok(await student2.locator('text=1 comment').count() > 0, 'members can comment');
+await employer.goto(B + gHref); ok(await employer.locator(`text=Debugging I2C ${tag}`).count() > 0 && await employer.locator('section[aria-label="New post"]').count() === 0, 'recruiters can read but not post');
+await student2.goto(`${B}/community/teammates?skill=cad`); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() > 0, 'teammate search finds project calls by skill');
+await student2.goto(`${B}/community/teammates?skill=zzzz`); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'teammate search filters by skill');
+// report + admin moderation
+await student2.goto(B + gHref); await art(student2, `Need a CAD partner ${tag}`).locator('summary:text-is("Report")').click(); await art(student2, `Need a CAD partner ${tag}`).locator('textarea[name=reason]').fill('This looks like an advert, not a project.'); await art(student2, `Need a CAD partner ${tag}`).locator('button:has-text("Send report")').click(); await student2.waitForSelector('text=Thanks, our team');
+await admin.goto(`${B}/dashboard/reports`); await admin.locator('li', { hasText: 'This looks like an advert' }).first().locator('button:has-text("Hide content")').click(); await admin.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'hidden post disappears for other members');
+await student.goto(B + gHref); ok(await student.locator(`text=Need a CAD partner ${tag}`).count() > 0 && await student.locator('text=Hidden').count() > 0, 'group moderator still sees hidden content, marked as hidden');
+// moderator hides a comment
+await art(student, `Debugging I2C ${tag}`).locator('summary:has-text("comment")').click(); await art(student, `Debugging I2C ${tag}`).locator('li:has-text("pull-up") button:has-text("Hide")').click(); await student.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator('text=Check the pull-up').count() === 0, 'moderator can hide a comment');
+// blocking
+await art(student2, `Debugging I2C ${tag}`).locator('button:has-text("Block author")').click(); await student2.waitForTimeout(1500);
+await student2.goto(B + gHref); ok(await student2.locator(`text=Debugging I2C ${tag}`).count() === 0, 'blocking an author hides their posts from you');
+await student.goto(B + gHref); ok(await student.locator(`text=Debugging I2C ${tag}`).count() > 0, 'the blocked author still sees their own post');
+// admin archive
+admin.once('dialog', (d) => d.accept()); await admin.goto(B + gHref); await admin.click('button:has-text("Archive group")'); await admin.waitForTimeout(1500);
+ok((await student.goto(B + gHref)).status() === 404, 'archived group is gone for members');
+await anon.goto(`${B}/community`); ok(await anon.locator(`text=${gName}`).count() === 0, 'archived group leaves the directory');
+
+// --- college portal: departments, drives, eligibility, consent, outcomes, reports
+const dept = `Electronics ${tag}`;
+await college.goto(`${B}/dashboard/college`); await college.fill('input[name=name]', dept); await college.click('button:has-text("Add department")'); await college.waitForSelector(`text=${dept}`);
+await student.goto(`${B}/dashboard/profile`); await student.check('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1500);
+await student.reload(); await student.selectOption('select[name=departmentId]', { label: dept }); await student.click('button:has-text("Save department")'); await student.waitForSelector('text=Saved');
+const dTitle = `Campus Drive ${tag}`;
+await college.goto(`${B}/dashboard/drives`); await college.selectOption('select[name=companyId]', { label: `Acme Labs ${tag}` }); await college.fill('input[name=title]', dTitle);
+await college.fill('textarea[name=description]', 'Hiring embedded interns. Aptitude round then interviews on campus.'); await college.fill('input[name=driveDate]', new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10)); await college.fill('input[name=gradYears]', '2026'); await college.check(`input[name=departmentIds]`);
+await college.click('button:has-text("Propose to company")'); await college.waitForSelector('text=Proposed.');
+await college.reload(); await college.locator(`a:has-text("${dTitle}")`).click(); await college.waitForSelector('text=Waiting for Acme Labs');
+ok(await college.locator('button:has-text("Invite eligible students")').count() === 0, 'students cannot be invited before the company confirms');
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator(`text=${dTitle}`).count() === 0, 'no invitation before confirmation');
+await employer.goto(`${B}/dashboard/drives`); await employer.locator('section', { hasText: dTitle }).locator('button:has-text("Confirm")').click(); await employer.waitForTimeout(1500);
+await college.reload(); await college.locator('button:has-text("Invite eligible students")').click(); await college.waitForSelector(`text=Test Student ${tag}`);
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator(`text=${dTitle}`).count() > 0 && await student.locator('button:has-text("Accept and share")').count() > 0, 'opted-in eligible student is invited');
+await student2.goto(`${B}/dashboard/drives`); ok(await student2.locator(`text=${dTitle}`).count() === 0, 'students outside the college or criteria are not invited');
+await employer.goto(`${B}/dashboard/drives`); await employer.locator('section', { hasText: dTitle }).locator('a:has-text("Participants")').click(); ok(await employer.locator(`text=Test Student ${tag}`).count() === 0, 'company sees no student before they accept');
+await student.locator('button:has-text("Accept and share")').click(); await student.waitForTimeout(1500);
+await employer.reload(); ok(await employer.locator(`text=Test Student ${tag}`).count() > 0 && await employer.locator('a:has-text("Talent Passport")').count() > 0, 'company sees a student only after they accept');
+ok(!(await employer.content()).includes(`stu${tag}@example.com`), 'drive participants never expose email');
+await employer.locator('button:text-is("shortlisted")').click(); await employer.waitForTimeout(1500);
+await student.goto(`${B}/dashboard/drives`); ok(await student.locator('text=shortlisted').count() > 0, 'student sees the drive outcome');
+const dUrl = college.url();
+await college.goto(`${B}/dashboard/drives`); await college.locator(`a:has-text("${dTitle}")`).click(); await college.waitForURL(/\/drives\/[a-z0-9]+$/); await college.waitForSelector('text=Declined'); ok(await college.locator('li >> text=shortlisted').count() > 0, 'college sees outcomes for participating students');
+ok((await rec3.goto(`${B}/dashboard/drives/${dUrl.split('/').pop()}`)).status() === 404, 'unrelated recruiter cannot open a drive');
+const rep = await college.request.get(`${B}/api/college/report?type=roster`); const repTxt = await rep.text();
+ok(rep.status() === 200 && (rep.headers()['content-type'] || '').includes('text/csv') && repTxt.includes(`Test Student ${tag}`) && repTxt.includes(dept) && !repTxt.includes('@example.com'), 'roster CSV includes opted-in students, no emails');
+const rep2 = await college.request.get(`${B}/api/college/report?type=drives`); ok((await rep2.text()).includes(dTitle), 'drives CSV lists the drive');
+ok((await student.request.get(`${B}/api/college/report?type=roster`)).status() === 403 && (await anon.request.get(`${B}/api/college/report?type=roster`)).status() === 403, 'reports are blocked for students and anonymous users');
+await student.goto(`${B}/dashboard/profile`); await student.uncheck('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1200);
+const rep3 = await college.request.get(`${B}/api/college/report?type=roster`); ok(!(await rep3.text()).includes(`Test Student ${tag}`), 'withdrawing consent removes the student from reports');
+
+// --- copilot: explainable recommendations, profile review, NL search, talent match notes, JD check, privacy in talent search
+const post = async (title, skills, years) => {
+  await employer.goto(`${B}/dashboard/roles`);
+  await employer.fill('input[name=title]', title); await employer.fill('textarea[name=description]', 'You will work on firmware for our sensor line with a small team. We use an assignment and two interview rounds.');
+  await employer.fill('input[name=payText]', '₹10,000 / month'); await employer.fill('input[name=monthlyINR]', '10000'); await employer.fill('input[name=location]', 'Hyderabad');
+  await employer.fill('input[name=deadline]', '2027-03-01'); await employer.fill('input[name=eligibility]', 'Graduates'); await employer.fill('input[name=gradYears]', years); await employer.fill('input[name=skills]', skills);
+  await employer.click('button:has-text("Submit for review")'); await employer.waitForSelector('text=Submitted for review');
+  await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: title }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1200);
+};
+const fwTitle = `Firmware Intern ${tag}`, futTitle = `Future Intern ${tag}`;
+await post(fwTitle, 'Embedded C, RTOS', '2026'); await post(futTitle, 'Embedded C', '2031');
+await employer.goto(`${B}/dashboard/talent`); const fwIdPub = await employer.locator(`select[name=opp] option:has-text("${fwTitle}")`).getAttribute('value');
+await student.goto(`${B}/dashboard/copilot?listing=${fwIdPub}`);
+const cp = await student.locator('main, body').first().innerText();
+ok(cp.includes(fwTitle) && cp.includes('Evidence-backed: Embedded C') && cp.includes('Not found on the profile: RTOS'), 'recommendation explains matched (evidence-backed) and missing skills');
+await student.goto(`${B}/dashboard/copilot`); ok(!(await student.locator('main, body').first().innerText()).includes(futTitle), 'listings for a different graduation year are not recommended');
+await student.goto(`${B}/dashboard/copilot?listing=${fwIdPub}`);
+ok(await student.locator('summary:has-text("How to close the gap")').count() > 0 && await student.locator('summary:has-text("Practice questions")').count() > 0, 'gap tips and practice questions are offered');
+ok(await student.locator('text=Profile review').count() > 0, 'profile review is shown');
+await anon.goto(`${B}/opportunities?nl=${encodeURIComponent('remote internship paid')}`); ok(/type=INTERNSHIP/.test(anon.url()) && /mode=REMOTE/.test(anon.url()) && /pay=paid/.test(anon.url()) && await anon.locator('text=We read that as').count() > 0, 'natural-language search maps onto filters and says how it was read');
+await anon.goto(`${B}/opportunities?nl=${encodeURIComponent('<script>alert(1)</script> ;;; DROP')}`); ok(await anon.locator('h1').count() > 0, 'hostile natural-language input does not break the page');
+await employer.goto(`${B}/dashboard/talent?q=ECE`); const seen = await employer.locator(`text=Test Student ${tag}`).count() > 0;
+const fwId = await employer.locator(`select[name=opp] option:has-text("${fwTitle}")`).getAttribute('value');
+await employer.goto(`${B}/dashboard/talent?q=ECE&opp=${fwId}&sort=match`); ok(seen && (await employer.locator('[data-testid=match-note]').first().innerText()).includes('Evidence-backed: Embedded C'), 'talent search explains the match against a listing');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/talent?q=ECE`); ok(await employer.locator(`text=Test Student ${tag}`).count() === 0, 'private Passports never appear in recruiter search');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/jd-check`); await employer.fill('textarea#jd', 'Join our team! Pay a registration fee of 500 and we guarantee a job. Message us on WhatsApp.'); await employer.click('button:has-text("Check description")');
+ok(await employer.locator('text=Not allowed').count() >= 2, 'JD check flags fees and guaranteed-job promises');
+await student.goto(`${B}/dashboard/jd-check`); ok(!/jd-check/.test(student.url()), 'students cannot open the recruiter JD check');
+
+// --- plans: limits are enforced server-side; admins assign plans; insights are admin-only
+const lim = await user(); await auth(lim, 'join', `lim${tag}@example.com`, { name: 'Starter Recruiter', role: 'EMPLOYER' });
+await lim.goto(`${B}/dashboard/company`); await lim.fill('input[name=name]', `Starter Co ${tag}`); await lim.fill('input[name=website]', 'https://starter.example.com'); await lim.click('button:has-text("Submit for verification")'); await lim.waitForSelector("text=We'll notify you");
+await admin.goto(`${B}/dashboard`); await admin.locator('li', { hasText: `Starter Co ${tag}` }).locator('button:has-text("Verify")').click(); await admin.waitForTimeout(1200);
+for (let i = 1; i <= 4; i++) {
+  await lim.goto(`${B}/dashboard/roles`); await lim.fill('input[name=title]', `Starter Role ${i} ${tag}`); await lim.fill('textarea[name=description]', 'A small role used to test plan limits, with enough text to pass validation.');
+  await lim.fill('input[name=payText]', '₹10,000 / month'); await lim.fill('input[name=monthlyINR]', '10000'); await lim.fill('input[name=location]', 'Pune'); await lim.fill('input[name=deadline]', '2027-03-01'); await lim.fill('input[name=eligibility]', 'Graduates');
+  await lim.click('button:has-text("Submit for review")');
+  if (i < 4) await lim.waitForSelector('text=Submitted for review'); else { await lim.waitForSelector('form [role=alert]'); ok((await lim.locator('form [role=alert]').innerText()).includes('Starter plan allows 3'), 'Starter plan refuses a 4th active listing'); }
+}
+await lim.goto(`${B}/dashboard/company`); ok(await lim.locator('text=Starter plan').count() > 0 && await lim.locator('text=3 / 3').count() > 0, 'company page shows plan usage');
+await lim.fill('input[name=email]', `a${tag}@example.com`); await lim.click('button:has-text("Send invitation")'); await lim.waitForSelector('text=Invitation saved');
+await lim.fill('input[name=email]', `b${tag}@example.com`); await lim.click('button:has-text("Send invitation")'); await lim.waitForSelector('p[role=alert]'); ok((await lim.locator('p[role=alert]').first().innerText()).includes('Starter plan allows 2'), 'Starter plan caps team size including pending invitations');
+await admin.goto(`${B}/dashboard/plans?q=${encodeURIComponent('Starter Co ' + tag)}`); await admin.locator('li', { hasText: `Starter Co ${tag}` }).locator('button:text-is("Growth")').click(); await admin.waitForTimeout(1200);
+await lim.goto(`${B}/dashboard/roles`); await lim.fill('input[name=title]', `Starter Role 4 ${tag}`); await lim.fill('textarea[name=description]', 'A small role used to test plan limits, with enough text to pass validation.');
+await lim.fill('input[name=payText]', '₹10,000 / month'); await lim.fill('input[name=monthlyINR]', '10000'); await lim.fill('input[name=location]', 'Pune'); await lim.fill('input[name=deadline]', '2027-03-01'); await lim.fill('input[name=eligibility]', 'Graduates'); await lim.click('button:has-text("Submit for review")'); await lim.waitForSelector('text=Submitted for review');
+ok(true, 'upgrading the plan lifts the limit immediately');
+await student.goto(`${B}/dashboard/plans`); ok(!/plans/.test(student.url()), 'students cannot open the plans page'); await employer.goto(`${B}/dashboard/insights`); ok(!/insights/.test(employer.url()), 'recruiters cannot open platform insights');
+await admin.goto(`${B}/dashboard/insights`); ok(await admin.locator('text=Platform insights').count() > 0 && await admin.locator('text=New accounts per week').count() > 0, 'admin insights show real weekly counts');
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Applications per week').count() > 0, 'recruiter analytics include weekly applications');
+
+// --- Talent Passport: username, evidence labels, verification, privacy, resume
+const uname = `pp${tag}`.toLowerCase();
+await student.goto(`${B}/dashboard/passport`);
+await student.fill('input[name=username]', 'admin'); await student.click('button:has-text("Save username")'); await student.waitForSelector('p[role=alert]');
+ok((await student.locator('p[role=alert]').first().innerText()).includes('reserved'), 'reserved username refused');
+await student.fill('input[name=username]', uname); await student.click('button:has-text("Save username")'); await student.waitForSelector('text=Saved');
+const pRes = await anon.goto(`${B}/talent/${uname}`); ok(pRes.status() === 200, 'Passport reachable at /talent/<username>');
+const legacy = await anon.goto(`${B}/t/${uname}`); ok(legacy.url().endsWith(`/talent/${uname}`), 'legacy /t/ link redirects to Passport');
+const s2 = await user(); await auth(s2, 'join', `stu3${tag}@example.com`, { name: `Third Student ${tag}`, role: 'STUDENT' });
+await s2.goto(`${B}/dashboard/passport`); await s2.fill('input[name=username]', uname); await s2.click('button:has-text("Save username")'); await s2.waitForSelector('p[role=alert]');
+ok((await s2.locator('p[role=alert]').first().innerText()).includes('taken'), 'duplicate username refused');
+await student.selectOption('select[name=kind]', 'CERTIFICATE'); await student.fill('input[name=title]', `Cloud Basics ${tag}`); await student.fill('input[name=org]', 'Example Academy'); await student.fill('input[name=url]', 'https://example.com/cert/123');
+await student.click('button:has-text("Add entry")'); await student.waitForSelector(`text=Cloud Basics ${tag}`);
+await anon.goto(`${B}/talent/${uname}`);
+ok(await anon.locator('text=External certificate · not verified by Kalwings').count() > 0 && await anon.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('text="Verified by Kalwings"').count() === 0, 'unverified certificate is labelled external, not verified');
+await student.reload(); await student.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('button:has-text("Request verification")').click(); await student.waitForSelector('text=Verification requested');
+await admin.goto(`${B}/dashboard/credentials`); await admin.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('button:has-text("Verify")').click(); await admin.waitForTimeout(1200);
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator('li', { hasText: `Cloud Basics ${tag}` }).locator('text="Verified by Kalwings"').count() > 0, 'admin verification shows the verified badge');
+const nonAdmin = await student.goto(`${B}/dashboard/credentials`); ok(!/credentials/.test(student.url()) || (await student.locator('text=Passport verification').count()) === 0, 'students cannot open the verification queue');
+await student.goto(`${B}/dashboard/passport`);
+await student.selectOption('select[name=entriesVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator(`text=Cloud Basics ${tag}`).count() === 0, 'private entries hidden from public');
+await student.goto(`${B}/talent/${uname}`); ok(await student.locator(`text=Cloud Basics ${tag}`).count() > 0, 'owner still sees private entries');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'RECRUITERS'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}`); ok(await anon.locator('text=This Talent Passport is limited').count() > 0 && await anon.locator(`text=Test Student`).count() === 0, 'recruiter-only Passport is gated and hides the name from the public');
+await employer.goto(`${B}/talent/${uname}`); ok(await employer.locator('h1:has-text("Test Student")').count() > 0, 'verified employer can open a recruiter-only Passport');
+const rr = await anon.goto(`${B}/talent/${uname}/resume`); ok(rr.status() === 404, 'resume respects recruiter-only visibility');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await anon.goto(`${B}/talent/${uname}/resume`); const rtxt = await anon.locator('article').innerText(); ok(rtxt.includes('Test Student') && !rtxt.includes(`stu${tag}@example.com`) && !rtxt.includes('Cloud Basics'), 'resume shows profile, hides email and private entries');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+ok((await (await anon.goto(`${B}/talent/${uname}`)).status()) === 404, 'private Passport is 404 to everyone else');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.selectOption('select[name=entriesVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+
 // --- admin suspends / restores users
 await student.goto(`${B}/dashboard`); const cardHref = await student.locator('a:has-text("View my Talent Card")').getAttribute('href');
 const suspend = async (who, reason) => {
   await admin.goto(`${B}/dashboard/users?q=${who}`);
   const row = admin.locator('li', { hasText: who }).first(); await row.locator('summary:has-text("Suspend")').click();
-  await row.locator('input[name=reason]').fill(reason); await row.locator('button:has-text("Suspend account")').click(); await admin.waitForSelector('text=Suspended');
+  await row.locator('input[name=reason]').fill(reason); await row.locator('button:has-text("Suspend account")').click(); await admin.waitForSelector('li:has-text("' + who + '") >> text=Suspended', { timeout: 15000 }); await admin.waitForTimeout(500);
 };
 await admin.goto(`${B}/dashboard/users?q=admin@sample`); ok(await admin.locator('li', { hasText: 'admin@sample.kalwings.test' }).locator('summary:has-text("Suspend")').count() === 0, 'platform admins have no suspend control');
 await suspend(`stu${tag}@example.com`, 'Posting fake projects (test)');

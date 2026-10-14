@@ -59,6 +59,7 @@ jobs:
           npx tsx e2e/ratelimit.ts check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run test:unit
       - run: npm run build
       - name: Smoke test (health endpoint)
         run: |

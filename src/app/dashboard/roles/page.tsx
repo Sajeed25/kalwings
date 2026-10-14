@@ -1,3 +1,4 @@
+import { TYPE_KEYS, TYPE_LABEL } from "@/lib/opportunity-types";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionForm, Area, Field } from "@/components/dash/action-form";
@@ -19,7 +20,7 @@ export default async function Page() {
           <ActionForm action={postOpportunity} reset submit="Submit for review" success="Submitted for review">
             <Field label="Title" name="title" required />
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm font-semibold">Type<select name="type" className={sel}><option value="INTERNSHIP">Internship</option><option value="JOB">Job</option><option value="CHALLENGE">Challenge</option></select></label>
+              <label className="block text-sm font-semibold">Type<select name="type" className={sel}>{TYPE_KEYS.filter((k) => k !== "CHALLENGE").map((k) => <option key={k} value={k}>{TYPE_LABEL[k]}</option>)}</select></label>
               <label className="block text-sm font-semibold">Work mode<select name="workMode" className={sel}><option value="REMOTE">Remote</option><option value="HYBRID">Hybrid</option><option value="ONSITE">On-site</option></select></label>
             </div>
             <Area label="Description" name="description" required minLength={30} />

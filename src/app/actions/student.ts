@@ -2,7 +2,9 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
-import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, csv } from "@/lib/validation";
+import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, privacySchema, entrySchema, submissionSchema, csv } from "@/lib/validation";
+import { usernameSchema } from "@/lib/passport";
+import { WITHDRAWABLE } from "@/lib/stages";
 import { completeness } from "@/lib/completeness";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
@@ -62,7 +64,7 @@ export async function saveCollege(_: Result, fd: FormData): Promise<Result> {
   const collegeId = r.data.collegeId || null;
   if (collegeId && !(await db.college.findFirst({ where: { id: collegeId, status: "VERIFIED" } }))) return { error: "Choose a college from the list." };
   // Consent is only meaningful with a college, and is off unless ticked.
-  await db.studentProfile.update({ where: { id: p.id }, data: { collegeId, shareWithCollege: !!collegeId && r.data.share === "on" } });
+  await db.studentProfile.update({ where: { id: p.id }, data: { collegeId, departmentId: collegeId === p.collegeId ? p.departmentId : null, shareWithCollege: !!collegeId && r.data.share === "on" } });
   revalidatePath("/dashboard", "layout");
   return { ok: true };
 }
@@ -88,7 +90,7 @@ export async function applyTo(opportunityId: string) {
 
 export async function withdrawApplication(id: string) {
   const { p } = await me();
-  await db.application.updateMany({ where: { id, studentId: p.id, stage: { in: ["APPLIED", "SHORTLISTED", "INTERVIEW"] } }, data: { stage: "WITHDRAWN" } });
+  await db.application.updateMany({ where: { id, studentId: p.id, stage: { in: WITHDRAWABLE } }, data: { stage: "WITHDRAWN" } });
   revalidatePath("/dashboard", "layout");
 }
 
@@ -145,5 +147,94 @@ export async function cancelSession(id: string) {
 export async function markNotificationsRead() {
   const u = await requireActionRole();
   await db.notification.updateMany({ where: { userId: u.id, readAt: null }, data: { readAt: new Date() } });
+  revalidatePath("/dashboard", "layout");
+}
+
+export async function saveUsername(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = usernameSchema.safeParse(String(fd.get("username") ?? ""));
+  if (!r.success) return { error: r.error.issues[0]?.message ?? "Invalid username", fieldErrors: { username: r.error.issues[0]?.message ?? "Invalid" } };
+  const taken = await db.studentProfile.findFirst({ where: { OR: [{ username: r.data }, { slug: r.data }], NOT: { id: p.id } }, select: { id: true } });
+  if (taken) return { error: "That username is taken." };
+  try { await db.studentProfile.update({ where: { id: p.id }, data: { username: r.data } }); } catch { return { error: "That username is taken." }; }
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function savePrivacy(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = privacySchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  await db.studentProfile.update({ where: { id: p.id }, data: r.data });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function addEntry(_: Result, fd: FormData): Promise<Result> {
+  const { p } = await me();
+  const r = entrySchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  if ((await db.passportEntry.count({ where: { studentId: p.id } })) >= 40) return { error: "Entry limit reached (40)." };
+  const d = r.data;
+  await db.passportEntry.create({ data: { studentId: p.id, kind: d.kind, title: d.title, org: d.org || null, year: d.year ?? null, url: d.url ?? null, summary: d.summary || null } });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function deleteEntry(id: string) {
+  const { p } = await me();
+  await db.passportEntry.deleteMany({ where: { id, studentId: p.id } }); // scoped to owner
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Verification needs evidence: an admin checks the URL. Nothing is verified automatically. */
+export async function requestEntryVerification(id: string) {
+  const { p } = await me();
+  const e = await db.passportEntry.findFirst({ where: { id, studentId: p.id, status: "PENDING" } });
+  if (!e || !e.url) return;
+  await db.passportEntry.update({ where: { id: e.id }, data: { verifyRequested: true } });
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Candidate response to an offer. Declining withdraws the application. */
+export async function respondOffer(applicationId: string, accept: boolean) {
+  const { u, p } = await me();
+  const app = await db.application.findFirst({ where: { id: applicationId, studentId: p.id, stage: "OFFER", offer: { status: "EXTENDED" } }, include: { offer: true, opportunity: { include: { company: { include: { members: true } } } } } });
+  if (!app?.offer) return;
+  await db.$transaction([
+    db.offer.update({ where: { id: app.offer.id }, data: { status: accept ? "ACCEPTED" : "DECLINED", respondedAt: new Date() } }),
+    ...(accept ? [] : [db.application.update({ where: { id: app.id }, data: { stage: "WITHDRAWN" } })]),
+  ]);
+  await Promise.all(app.opportunity.company.members.map((m) => notify(m.userId, accept ? "Offer accepted" : "Offer declined", `${u.name} · ${app.opportunity.title}`)));
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Submit (or resubmit before review) work for a challenge. One submission per student per challenge. */
+export async function submitWork(_: Result, fd: FormData): Promise<Result> {
+  const { u, p } = await me();
+  const r = submissionSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const ch = await db.challenge.findUnique({ where: { id: r.data.challengeId }, include: { opportunity: { include: { company: { include: { members: true } } } } } });
+  const o = ch?.opportunity;
+  if (!ch || !o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) return { error: "This challenge isn't open for submissions." };
+  if (!p.headline) return { error: "Complete your profile before submitting." };
+  if (r.data.teamNote && !ch.allowTeams) return { error: "This challenge is individual. Remove the team note." };
+  const key = { challengeId_studentId: { challengeId: ch.id, studentId: p.id } };
+  const existing = await db.submission.findUnique({ where: key });
+  if (existing && existing.status !== "SUBMITTED" && existing.status !== "WITHDRAWN") return { error: "This submission has already been reviewed or withdrawn." };
+  const data = { title: r.data.title, summary: r.data.summary, workUrl: r.data.workUrl, teamNote: r.data.teamNote || null, status: "SUBMITTED" as const };
+  if (existing) await db.submission.update({ where: key, data });
+  else {
+    await db.submission.create({ data: { ...data, challengeId: ch.id, studentId: p.id } });
+    await Promise.all(o.company.members.map((m) => notify(m.userId, "New challenge submission", `${u.name} submitted to ${o.title}`)));
+  }
+  revalidatePath("/dashboard", "layout");
+  revalidatePath(`/challenges/${o.id}`);
+  return { ok: true };
+}
+
+export async function withdrawSubmission(id: string) {
+  const { p } = await me();
+  await db.submission.updateMany({ where: { id, studentId: p.id, status: "SUBMITTED" }, data: { status: "WITHDRAWN" } });
   revalidatePath("/dashboard", "layout");
 }

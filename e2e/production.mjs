@@ -7,7 +7,7 @@ let bad=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) bad++;};
 const ctx=await b.newContext(); const p=await ctx.newPage(); const viol=[];
 p.on('console',m=>{ if(m.type()==='error'||/content security/i.test(m.text())) viol.push(m.text().slice(0,160)); }); p.on('pageerror',e=>viol.push('PAGEERROR '+e.message));
 // public pages
-for (const path of ['/','/opportunities','/mentors','/contact','/login','/t/sample-student','/about']) { await p.goto(B+path,{waitUntil:'networkidle'}); }
+for (const path of ['/','/opportunities','/mentors','/contact','/login','/talent/sample-student','/about']) { await p.goto(B+path,{waitUntil:'networkidle'}); }
 ok(viol.length===0, 'no CSP/console errors on public pages '+(viol[0]||''));
 // meta + assets
 const html = await (await fetch(B+'/')).text();

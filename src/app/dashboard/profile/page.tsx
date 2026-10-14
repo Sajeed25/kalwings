@@ -4,11 +4,13 @@ import { requirePageRole } from "@/lib/session";
 import { ActionForm, Area, Field, ActionButton } from "@/components/dash/action-form";
 import { PageTitle, Panel } from "@/components/dash/ui";
 import { saveCollege, saveProfile, toggleContactVisible } from "@/app/actions/student";
+import { setDepartment } from "@/app/actions/drives";
 import { ImageUpload } from "@/components/dash/image-upload";
 
 export default async function Page() {
   const u = await requirePageRole("STUDENT");
   const p = await db.studentProfile.findUniqueOrThrow({ where: { userId: u.id } });
+  const depts = p.collegeId ? await db.department.findMany({ where: { collegeId: p.collegeId }, orderBy: { name: "asc" } }) : [];
   const colleges = await db.college.findMany({ where: { status: "VERIFIED" }, orderBy: { name: "asc" } });
   return (
     <>
@@ -35,6 +37,14 @@ export default async function Page() {
             <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="share" defaultChecked={p.shareWithCollege} className="mt-1 h-4 w-4 accent-neon" /><span>Let my college&apos;s placement team see my name, headline and progress. <span className="text-ink-soft">Never your email or phone. You can turn this off any time.</span></span></label>
           </ActionForm>
         </Panel>
+        {depts.length > 0 && (
+          <Panel title="Department">
+            <ActionForm action={setDepartment} submit="Save department" className="space-y-3">
+              <label className="block text-sm font-semibold">Your department
+                <select name="departmentId" defaultValue={p.departmentId ?? ""} className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3"><option value="">Not listed</option>{depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
+              </label>
+            </ActionForm>
+          </Panel>)}
         <Panel title="Privacy">
           <p className="text-sm text-ink-soft">Your email and phone are <b>private by default</b>. Employers only see them if you opt in below.</p>
           <p className="mt-4 text-sm">Contact details: <b>{p.contactVisible ? "visible to verified employers you apply to" : "hidden"}</b></p>

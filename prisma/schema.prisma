@@ -26,6 +26,10 @@ enum VerificationStatus {
 enum OpportunityType {
   INTERNSHIP
   JOB
+  GRADUATE_TRAINEE
+  APPRENTICESHIP
+  CAMPUS
+  FREELANCE
   CHALLENGE
 }
 
@@ -37,10 +41,115 @@ enum WorkMode {
 
 enum ApplicationStage {
   APPLIED
+  UNDER_REVIEW
   SHORTLISTED
   INTERVIEW
   OFFER
+  HIRED
   REJECTED
+  WITHDRAWN
+}
+
+enum ChallengeKind {
+  CODING
+  SOFTWARE
+  DATA_SQL
+  DESIGN
+  BUSINESS_CASE
+  MARKETING
+  HARDWARE_IOT
+  RESEARCH
+  OTHER
+}
+
+enum ChallengeStyle {
+  COMPETITIVE
+  COLLABORATIVE
+  PORTFOLIO
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  SHORTLISTED
+  NOT_SELECTED
+  WITHDRAWN
+}
+
+enum AssessmentKind {
+  CODING
+  WRITTEN
+}
+
+enum AttemptStatus {
+  PASSED
+  FAILED
+  ERROR
+  PENDING_REVIEW
+  REVIEWED
+}
+
+enum GroupKind {
+  COLLEGE
+  INTEREST
+  PROJECT
+}
+
+enum GroupRole {
+  MEMBER
+  MOD
+}
+
+enum PostKind {
+  DISCUSSION
+  QUESTION
+  PROJECT_CALL
+  EVENT
+}
+
+enum DriveStatus {
+  PROPOSED
+  CONFIRMED
+  DECLINED
+  CLOSED
+}
+
+enum InviteStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+}
+
+enum DriveOutcome {
+  NONE
+  SHORTLISTED
+  OFFERED
+  HIRED
+  NOT_SELECTED
+}
+
+enum Plan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum InterviewMode {
+  VIDEO
+  PHONE
+  ONSITE
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  EXTENDED
+  ACCEPTED
+  DECLINED
   WITHDRAWN
 }
 
@@ -50,6 +159,19 @@ enum SessionStatus {
   DECLINED
   COMPLETED
   CANCELLED
+}
+
+enum Visibility {
+  PUBLIC
+  RECRUITERS
+  PRIVATE
+}
+
+enum EntryKind {
+  EXPERIENCE
+  ACHIEVEMENT
+  HACKATHON
+  CERTIFICATE
 }
 
 model User {
@@ -64,43 +186,79 @@ model User {
   role               Role      @default(STUDENT)
   createdAt          DateTime  @default(now())
 
-  student       StudentProfile?
-  mentor        MentorProfile?
-  employer      EmployerMember?
-  college       CollegeAdmin?
-  notifications Notification[]
-  auditLogs     AuditLog[]
-  messages      Message[]
-  reports       Report[]
+  student          StudentProfile?
+  mentor           MentorProfile?
+  employer         EmployerMember?
+  college          CollegeAdmin?
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  messages         Message[]
+  reports          Report[]
+  groupMemberships GroupMember[]
+  posts            Post[]
+  comments         Comment[]
+  blocksMade       Block[]         @relation("blocker")
+  blocksReceived   Block[]         @relation("blocked")
 }
 
 model StudentProfile {
-  avatarId         String? // Upload.id of the profile photo
-  shareWithCollege Boolean            @default(false) // consent: name + progress visible to their college admins
-  isSample         Boolean            @default(false) // seeded placeholder; UI shows a "Sample" tag
-  id               String             @id @default(cuid())
-  userId           String             @unique
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug             String             @unique // public Talent Card URL
-  headline         String?
-  bio              String?            @db.Text
-  city             String?
-  githubUrl        String?            @db.VarChar(400)
-  skillsClaimed    Json?
-  lookingFor       String?            @db.Text
-  graduationYear   Int?
-  collegeId        String?
-  college          College?           @relation(fields: [collegeId], references: [id])
+  avatarId               String? // Upload.id of the profile photo
+  username               String?             @unique @db.VarChar(30) // public Passport URL /talent/<username>; falls back to slug
+  passportVisibility     Visibility          @default(PUBLIC)
+  projectsVisibility     Visibility          @default(PUBLIC)
+  endorsementsVisibility Visibility          @default(PUBLIC)
+  entriesVisibility      Visibility          @default(PUBLIC)
+  entries                PassportEntry[]
+  shareWithCollege       Boolean             @default(false) // consent: name + progress visible to their college admins
+  isSample               Boolean             @default(false) // seeded placeholder; UI shows a "Sample" tag
+  id                     String              @id @default(cuid())
+  userId                 String              @unique
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                   String              @unique // public Talent Card URL
+  headline               String?
+  bio                    String?             @db.Text
+  city                   String?
+  githubUrl              String?             @db.VarChar(400)
+  skillsClaimed          Json?
+  lookingFor             String?             @db.Text
+  graduationYear         Int?
+  collegeId              String?
+  college                College?            @relation(fields: [collegeId], references: [id])
   // Contact details live on User and are NEVER returned by public queries.
-  contactVisible   Boolean            @default(false)
-  completeness     Int                @default(0) // 0–100 profile completeness score
-  projects         Project[]
-  skills           SkillEvidence[]
-  applications     Application[]
-  savedRoles       SavedOpportunity[]
-  sessions         MentorSession[]
-  endorsements     Endorsement[]
-  shortlistedBy    Shortlist[]
+  contactVisible         Boolean             @default(false)
+  completeness           Int                 @default(0) // 0–100 profile completeness score
+  projects               Project[]
+  skills                 SkillEvidence[]
+  applications           Application[]
+  savedRoles             SavedOpportunity[]
+  sessions               MentorSession[]
+  endorsements           Endorsement[]
+  shortlistedBy          Shortlist[]
+  submissions            Submission[]
+  assessmentAttempts     AssessmentAttempt[]
+  department             Department?         @relation(fields: [departmentId], references: [id])
+  departmentId           String?
+  driveInvites           DriveInvite[]
+}
+
+// Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL.
+model PassportEntry {
+  id              String             @id @default(cuid())
+  studentId       String
+  student         StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  kind            EntryKind
+  title           String             @db.VarChar(120)
+  org             String?            @db.VarChar(120)
+  year            Int?
+  url             String?            @db.VarChar(400)
+  summary         String?            @db.Text
+  verifyRequested Boolean            @default(false)
+  status          VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  createdAt       DateTime           @default(now())
+
+  @@index([studentId])
+  @@index([verifyRequested, status])
 }
 
 model Project {
@@ -189,8 +347,13 @@ model Company {
   status        VerificationStatus @default(PENDING) // no posting/search access until VERIFIED
   verifiedAt    DateTime?
   about         String?            @db.Text
+  assessments   Assessment[]
   shortlists    Shortlist[]
+  plan          Plan               @default(STARTER) // set by a platform admin; no online payments yet
+  stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
+  invites       CompanyInvite[]
   members       EmployerMember[]
+  drives        Drive[]
   opportunities Opportunity[]
 }
 
@@ -224,6 +387,7 @@ model Opportunity {
   deadline     DateTime
   sponsored    Boolean            @default(false) // must be labelled "Sponsored"; never implies verification
   moderated    VerificationStatus @default(PENDING)
+  challenge    Challenge?
   applications Application[]
   saved        SavedOpportunity[]
   createdAt    DateTime           @default(now())
@@ -238,9 +402,246 @@ model Application {
   stage         ApplicationStage @default(APPLIED)
   employerNotes String?          @db.Text
   messages      Message[]
+  interviews    Interview[]
+  offer         Offer?
   createdAt     DateTime         @default(now())
 
   @@unique([opportunityId, studentId])
+}
+
+// Details of an Opportunity whose type is CHALLENGE. Rubric: [{criterion, max, description}]. Scoring is by a human reviewer.
+model Challenge {
+  id            String         @id @default(cuid())
+  opportunityId String         @unique
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  kind          ChallengeKind
+  style         ChallengeStyle @default(PORTFOLIO)
+  allowTeams    Boolean        @default(false)
+  brief         String         @db.Text
+  rubric        Json
+  skillTag      String?        @db.VarChar(60) // skill a reviewer may award as verified evidence
+  submissions   Submission[]
+  createdAt     DateTime       @default(now())
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  challengeId String
+  challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String           @db.VarChar(120)
+  summary     String           @db.Text
+  workUrl     String           @db.VarChar(400) // repository, document or demo link
+  teamNote    String?          @db.VarChar(300) // self-declared teammates and roles
+  status      SubmissionStatus @default(SUBMITTED)
+  scores      Json? // [{criterion, points, comment}] from the human reviewer
+  totalScore  Int?
+  maxScore    Int?
+  feedback    String?          @db.Text
+  reviewedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@unique([challengeId, studentId])
+  @@index([challengeId, status])
+}
+
+// CODING: items = [{input, expected, hidden}] run in an isolated sandbox. WRITTEN: items = [{prompt, max}] scored by a human.
+model Assessment {
+  id           String              @id @default(cuid())
+  companyId    String
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind         AssessmentKind
+  title        String              @db.VarChar(120)
+  instructions String              @db.Text
+  languages    Json?
+  items        Json
+  timeLimitMs  Int                 @default(2000)
+  memoryMb     Int                 @default(128)
+  closesAt     DateTime?
+  closedAt     DateTime?
+  attempts     AssessmentAttempt[]
+  createdAt    DateTime            @default(now())
+}
+
+model AssessmentAttempt {
+  id           String         @id @default(cuid())
+  assessmentId String
+  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  language     String?        @db.VarChar(20)
+  code         String?        @db.Text
+  answers      Json?
+  status       AttemptStatus
+  results      Json? // coding: per-test outcome (hidden tests never expose input or expected output)
+  scores       Json? // written: [{prompt, points, comment}] from the reviewer
+  passed       Int?
+  total        Int?
+  feedback     String?        @db.Text
+  reviewedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([assessmentId, studentId, createdAt])
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  slug        String        @unique @db.VarChar(60)
+  name        String        @db.VarChar(80)
+  description String        @db.VarChar(500)
+  kind        GroupKind
+  collegeId   String?
+  createdById String
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  members     GroupMember[]
+  posts       Post[]
+
+  @@index([kind, archivedAt])
+}
+
+model GroupMember {
+  groupId  String
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+// Chronological, no ranking or likes: the feed rewards usefulness, not engagement.
+model Post {
+  id        String    @id @default(cuid())
+  groupId   String
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  kind      PostKind
+  title     String    @db.VarChar(140)
+  body      String    @db.Text
+  tags      Json?
+  eventAt   DateTime?
+  hiddenAt  DateTime?
+  createdAt DateTime  @default(now())
+  comments  Comment[]
+
+  @@index([groupId, createdAt])
+  @@index([kind, createdAt])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String    @db.Text
+  hiddenAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([postId, createdAt])
+}
+
+model Block {
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+}
+
+model Department {
+  id        String           @id @default(cuid())
+  collegeId String
+  college   College          @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name      String           @db.VarChar(80)
+  students  StudentProfile[]
+
+  @@unique([collegeId, name])
+}
+
+// A campus placement drive: a college proposes it to a verified company, the company confirms, eligible students who opted in are invited.
+model Drive {
+  id              String        @id @default(cuid())
+  collegeId       String
+  college         College       @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String        @db.VarChar(120)
+  description     String        @db.Text
+  driveDate       DateTime
+  gradYears       Json?
+  departmentIds   Json?
+  minCompleteness Int           @default(0)
+  status          DriveStatus   @default(PROPOSED)
+  createdById     String
+  createdAt       DateTime      @default(now())
+  invites         DriveInvite[]
+
+  @@index([collegeId, createdAt])
+  @@index([companyId, status])
+}
+
+model DriveInvite {
+  id          String         @id @default(cuid())
+  driveId     String
+  drive       Drive          @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      InviteStatus   @default(INVITED)
+  outcome     DriveOutcome   @default(NONE)
+  invitedAt   DateTime       @default(now())
+  respondedAt DateTime?
+
+  @@unique([driveId, studentId])
+  @@index([studentId, status])
+}
+
+model Interview {
+  id            String          @id @default(cuid())
+  applicationId String
+  application   Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  scheduledAt   DateTime
+  minutes       Int             @default(30)
+  mode          InterviewMode
+  detail        String          @db.VarChar(300) // meeting link or address
+  notes         String?         @db.Text
+  status        InterviewStatus @default(SCHEDULED)
+  createdById   String
+  createdAt     DateTime        @default(now())
+
+  @@index([applicationId])
+  @@index([scheduledAt])
+}
+
+model Offer {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  summary       String      @db.VarChar(400) // role, pay and terms as stated to the candidate
+  joiningDate   DateTime?
+  status        OfferStatus @default(EXTENDED)
+  createdAt     DateTime    @default(now())
+  respondedAt   DateTime?
+}
+
+// A colleague is invited by email; they join after signing in (OTP-verified) with that email.
+model CompanyInvite {
+  id          String    @id @default(cuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email       String    @db.VarChar(254)
+  invitedById String
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+
+  @@unique([companyId, email])
 }
 
 model SavedOpportunity {
@@ -253,13 +654,15 @@ model SavedOpportunity {
 }
 
 model College {
-  status    VerificationStatus @default(PENDING) // students can pick it only once VERIFIED
-  createdAt DateTime           @default(now())
-  id        String             @id @default(cuid())
-  name      String
-  city      String?
-  students  StudentProfile[]
-  admins    CollegeAdmin[]
+  status      VerificationStatus @default(PENDING) // students can pick it only once VERIFIED
+  createdAt   DateTime           @default(now())
+  id          String             @id @default(cuid())
+  name        String
+  city        String?
+  students    StudentProfile[]
+  admins      CollegeAdmin[]
+  departments Department[]
+  drives      Drive[]
 }
 
 model CollegeAdmin {

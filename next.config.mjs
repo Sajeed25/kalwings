@@ -21,6 +21,16 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Friendly top-level routes from the product map. They forward to the role dashboards (sign-in is enforced there).
+  redirects: async () => [
+    ["/recruiter/dashboard", "/dashboard"], ["/recruiter/jobs", "/dashboard/roles"], ["/recruiter/candidates", "/dashboard/talent"],
+    ["/recruiter/applications", "/dashboard/pipeline"], ["/recruiter/challenges", "/dashboard/challenges"], ["/recruiter/interviews", "/dashboard/interviews"], ["/recruiter/analytics", "/dashboard/analytics"],
+    ["/college/dashboard", "/dashboard"], ["/college/students", "/dashboard/college"], ["/college/drives", "/dashboard/drives"], ["/college/reports", "/dashboard/college"],
+    ["/admin/dashboard", "/dashboard"], ["/admin/users", "/dashboard/users"], ["/admin/companies", "/dashboard"], ["/admin/opportunities", "/dashboard/moderation"], ["/admin/moderation", "/dashboard/reports"], ["/admin/settings", "/dashboard/audit"],
+    ["/assessments", "/dashboard/assessments"], ["/profile", "/dashboard/profile"], ["/portfolio", "/dashboard/portfolio"], ["/applications", "/dashboard/applications"], ["/messages", "/dashboard/applications"],
+    ["/notifications", "/dashboard/notifications"], ["/settings", "/dashboard/account"], ["/register", "/join"], ["/forgot-password", "/login"], ["/verify", "/login"],
+    ["/jobs", "/opportunities?type=JOB"], ["/internships", "/opportunities?type=INTERNSHIP"],
+  ].map(([source, destination]) => ({ source, destination, permanent: false })),
   headers: async () => [
     {
       source: "/(.*)",

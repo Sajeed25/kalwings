@@ -1,7 +1,8 @@
+import { TYPE_LABEL } from "@/lib/opportunity-types";
 import type { Metadata } from "next";
 import { asList } from "@/lib/lists";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import { Block } from "@/components/pages/shell";
@@ -31,6 +32,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const o = await load(id);
   if (!o) notFound();
+  if (o.type === "CHALLENGE") redirect(`/challenges/${o.id}`);
   const user = await getUser();
   let applied = false, saved = false;
   if (user?.role === "STUDENT") {
@@ -42,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
   const closed = !!o.closedAt || o.deadline < new Date();
   const ld = {
-    "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: o.type === "JOB" ? "FULL_TIME" : "INTERN",
+    "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: ["JOB","GRADUATE_TRAINEE","CAMPUS"].includes(o.type) ? "FULL_TIME" : o.type === "FREELANCE" ? "CONTRACTOR" : "INTERN",
     datePosted: o.createdAt.toISOString(), validThrough: o.deadline.toISOString(), hiringOrganization: { "@type": "Organization", name: o.company.name, sameAs: o.company.website },
     jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: o.location, addressCountry: "IN" } }, jobLocationType: o.workMode === "REMOTE" ? "TELECOMMUTE" : undefined,
     url: `${site.url}/opportunities/${o.id}`,
@@ -52,7 +54,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <Link href="/opportunities" className="text-sm font-semibold text-accent">← All opportunities</Link>
       <div className="mt-6 max-w-3xl">
-        <div className="flex gap-2"><Badge tone="accent">{o.type.toLowerCase()}</Badge>{o.company.isSample && <SampleTag />}</div>
+        <div className="flex gap-2"><Badge tone="accent">{TYPE_LABEL[o.type]}</Badge>{o.company.isSample && <SampleTag />}</div>
         <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{o.title}</h1>
         <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">
@@ -69,6 +71,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             : applied ? <Badge tone="accent">You&apos;ve applied — track it in your dashboard</Badge>
             : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id)}>Apply with my Talent Card</ActionButton>}
           {user?.role === "STUDENT" && <ActionButton variant="secondary" size="md" action={toggleSave.bind(null, o.id)}>{saved ? "Saved ✓" : "Save role"}</ActionButton>}
+          {user?.role === "STUDENT" && <Link href={`/dashboard/copilot?listing=${o.id}`} className="text-sm font-semibold text-accent underline">How well do I match?</Link>}
         </div>
         {user && (
           <details className="mt-10 text-sm"><summary className="cursor-pointer font-semibold text-ink-soft">Report this listing</summary>

@@ -10,18 +10,18 @@ export const metadata: Metadata = { title: "Dashboard", robots: { index: false }
 export const dynamic = "force-dynamic";
 
 const links: Record<Role, [string, string][]> = {
-  STUDENT: [["Overview", "/dashboard"], ["Profile", "/dashboard/profile"], ["Portfolio", "/dashboard/portfolio"], ["Applications", "/dashboard/applications"], ["Saved roles", "/dashboard/saved"], ["Mentor sessions", "/dashboard/mentoring"]],
-  MENTOR: [["Overview", "/dashboard"], ["Mentor profile", "/dashboard/mentoring"]],
-  EMPLOYER: [["Overview", "/dashboard"], ["Company", "/dashboard/company"], ["Roles & challenges", "/dashboard/roles"], ["Talent search", "/dashboard/talent"], ["Pipeline", "/dashboard/pipeline"]],
-  COLLEGE_ADMIN: [["Overview", "/dashboard"], ["College", "/dashboard/college"]],
-  PLATFORM_ADMIN: [["Overview & queues", "/dashboard"], ["Listing moderation", "/dashboard/moderation"], ["Reports", "/dashboard/reports"], ["Users", "/dashboard/users"], ["Contact inbox", "/dashboard/inbox"], ["Server errors", "/dashboard/errors"], ["Audit log", "/dashboard/audit"]],
+  STUDENT: [["Overview", "/dashboard"], ["Profile", "/dashboard/profile"], ["Portfolio", "/dashboard/portfolio"], ["Career copilot", "/dashboard/copilot"], ["Talent Passport", "/dashboard/passport"], ["Applications", "/dashboard/applications"], ["Interviews", "/dashboard/interviews"], ["Challenge submissions", "/dashboard/submissions"], ["Assessments", "/dashboard/assessments"], ["Campus drives", "/dashboard/drives"], ["Community", "/community"], ["Saved roles", "/dashboard/saved"], ["Mentor sessions", "/dashboard/mentoring"]],
+  MENTOR: [["Overview", "/dashboard"], ["Mentor profile", "/dashboard/mentoring"], ["Community", "/community"]],
+  EMPLOYER: [["Overview", "/dashboard"], ["Company", "/dashboard/company"], ["Roles", "/dashboard/roles"], ["Description check", "/dashboard/jd-check"], ["Challenges", "/dashboard/challenges"], ["Assessments", "/dashboard/assessments"], ["Talent search", "/dashboard/talent"], ["Pipeline", "/dashboard/pipeline"], ["Interviews", "/dashboard/interviews"], ["Analytics", "/dashboard/analytics"], ["Campus drives", "/dashboard/drives"]],
+  COLLEGE_ADMIN: [["Overview", "/dashboard"], ["College", "/dashboard/college"], ["Placement drives", "/dashboard/drives"]],
+  PLATFORM_ADMIN: [["Overview & queues", "/dashboard"], ["Listing moderation", "/dashboard/moderation"], ["Passport verification", "/dashboard/credentials"], ["Employer plans", "/dashboard/plans"], ["Insights", "/dashboard/insights"], ["Reports", "/dashboard/reports"], ["Users", "/dashboard/users"], ["Contact inbox", "/dashboard/inbox"], ["Server errors", "/dashboard/errors"], ["Audit log", "/dashboard/audit"]],
 };
 
 export default async function DashLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePageRole();
   const unread = await db.notification.count({ where: { userId: user.id, readAt: null } });
   return (
-    <div className="container grid gap-8 py-8 lg:grid-cols-[230px_1fr]">
+    <div className="container grid grid-cols-[minmax(0,1fr)] gap-8 py-8 lg:grid-cols-[230px_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-24 lg:h-fit">
         <div className="card p-4">
           <p className="truncate font-display font-bold">{user.name}</p>
