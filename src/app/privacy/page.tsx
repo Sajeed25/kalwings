@@ -53,8 +53,7 @@ export default function Page() {
       <h2 className={H}>5. Service providers</h2>
       <p>We do not sell personal data and we do not run third-party advertising or analytics trackers. We use a small number of providers to operate the service:</p>
       <ul>
-        <li><b>Hostinger</b> for hosting and the database (data is stored on their infrastructure).</li>
-        <li><b>Resend</b> to deliver email (your email address and the message content).</li>
+        <li><b>Hostinger</b> for hosting, the database and email delivery (data and the email address and message content of sign-in and notification emails pass through their infrastructure).</li>
         <li><b>Google</b>, only if you choose &quot;Continue with Google&quot;: we receive your name and email from Google to sign you in.</li>
         <li><b>A code-execution service</b>, only for coding assessments and only when enabled: the code you submit is sent to an isolated runner to be tested.</li>
       </ul>

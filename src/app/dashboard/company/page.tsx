@@ -2,10 +2,12 @@ import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
 import { PageTitle, Panel, Status, fmt } from "@/components/dash/ui";
-import { acceptInvite, cancelInvite, createCompany, inviteMember, removeMember, saveStageLabels } from "@/app/actions/employer";
+import { acceptInvite, saveCareerSlug, cancelInvite, createCompany, inviteMember, removeMember, saveStageLabels } from "@/app/actions/employer";
 import { DEFAULT_LABEL, stageLabels } from "@/lib/stages";
 import { PLAN_LIMITS, usage } from "@/lib/plans";
 import Link from "next/link";
+import { CopyButton } from "@/components/dash/copy-button";
+import { site } from "@/lib/site";
 
 export default async function Page() {
   const u = await requirePageRole("EMPLOYER");
@@ -40,6 +42,15 @@ export default async function Page() {
                 <ActionForm action={inviteMember} reset submit="Send invitation" success="Invitation saved" className="mt-4 space-y-2">
                   <Field label="Invite a colleague by email" name="email" type="email" required hint="They sign up as an Employer with this email, then accept under Company. Up to 10 members." />
                 </ActionForm>
+              </Panel>
+              <Panel title="Free career page and job distribution">
+                <ActionForm action={saveCareerSlug} submit="Save address" className="space-y-3">
+                  <Field label="Career page address" name="slug" defaultValue={mem.company.slug ?? ""} placeholder="acme-labs" hint={`Your page: ${site.url}/careers/${mem.company.slug ?? "your-name"}. Leave empty to turn it off.`} />
+                </ActionForm>
+                {mem.company.slug && <ul className="mt-3 space-y-1 text-sm">
+                  <li><Link className="font-semibold underline" href={`/careers/${mem.company.slug}`}>Open career page</Link> · <CopyButton text={`${site.url}/careers/${mem.company.slug}`} label="Copy link" /></li>
+                  <li>Embed on your website: <CopyButton text={`<iframe src="${site.url}/embed/careers/${mem.company.slug}" title="Open roles at ${mem.company.name.replace(/"/g, "")}" width="100%" height="600" style="border:0"></iframe>`} label="Copy embed code" /></li></ul>}
+                <p className="mt-3 text-xs text-ink-soft">Approved listings also appear in Google-friendly structured data, our sitemap and an open job feed (<a className="underline" href="/feeds/jobs.xml">XML</a> · <a className="underline" href="/feeds/jobs.json">JSON</a>). We do not post to LinkedIn, Indeed or other boards for you; use the Share buttons on each listing. Job sites decide for themselves whether to read our feed.</p>
               </Panel>
               <Panel title="Pipeline stage names">
                 <ActionForm action={saveStageLabels} submit="Save names" className="space-y-3">

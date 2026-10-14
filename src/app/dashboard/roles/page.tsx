@@ -5,6 +5,7 @@ import { ActionForm, Area, Field } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel, Status, fmt } from "@/components/dash/ui";
 import { closeOpportunity, postOpportunity, reopenOpportunity } from "@/app/actions/employer";
 import { ActionButton } from "@/components/dash/action-form";
+import { ShareKit } from "@/components/dash/share-kit";
 
 const sel = "mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3";
 
@@ -31,7 +32,7 @@ export default async function Page() {
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Graduation years" name="gradYears" placeholder="2025, 2026" /><Field label="Skills" name="skills" placeholder="React, SQL" /></div>
           </ActionForm>
         </Panel>
-        <Panel title="Your listings">{mem.company.opportunities.length ? <ul className="divide-y divide-line">{mem.company.opportunities.map((o) => <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-3"><div><p className="font-semibold">{o.title}</p><p className="text-sm text-ink-soft">{o.payText} · {o.closedAt ? "closed by you" : `closes ${fmt(o.deadline)}`}</p></div><div className="flex items-center gap-2"><Status s={o.closedAt ? "CLOSED" : o.moderated} />{o.closedAt ? <ActionButton action={reopenOpportunity.bind(null, o.id)}>Reopen</ActionButton> : <ActionButton confirm="Close this listing? It will stop accepting applications." action={closeOpportunity.bind(null, o.id)}>Close</ActionButton>}</div></li>)}</ul> : <Empty>No listings yet.</Empty>}</Panel>
+        <Panel title="Your listings">{mem.company.opportunities.length ? <ul className="divide-y divide-line">{mem.company.opportunities.map((o) => <li key={o.id} className="py-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold">{o.title}</p><p className="text-sm text-ink-soft">{o.payText} · {o.closedAt ? "closed by you" : `closes ${fmt(o.deadline)}`}</p></div><div className="flex items-center gap-2"><Status s={o.closedAt ? "CLOSED" : o.moderated} />{o.closedAt ? <ActionButton action={reopenOpportunity.bind(null, o.id)}>Reopen</ActionButton> : <ActionButton confirm="Close this listing? It will stop accepting applications." action={closeOpportunity.bind(null, o.id)}>Close</ActionButton>}</div></div>{o.moderated === "VERIFIED" && !o.closedAt && <ShareKit o={o} company={mem.company.name} />}</li>)}</ul> : <Empty>No listings yet.</Empty>}</Panel>
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import { chromium } from 'playwright-core'; import fs from 'fs';
 // Production smoke test. Start the app with `npm run build && npm start` using EMAIL_API_URL=http://localhost:4010,
-// EMAIL_API_KEY/EMAIL_FROM set, ADMIN_EMAILS=boss@example.com, and run `node e2e/mock-mail.mjs` alongside.
+// EMAIL_FROM set, ADMIN_EMAILS=boss@example.com, and run `node e2e/mock-mail.mjs` alongside.
 const B=process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const MAIL=process.env.MAIL_CAPTURE ?? '/tmp/kalwings-last-mail.json'; const b=await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 let bad=0; const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) bad++;};

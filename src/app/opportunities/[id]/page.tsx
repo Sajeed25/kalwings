@@ -12,6 +12,7 @@ import { ActionButton, ActionForm, Area } from "@/components/dash/action-form";
 import { applyTo, toggleSave } from "@/app/actions/student";
 import { reportContent } from "@/app/actions/common";
 import { site } from "@/lib/site";
+import { cleanSource } from "@/lib/distribution";
 
 export const dynamic = "force-dynamic";
 const MODE = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" } as const;
@@ -28,16 +29,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: o ? `${o.title} at ${o.company.name}` : "Opportunity", robots: o && (o.company.isSample || o.closedAt || o.deadline < new Date()) ? { index: false } : undefined };
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ src?: string; ref?: string }> }) {
   const { id } = await params;
+  const { src, ref } = await searchParams;
   const o = await load(id);
   if (!o) notFound();
   if (o.type === "CHALLENGE") redirect(`/challenges/${o.id}`);
   const user = await getUser();
-  let applied = false, saved = false;
+  let applied = false, saved = false, myId: string | null = null;
   if (user?.role === "STUDENT") {
     const sp = await db.studentProfile.findUnique({ where: { userId: user.id } });
     if (sp) {
+      myId = sp.id;
       applied = !!(await db.application.findUnique({ where: { opportunityId_studentId: { opportunityId: id, studentId: sp.id } } }));
       saved = !!(await db.savedOpportunity.findUnique({ where: { studentId_opportunityId: { studentId: sp.id, opportunityId: id } } }));
     }
@@ -47,7 +50,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     "@context": "https://schema.org", "@type": "JobPosting", title: o.title, description: o.description, employmentType: ["JOB","GRADUATE_TRAINEE","CAMPUS"].includes(o.type) ? "FULL_TIME" : o.type === "FREELANCE" ? "CONTRACTOR" : "INTERN",
     datePosted: o.createdAt.toISOString(), validThrough: o.deadline.toISOString(), hiringOrganization: { "@type": "Organization", name: o.company.name, sameAs: o.company.website },
     jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: o.location, addressCountry: "IN" } }, jobLocationType: o.workMode === "REMOTE" ? "TELECOMMUTE" : undefined,
-    url: `${site.url}/opportunities/${o.id}`,
+    url: `${site.url}/opportunities/${o.id}`, identifier: { "@type": "PropertyValue", name: o.company.name, value: o.id }, directApply: true,
+    baseSalary: !o.unpaid && o.monthlyINR > 0 ? { "@type": "MonetaryAmount", currency: "INR", value: { "@type": "QuantitativeValue", value: o.monthlyINR, unitText: "MONTH" } } : undefined,
   };
   return (
     <Block>
@@ -69,10 +73,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             : !user ? <Button asChild size="lg"><Link href="/login">Log in to apply</Link></Button>
             : user.role !== "STUDENT" ? <Badge>Only students can apply</Badge>
             : applied ? <Badge tone="accent">You&apos;ve applied — track it in your dashboard</Badge>
-            : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id)}>Apply with my Talent Card</ActionButton>}
+            : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id, cleanSource(src) ?? undefined, typeof ref === "string" ? ref.slice(0, 40) : undefined)}>Apply with my Talent Card</ActionButton>}
           {user?.role === "STUDENT" && <ActionButton variant="secondary" size="md" action={toggleSave.bind(null, o.id)}>{saved ? "Saved ✓" : "Save role"}</ActionButton>}
           {user?.role === "STUDENT" && <Link href={`/dashboard/copilot?listing=${o.id}`} className="text-sm font-semibold text-accent underline">How well do I match?</Link>}
         </div>
+        {myId && !closed && <p className="mt-6 text-sm text-ink-soft">Know someone who fits? Share your referral link: <code className="break-all rounded bg-muted px-1.5 py-0.5 text-xs">{`${site.url}/opportunities/${o.id}?ref=${myId}`}</code>. The employer will see that you referred them. It doesn&apos;t change how anyone is assessed.</p>}
         {user && (
           <details className="mt-10 text-sm"><summary className="cursor-pointer font-semibold text-ink-soft">Report this listing</summary>
             <ActionForm action={reportContent} reset submit="Send report" success="Thanks — our team will review it." className="mt-3 max-w-md space-y-3">

@@ -1,3 +1,4 @@
+import { sourceLabel } from "@/lib/distribution";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
@@ -17,7 +18,7 @@ export default async function Page() {
     where: { opportunity: { companyId: mem.company.id }, stage: { in: [...PIPELINE, "REJECTED"] } }, orderBy: { createdAt: "desc" },
     include: {
       opportunity: true, offer: true, interviews: { where: { status: "SCHEDULED" }, orderBy: { scheduledAt: "asc" } },
-      messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true, phone: true } } } },
+      messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true, phone: true } } } }, referrer: { include: { user: { select: { name: true } } } },
     },
   });
   return (
@@ -38,6 +39,7 @@ export default async function Page() {
                       <p className="font-display font-bold">{a.student.user.name}</p><p className="text-ink-soft">{a.opportunity.title}</p>
                       {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email ?? a.student.user.phone}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
                       <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Passport</a>
+                      <p className="mt-1 text-xs text-ink-soft">Source: {sourceLabel(a.source)}{a.referrer && <> · Referred by {a.referrer.user.name}</>}</p>
                       {a.interviews[0] && <p className="mt-2 text-xs text-ink-soft">Next interview: {fmtTime(a.interviews[0].scheduledAt)} IST</p>}
                       {a.offer && <p className="mt-2 text-xs text-ink-soft">Offer: {a.offer.status.toLowerCase()}</p>}
                       <div className="mt-3 flex flex-wrap gap-2">

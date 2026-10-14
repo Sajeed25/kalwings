@@ -44,4 +44,4 @@ Status key: **Done** (implemented and covered by an automated test or inspection
 - **Done**: lockfile committed, CI builds from it, Dependabot enabled. Run `npm audit` before launch and review results.
 
 ## Before launch (owner)
-Rotate any secret that was ever pasted in a screenshot or chat (Resend key, `AUTH_SECRET`, DB password); turn on branch protection; confirm backups run (`docs/OPERATIONS.md`); have a lawyer review Privacy/Terms; decide on SMS, payments and LLM providers.
+Rotate any secret that was ever pasted in a screenshot or chat (mailbox password, `AUTH_SECRET`, DB password); turn on branch protection; confirm backups run (`docs/OPERATIONS.md`); have a lawyer review Privacy/Terms; decide on SMS, payments and LLM providers.

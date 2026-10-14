@@ -1,4 +1,5 @@
 "use server";
+import { cleanSource } from "@/lib/distribution";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
@@ -75,14 +76,16 @@ export async function toggleContactVisible() {
   revalidatePath("/dashboard", "layout");
 }
 
-export async function applyTo(opportunityId: string) {
+export async function applyTo(opportunityId: string, srcIn?: string, refIn?: string) {
   const { u, p } = await me();
   const o = await db.opportunity.findUnique({ where: { id: opportunityId }, include: { company: { include: { members: true } } } });
   if (!o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) throw new Error("This opportunity isn't open for applications.");
   if (!p.headline) throw new Error("Complete your profile before applying.");
   const existing = await db.application.findUnique({ where: { opportunityId_studentId: { opportunityId, studentId: p.id } } });
   if (existing) return;
-  await db.application.create({ data: { opportunityId, studentId: p.id } });
+  const src = cleanSource(srcIn);
+  const ref = refIn && refIn !== p.id ? (await db.studentProfile.findUnique({ where: { id: refIn }, select: { id: true } }))?.id ?? null : null;
+  await db.application.create({ data: { opportunityId, studentId: p.id, source: ref ? "referral" : src, referrerId: ref } });
   await Promise.all(o.company.members.map((m) => notify(m.userId, "New application", `${u.name} applied to ${o.title}`)));
   revalidatePath("/dashboard", "layout");
   revalidatePath(`/opportunities/${opportunityId}`);

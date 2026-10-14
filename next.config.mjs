@@ -2,7 +2,7 @@ const isProd = process.env.NODE_ENV === "production";
 
 // Content Security Policy. 'unsafe-inline' is needed for Next's inline bootstrap scripts and our pre-paint theme
 // script; everything else is locked to this origin. Dev needs 'unsafe-eval' for React refresh.
-const csp = [
+const cspFor = (frameAncestors) => [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
@@ -14,8 +14,10 @@ const csp = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'self'",
+  `frame-ancestors ${frameAncestors}`,
 ].join("; ");
+const csp = cspFor("'self'");
+const embedCsp = cspFor("*");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -33,11 +35,22 @@ const nextConfig = {
   ].map(([source, destination]) => ({ source, destination, permanent: false })),
   headers: async () => [
     {
-      source: "/(.*)",
+      // Everything except the embeddable career widget: never framed by other sites.
+      source: "/((?!embed/).*)",
       headers: [
         ...(isProd ? [{ key: "Content-Security-Policy", value: csp }, { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      ],
+    },
+    {
+      // /embed/careers/<slug> is a read-only list of public listings that companies may frame on their own site.
+      source: "/embed/:path*",
+      headers: [
+        ...(isProd ? [{ key: "Content-Security-Policy", value: embedCsp }, { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
+        { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
       ],

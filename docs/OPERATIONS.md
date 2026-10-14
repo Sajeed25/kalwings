@@ -6,7 +6,7 @@
 | `DATABASE_URL` | yes | `mysql://user:pass@host:3306/db?connection_limit=5` (URL-encode special characters) |
 | `AUTH_SECRET` | yes | 32+ random characters; changing it signs everyone out |
 | `NEXT_PUBLIC_SITE_URL` | yes | `https://app.kalwings.com`; baked in at build time, so redeploy after changing |
-| `EMAIL_API_KEY`, `EMAIL_FROM` | yes in production | Resend; without it nobody can log in |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | yes in production | Hostinger mailbox over SMTP (`smtp.hostinger.com`, 465); without it nobody can log in |
 | `ADMIN_EMAILS` | first admin | Comma-separated; these emails become platform admins when they sign in |
 | `CONTACT_TO` | no | Inbox for contact-form emails |
 | `SANDBOX_URL`, `SANDBOX_TOKEN` | no | Isolated Judge0-compatible runner; unset = coding assessments off |
@@ -32,7 +32,7 @@ Merge a PR into `main`; GitHub CI runs; Hostinger pulls, builds (`npm run build`
 ## Routine tasks
 - **First/extra admin**: add the email to `ADMIN_EMAILS` and sign in, or `DATABASE_URL=... npm run make-admin -- email`.
 - **Never run `npm run db:seed` in production**. If it ever ran there, run `npm run db:unseed`.
-- **Rotate secrets** (every 6 to 12 months or after any exposure): generate a new `AUTH_SECRET` (`openssl rand -base64 48`), new Resend key, new DB password; update env vars in hPanel; redeploy.
+- **Rotate secrets** (every 6 to 12 months or after any exposure): generate a new `AUTH_SECRET` (`openssl rand -base64 48`), new mailbox password, new DB password; update env vars in hPanel; redeploy.
 - **Suspend an abusive user**: Dashboard → Users. **Hide content / archive a group**: Dashboard → Reports or the group page.
 - **Assign an employer plan**: Dashboard → Employer plans.
 - **Refresh generated docs** after schema or action changes: `npm run docs:db && npm run docs:api`.
