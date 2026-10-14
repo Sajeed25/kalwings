@@ -1,9 +1,11 @@
 "use server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireActionRole, destroySession } from "@/lib/session";
+import { requireActionRole, destroySession, sessionAgeSeconds } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { emailConfigured, sendEmail } from "@/lib/email";
+import { hashPassword, passwordProblem, verifyPassword } from "@/lib/password";
+import { audit, notify } from "@/lib/audit";
 import type { Result } from "./_shared";
 
 /**
@@ -51,4 +53,38 @@ export async function deleteMyAccount(_: Result, fd: FormData): Promise<Result> 
   }
   await destroySession();
   redirect("/");
+}
+
+const WRONG = "Your current password is incorrect.";
+
+/**
+ * Set or change the optional password. Changing needs the current password. If you forgot it, log out and log in with an
+ * email code: a session younger than 10 minutes may set a new password without the old one (you just proved you control the email).
+ */
+export async function setPassword(_: Result, fd: FormData): Promise<Result> {
+  const u = await requireActionRole();
+  const next = String(fd.get("password") ?? ""), confirm = String(fd.get("confirmPassword") ?? ""), current = String(fd.get("current") ?? "");
+  if (!(await rateLimit(`pwset:${u.id}`, 12, 15 * 60 * 1000))) return { error: "Too many attempts. Try again in a few minutes." };
+  if (u.passwordHash) {
+    if (current) { if (!(await verifyPassword(current, u.passwordHash))) return { error: WRONG, fieldErrors: { current: WRONG } }; }
+    else if ((await sessionAgeSeconds()) > 600) return { error: "Enter your current password. Forgot it? Log out, log in with an email code, then set a new one straight away.", fieldErrors: { current: "Required" } };
+  }
+  if (next !== confirm) return { error: "The two passwords don't match.", fieldErrors: { confirmPassword: "Doesn't match" } };
+  const problem = passwordProblem(next, { email: u.email, name: u.name });
+  if (problem) return { error: problem, fieldErrors: { password: problem } };
+  await db.user.update({ where: { id: u.id }, data: { passwordHash: await hashPassword(next), passwordSetAt: new Date() } });
+  await audit(u.id, u.passwordHash ? "account.password_changed" : "account.password_set", "self");
+  await notify(u.id, u.passwordHash ? "Your password was changed" : "Password login turned on", "If this wasn't you, log in with an email code and change it, then contact support.");
+  return { ok: true };
+}
+
+export async function removePassword(_: Result, fd: FormData): Promise<Result> {
+  const u = await requireActionRole();
+  if (!u.passwordHash) return { error: "No password is set." };
+  if (!(await rateLimit(`pwset:${u.id}`, 12, 15 * 60 * 1000))) return { error: "Too many attempts. Try again in a few minutes." };
+  const current = String(fd.get("current") ?? "");
+  if (!(current && (await verifyPassword(current, u.passwordHash)))) return { error: WRONG, fieldErrors: { current: WRONG } };
+  await db.user.update({ where: { id: u.id }, data: { passwordHash: null, passwordSetAt: null } });
+  await audit(u.id, "account.password_removed", "self");
+  return { ok: true };
 }

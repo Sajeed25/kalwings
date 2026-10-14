@@ -182,6 +182,8 @@ model User {
   email              String?   @unique
   phone              String?   @unique
   googleId           String?   @unique
+  passwordHash       String?   @db.VarChar(255) // optional scrypt hash; email codes always work too
+  passwordSetAt      DateTime?
   name               String
   role               Role      @default(STUDENT)
   createdAt          DateTime  @default(now())
