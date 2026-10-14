@@ -74,12 +74,18 @@ const admin: Section[] = [
   { title: "Reviews", items: [
     { label: "Listing moderation", icon: "shield", href: "/dashboard/moderation", desc: "Approve or reject new listings." },
     { label: "Profile verification", icon: "badge", href: "/dashboard/credentials", desc: "Verify credentials students submit." },
-    { label: "Employer plans", icon: "card", href: "/dashboard/plans", desc: "Assign plans and view usage." },
     { label: "Abuse reports", icon: "flag", href: "/dashboard/reports", desc: "Reports from users about listings, profiles or posts." },
   ] },
+  { title: "Directory", items: [
+    { label: "Companies", icon: "briefcase", href: "/dashboard/companies", desc: "Add and verify companies, set their plan, post listings for them." },
+    { label: "Colleges", icon: "school", href: "/dashboard/colleges", desc: "Add colleges and verify the ones students can pick." },
+    { label: "Mentors", icon: "sparkles", href: "/dashboard/mentors", desc: "Add mentors with full profile details, or edit them." },
+    { label: "Users", icon: "users", href: "/dashboard/users", desc: "Add people, find, suspend or restore accounts." },
+  ] },
   { title: "Platform", items: [
+    { label: "Employer plans", icon: "card", href: "/dashboard/plans", desc: "Rename plans, change prices and limits, assign plans." },
+    { label: "Site settings", icon: "file", href: "/dashboard/site", desc: "Announcement banner, support email and who can sign up." },
     { label: "Insights", icon: "chart", href: "/dashboard/insights", desc: "Platform-wide counts and trends." },
-    { label: "Users", icon: "users", href: "/dashboard/users", desc: "Find, suspend or restore accounts." },
     { label: "Contact inbox", icon: "inbox", href: "/dashboard/inbox", desc: "Messages from the contact form." },
   ] },
   { title: "Operations", items: [

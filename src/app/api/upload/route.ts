@@ -44,6 +44,14 @@ export async function POST(req: Request) {
     if (!mem) return bad("Create your company first", 400);
     const c = mem.company;
     apply = async (id) => { await db.company.update({ where: { id: c.id }, data: { logoId: id } }); return c.logoId; };
+  } else if (kind === "COMPANY_LOGO" && user.role === "PLATFORM_ADMIN") {
+    const c = await db.company.findUnique({ where: { id: String(form.get("companyId") ?? "") } });
+    if (!c) return bad("Company not found", 404);
+    apply = async (id) => { await db.company.update({ where: { id: c.id }, data: { logoId: id } }); return c.logoId; };
+  } else if (kind === "AVATAR" && user.role === "PLATFORM_ADMIN") {
+    const m = await db.mentorProfile.findUnique({ where: { id: String(form.get("mentorId") ?? "") } });
+    if (!m) return bad("Mentor not found", 404);
+    apply = async (id) => { await db.mentorProfile.update({ where: { id: m.id }, data: { avatarId: id } }); return m.avatarId; };
   } else if (kind === "PROJECT" && user.role === "STUDENT") {
     const projectId = String(form.get("projectId") ?? "");
     const proj = await db.project.findFirst({ where: { id: projectId, student: { userId: user.id } } });

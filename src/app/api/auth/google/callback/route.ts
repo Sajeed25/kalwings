@@ -1,3 +1,4 @@
+import { signupClosedMessage } from "@/lib/settings";
 import { NextResponse, type NextRequest } from "next/server";
 import { decodeJwt } from "jose";
 import type { Role } from "@prisma/client";
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
   const isNew = !user;
   if (!user) {
     const role = (req.cookies.get("kw_oauth_role")?.value ?? "STUDENT") as Exclude<Role, "PLATFORM_ADMIN">;
+    if (await signupClosedMessage(role)) return fail("closed");
     user = await db.user.create({ data: { email, googleId: claims.sub, name: claims.name ?? email.split("@")[0], role, ...(role === "STUDENT" ? { student: { create: { slug: uniqueSlug(claims.name ?? "student") } } } : {}) } });
   }
   if (user.suspendedAt) return fail("suspended");

@@ -4,11 +4,11 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (47)
+## Models (50)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
-| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived |
+| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived, roleRequests |
 | [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, referrals, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
 | [PassportEntry](#passportentry) | Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL. | student |
 | [Project](#project) |  | student |
@@ -55,6 +55,9 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [RateLimit](#ratelimit) | Persistent rate limiting (survives restarts, shared by all processes). |  |
 | [ErrorLog](#errorlog) | Unhandled server errors (no personal data: path without query string, truncated message/stack). |  |
 | [Upload](#upload) | Images are stored in the database so they survive redeploys on hosts with ephemeral disks. |  |
+| [PlanConfig](#planconfig) | Employer plans, editable by a platform admin (names, prices, limits, features). Company.plan holds a key. |  |
+| [SiteSetting](#sitesetting) | Platform-wide settings an admin can change (announcement banner, contact email, which roles can sign up). |  |
+| [RoleChangeRequest](#rolechangerequest) | / A signed-in user asking a platform admin to change their role. An admin approves or declines; nothing changes until approved. | user |
 
 ### User
 
@@ -86,6 +89,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | comments | Comment[] |  |  |
 | blocksMade | Block[] | @relation("blocker") |  |
 | blocksReceived | Block[] | @relation("blocked") |  |
+| roleRequests | RoleChangeRequest[] |  |  |
 
 ### StudentProfile
 
@@ -257,7 +261,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | shortlists | Shortlist[] |  |  |
 | slug | String? | @unique @db.VarChar(40) | public career page: /careers/<slug> |
 | logoId | String? |  | Upload.id of the company logo |
-| plan | Plan | @default(STARTER) | set by a platform admin; no online payments yet |
+| plan | String | @default("STARTER") @db.VarChar(40) | PlanConfig.key; assigned by a platform admin |
 | stageLabels | Json? |  | optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"} |
 | invites | CompanyInvite[] |  |  |
 | members | EmployerMember[] |  |  |
@@ -851,6 +855,56 @@ Only validated PNG/JPEG/WebP, max 1 MB (the browser downscales before upload).
 
 Indexes and constraints: `@@index([ownerId])`
 
+### PlanConfig
+
+Employer plans, editable by a platform admin (names, prices, limits, features). Company.plan holds a key.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| key | String | @id @db.VarChar(40) |  |
+| label | String | @db.VarChar(60) |  |
+| priceText | String | @db.VarChar(80) | shown as typed, e.g. "₹2,999 / month", "Free", "Contact us" |
+| description | String? | @db.VarChar(300) |  |
+| features | Json? |  | string[] |
+| listings | Int |  |  |
+| challenges | Int |  |  |
+| assessments | Int |  |  |
+| team | Int |  |  |
+| highlight | Boolean | @default(false) |  |
+| active | Boolean | @default(true) |  |
+| position | Int | @default(0) |  |
+| updatedAt | DateTime | @default(now()) @updatedAt |  |
+
+### SiteSetting
+
+Platform-wide settings an admin can change (announcement banner, contact email, which roles can sign up).
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| key | String | @id @db.VarChar(60) |  |
+| value | String | @db.Text |  |
+| updatedAt | DateTime | @default(now()) @updatedAt |  |
+
+### RoleChangeRequest
+
+/ A signed-in user asking a platform admin to change their role. An admin approves or declines; nothing changes until approved.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| userId | String |  |  |
+| user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
+| fromRole | Role |  |  |
+| requestedRole | Role |  |  |
+| reason | String | @db.VarChar(500) |  |
+| status | String | @default("PENDING") @db.VarChar(12) | PENDING | APPROVED | DECLINED |
+| decidedById | String? |  |  |
+| decisionNote | String? | @db.VarChar(300) |  |
+| decidedAt | DateTime? |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([status, createdAt])`, `@@index([userId])`
+
 ## Enums
 
 - **Role**: STUDENT, MENTOR, EMPLOYER, COLLEGE_ADMIN, PLATFORM_ADMIN
@@ -869,7 +923,6 @@ Indexes and constraints: `@@index([ownerId])`
 - **DriveStatus**: PROPOSED, CONFIRMED, DECLINED, CLOSED
 - **InviteStatus**: INVITED, ACCEPTED, DECLINED
 - **DriveOutcome**: NONE, SHORTLISTED, OFFERED, HIRED, NOT_SELECTED
-- **Plan**: STARTER, GROWTH, ENTERPRISE
 - **InterviewMode**: VIDEO, PHONE, ONSITE
 - **InterviewStatus**: SCHEDULED, COMPLETED, CANCELLED
 - **OfferStatus**: EXTENDED, ACCEPTED, DECLINED, WITHDRAWN

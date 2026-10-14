@@ -6,7 +6,7 @@ import { Logo } from "@/components/ui/brand";
 import { loginWithPassword, requestOtp, submitOtp, type AuthState } from "@/app/actions/auth";
 
 const f = "mt-1.5 h-12 w-full border border-line bg-bg px-4 text-[15px]";
-const errs: Record<string, string> = { "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified.", suspended: "This account has been suspended. Please contact support." };
+const errs: Record<string, string> = { "google-closed": "New sign-ups for that role are closed right now. Please contact us.", "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified.", suspended: "This account has been suspended. Please contact support." };
 
 export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean }) {
   const join = mode === "join";
