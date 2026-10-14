@@ -5,6 +5,7 @@ import { parseNaturalQuery } from "../src/lib/nlsearch";
 import { checkJobDescription } from "../src/lib/jdcheck";
 import { profileFeedback } from "../src/lib/feedback";
 import { publicOrigin } from "../src/lib/origin";
+import { MIGRATIONS } from "../src/lib/migrations.generated";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -48,6 +49,11 @@ t("OAuth origin prefers the configured https site URL over an internal proxy add
   assert.equal(publicOrigin(req({ "x-forwarded-host": "app.kalwings.com", "x-forwarded-proto": "https" }, "http://localhost:3000"), ""), "https://app.kalwings.com");
   assert.equal(publicOrigin(req({ "x-forwarded-host": "evil.com/x", "x-forwarded-proto": "https" }, "http://localhost:3000"), ""), "http://localhost:3000");
   assert.equal(publicOrigin(req({}, "http://localhost:3000"), "http://example.com"), "http://localhost:3000");
+});
+t("embedded migrations: every statement splits cleanly, ordered, no stray semicolons", () => {
+  const split = (sql: string) => sql.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n").split(/;\s*(?:\n|$)/).map((x) => x.trim()).filter(Boolean);
+  assert.ok(MIGRATIONS.length >= 15); assert.deepEqual(MIGRATIONS.map((m) => m.name), [...MIGRATIONS.map((m) => m.name)].sort());
+  for (const m of MIGRATIONS) { const stmts = split(m.sql); assert.ok(stmts.length > 0, m.name); for (const st of stmts) assert.ok(!st.includes(";"), `${m.name}: statement contains ;`); assert.match(m.checksum, /^[a-f0-9]{64}$/); }
 });
 const asyncTests: Promise<void>[] = [];
 const ta = (name: string, fn: () => Promise<void>) => { asyncTests.push(fn().then(() => { n++; console.log("PASS " + name); })); };

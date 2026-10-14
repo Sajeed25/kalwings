@@ -57,6 +57,10 @@ jobs:
         run: |
           npx tsx e2e/ratelimit.ts fill
           npx tsx e2e/ratelimit.ts check
+      - name: Embedded migrations are up to date (fails if prisma/migrations changed without regenerating)
+        run: |
+          node scripts/embed-migrations.mjs
+          git diff --exit-code src/lib/migrations.generated.ts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit

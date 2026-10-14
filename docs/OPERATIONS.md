@@ -11,9 +11,10 @@
 | `CONTACT_TO` | no | Inbox for contact-form emails |
 | `SANDBOX_URL`, `SANDBOX_TOKEN` | no | Isolated Judge0-compatible runner; unset = coding assessments off |
 | `GOOGLE_CLIENT_ID/SECRET` | no | Google sign-in |
-| `AUTO_MIGRATE` | no | Defaults to on: the server runs `prisma migrate deploy` when it starts, so an empty or outdated database is brought up to date even if the host's start command is `next start`. Set `false` to turn it off. Look for `[migrate] ok` or `[migrate] FAILED` in the runtime log. |
+| `AUTO_MIGRATE` | no | Defaults to on: when the server starts it applies any pending database migrations itself (the SQL is embedded in the build, so it needs no Prisma CLI or `prisma/` folder, which Hostinger doesn't deploy). It records them in Prisma's `_prisma_migrations` table, so `prisma migrate status` still agrees. Set `false` to turn it off. Look for `[migrate] ok` or `[migrate] FAILED` in the runtime log. |
 
 ## Deploy and rollback
+Migrations run automatically on every start (see `AUTO_MIGRATE`). After adding a migration under `prisma/migrations`, `npm run build` regenerates `src/lib/migrations.generated.ts`; commit it (CI fails if it is stale).
 Merge a PR into `main`; GitHub CI runs; Hostinger pulls, builds (`npm run build`) and starts (`npm start`, which runs `prisma migrate deploy` first). Rollback: revert the PR on GitHub (auto-deploys) or redeploy the previous commit from hPanel. **Migrations are forward-only** and additive: never edit a deployed migration; fix forward with a new one. Merge stacked PRs bottom-up.
 
 ## Health and monitoring
