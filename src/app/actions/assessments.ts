@@ -5,6 +5,7 @@ import { requireActionRole } from "@/lib/session";
 import { assessmentSchema, attemptSchema, parseRubric, parseTests, writtenAttemptSchema, writtenReviewSchema, type TestCase } from "@/lib/validation";
 import { LANG_KEYS, runInSandbox, sameOutput, sandboxConfigured, type LangKey } from "@/lib/sandbox";
 import { rateLimit } from "@/lib/rate-limit";
+import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
 
@@ -23,6 +24,8 @@ export async function createAssessment(_: Result, fd: FormData): Promise<Result>
   const r = assessmentSchema.safeParse(obj(fd));
   if (!r.success) return fail(r.error);
   const d = r.data;
+  const cap = await limitError(company.id, company.plan, "assessments");
+  if (cap) return { error: cap };
   let items: unknown, languages: string[] | null = null;
   if (d.kind === "CODING") {
     if (!sandboxConfigured()) return { error: "Coding assessments need a code execution service, which isn't enabled on this platform yet. You can still create written assessments." };

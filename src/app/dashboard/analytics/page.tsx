@@ -15,6 +15,9 @@ export default async function Page() {
   const accepted = apps.filter((a) => a.offer?.status === "ACCEPTED").length;
   const interviewed = apps.filter((a) => a.interviews.length > 0).length;
   const max = Math.max(1, ...PIPELINE.map(by), by("REJECTED"));
+  const recent = await db.application.findMany({ where: { opportunity: { companyId: mem.companyId }, createdAt: { gte: new Date(Date.now() - 8 * 7 * 864e5) } }, select: { createdAt: true } });
+  const weekly = Array(8).fill(0) as number[]; recent.forEach((a) => { weekly[Math.min(7, Math.floor((Date.now() - a.createdAt.getTime()) / (7 * 864e5)))]++; });
+  const wmax = Math.max(1, ...weekly);
   return (
     <>
       <PageTitle title="Hiring analytics" sub="Counts from your real pipeline, as it stands now. Nothing is estimated." />
@@ -29,6 +32,9 @@ export default async function Page() {
               <li key={s} className="grid grid-cols-[130px_1fr_40px] items-center gap-3 text-sm"><span>{s === "REJECTED" ? "Rejected" : labels[s]}</span>
                 <span className="h-3 rounded bg-muted" role="img" aria-label={`${by(s)} candidates`}><span className="block h-3 rounded bg-neon" style={{ width: `${(by(s) / max) * 100}%` }} /></span><b className="text-right">{by(s)}</b></li>))}</ul>
             <p className="mt-3 text-xs text-ink-soft">Withdrawn applications: {by("WITHDRAWN")}.</p>
+          </Panel>
+          <Panel title="Applications per week">
+            <ul className="space-y-2 text-sm">{weekly.map((n, i) => <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n} applications`}><span className="block h-3 rounded bg-neon" style={{ width: `${(n / wmax) * 100}%` }} /></span><b className="text-right">{n}</b></li>)}</ul>
           </Panel>
           <Panel title="By listing">
             <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="text-ink-soft"><th className="py-2 pr-4 font-semibold">Listing</th><th className="pr-4 font-semibold">Applications</th><th className="pr-4 font-semibold">Shortlisted+</th><th className="pr-4 font-semibold">Offers</th><th className="font-semibold">Hired</th></tr></thead>

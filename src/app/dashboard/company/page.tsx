@@ -4,6 +4,8 @@ import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-
 import { PageTitle, Panel, Status, fmt } from "@/components/dash/ui";
 import { acceptInvite, cancelInvite, createCompany, inviteMember, removeMember, saveStageLabels } from "@/app/actions/employer";
 import { DEFAULT_LABEL, stageLabels } from "@/lib/stages";
+import { PLAN_LIMITS, usage } from "@/lib/plans";
+import Link from "next/link";
 
 export default async function Page() {
   const u = await requirePageRole("EMPLOYER");
@@ -13,6 +15,7 @@ export default async function Page() {
   const invites = mem ? await db.companyInvite.findMany({ where: { companyId: mem.companyId, acceptedAt: null }, orderBy: { createdAt: "desc" } }) : [];
   const labels = mem ? stageLabels(mem.company.stageLabels) : DEFAULT_LABEL;
   const verified = mem?.company.status === "VERIFIED";
+  const used = mem ? await usage(mem.companyId) : null;
   return (
     <>
       <PageTitle title="Company" sub="Every company is reviewed before it can post roles or search talent." />
@@ -21,6 +24,11 @@ export default async function Page() {
           <Panel><div className="flex items-center justify-between"><h2 className="text-xl">{mem.company.name}</h2><Status s={mem.company.status} /></div>
             <p className="mt-2 text-sm text-ink-soft">{mem.company.website}</p>{mem.company.about && <p className="mt-2">{mem.company.about}</p>}
             <p className="mt-4 text-sm text-ink-soft">{mem.company.status === "PENDING" ? "We'll notify you once the review is done." : verified ? "You can post roles and search talent." : "This company was not approved. Contact support to appeal."}</p></Panel>
+          {verified && used && mem && (
+            <Panel title={`${PLAN_LIMITS[mem.company.plan].label} plan`}>
+              <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{(["listings", "challenges", "assessments", "team"] as const).map((k) => <li key={k} className="rounded-lg border border-line p-3"><p className="text-ink-soft">{k === "team" ? "Team seats" : k[0].toUpperCase() + k.slice(1)}</p><p className="font-display text-xl font-bold">{used[k]} / {PLAN_LIMITS[mem.company.plan][k]}</p></li>)}</ul>
+              <p className="mt-3 text-xs text-ink-soft">Limits count active items only. To change plan, <Link className="underline" href="/contact?topic=employer">contact us</Link>; online payments are not available yet.</p>
+            </Panel>)}
           {verified && (
             <div className="grid gap-6 lg:grid-cols-2">
               <Panel title="Recruiting team">

@@ -92,3 +92,14 @@ export async function reviewEntry(id: string, d: Decision) {
   await notify(e.student.userId, `Passport entry ${d.toLowerCase()}`, e.title);
   revalidatePath("/dashboard", "layout");
 }
+
+const PLANS = ["STARTER", "GROWTH", "ENTERPRISE"] as const;
+/** Plans are assigned by a platform admin until an online payment provider is chosen. */
+export async function setPlan(companyId: string, plan: string) {
+  const a = await requireActionRole("PLATFORM_ADMIN");
+  if (!(PLANS as readonly string[]).includes(plan)) throw new Error("Invalid plan");
+  const c = await db.company.update({ where: { id: companyId }, data: { plan: plan as (typeof PLANS)[number] }, include: { members: true } });
+  await audit(a.id, `company.plan_${plan.toLowerCase()}`, `${c.name} (${companyId})`);
+  await Promise.all(c.members.map((m) => notify(m.userId, "Your plan changed", `${c.name} is now on the ${plan.toLowerCase()} plan.`)));
+  revalidatePath("/dashboard", "layout");
+}

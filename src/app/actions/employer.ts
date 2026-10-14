@@ -7,6 +7,7 @@ import { companySchema, opportunitySchema, noteSchema, challengeSchema, parseRub
 import { audit } from "@/lib/audit";
 import { completeness } from "@/lib/completeness";
 import { DEFAULT_LABEL } from "@/lib/stages";
+import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
 
@@ -38,6 +39,8 @@ export async function postOpportunity(_: Result, fd: FormData): Promise<Result> 
   if (!r.success) return fail(r.error);
   const d = r.data;
   if (d.type === "CHALLENGE") return { error: "Create challenges under Challenges: they need a brief and a scoring rubric." };
+  const cap = await limitError(company.id, company.plan, "listings");
+  if (cap) return { error: cap };
   await db.opportunity.create({
     data: {
       companyId: company.id, title: d.title, type: d.type, description: d.description, payText: d.unpaid ? `Unpaid — ${d.payText}` : d.payText,
@@ -144,7 +147,8 @@ export async function inviteMember(_: Result, fd: FormData): Promise<Result> {
   const { u, company } = await verifiedCompany();
   const r = inviteSchema.safeParse(obj(fd));
   if (!r.success) return { error: "Enter a valid email address." };
-  if ((await db.employerMember.count({ where: { companyId: company.id } })) >= 10) return { error: "Team limit reached (10)." };
+  const cap = await limitError(company.id, company.plan, "team");
+  if (cap) return { error: cap };
   const existing = await db.user.findUnique({ where: { email: r.data.email }, include: { employer: true } });
   if (existing?.employer?.companyId === company.id) return { error: "They are already on your team." };
   if (existing && existing.role !== "EMPLOYER") return { error: "That email belongs to an account that isn't a recruiter account." };
@@ -223,6 +227,8 @@ export async function createChallenge(_: Result, fd: FormData): Promise<Result> 
   if (!d.unpaid && !/\d/.test(d.payText)) return { error: "Paid challenges must state the amount.", fieldErrors: { payText: "State the amount" } };
   const rubric = parseRubric(d.rubric);
   if (typeof rubric === "string") return { error: rubric, fieldErrors: { rubric } };
+  const cap = await limitError(company.id, company.plan, "challenges");
+  if (cap) return { error: cap };
   await db.opportunity.create({
     data: {
       companyId: company.id, title: d.title, type: "CHALLENGE", description: d.description, payText: d.unpaid ? `Unpaid: ${d.payText}` : d.payText,
