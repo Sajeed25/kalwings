@@ -3,13 +3,14 @@ import { revalidatePath } from "next/cache";
 import type { ApplicationStage } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
-import { companySchema, opportunitySchema, noteSchema, challengeSchema, parseRubric, reviewSchema, interviewSchema, offerSchema, inviteSchema, stageLabelsSchema, csv } from "@/lib/validation";
+import { companySchema, opportunitySchema, noteSchema, challengeSchema, parseRubric, reviewSchema, interviewSchema, offerSchema, inviteSchema, stageLabelsSchema, feedbackSchema, templateSchema, csv } from "@/lib/validation";
 import { audit } from "@/lib/audit";
 import { completeness } from "@/lib/completeness";
 import { DEFAULT_LABEL } from "@/lib/stages";
 import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
 import { slugProblem } from "@/lib/distribution";
+import { stageEvent } from "@/lib/stage-history";
 import { fail, obj, type Result } from "./_shared";
 
 async function myCompany() {
@@ -42,12 +43,14 @@ export async function postOpportunity(_: Result, fd: FormData): Promise<Result> 
   if (d.type === "CHALLENGE") return { error: "Create challenges under Challenges: they need a brief and a scoring rubric." };
   const cap = await limitError(company.id, company.plan, "listings");
   if (cap) return { error: cap };
+  const questions = String(fd.get("questions") ?? "").split("\n").map((q) => q.trim().slice(0, 300)).filter(Boolean).slice(0, 5);
   await db.opportunity.create({
     data: {
       companyId: company.id, title: d.title, type: d.type, description: d.description, payText: d.unpaid ? `Unpaid — ${d.payText}` : d.payText,
       unpaid: d.unpaid, monthlyINR: d.unpaid ? 0 : d.monthlyINR, workMode: d.workMode, location: d.location, eligibility: d.eligibility,
       gradYears: csv(d.gradYears).map(Number).filter((n) => n > 2000 && n < 2100), skills: csv(d.skills), deadline: d.deadline,
       moderated: "PENDING", // listed only after admin moderation
+      questions: { create: questions.map((text, position) => ({ text, position })) },
     },
   });
   revalidatePath("/dashboard", "layout");
@@ -77,12 +80,12 @@ async function ownedApp(applicationId: string, companyId: string) {
 }
 
 export async function setStage(applicationId: string, stage: ApplicationStage) {
-  const { company } = await verifiedCompany();
+  const { u, company } = await verifiedCompany();
   if (!MOVABLE.includes(stage)) throw new Error("Invalid stage");
   const app = await ownedApp(applicationId, company.id);
   if (!app || app.stage === "WITHDRAWN" || app.stage === "HIRED") throw new Error("Not found");
   if (app.stage === "OFFER" && app.offer?.status === "ACCEPTED") throw new Error("This candidate accepted your offer. Mark them as hired instead.");
-  await db.application.update({ where: { id: app.id }, data: { stage } });
+  if (app.stage !== stage) await db.$transaction([db.application.update({ where: { id: app.id }, data: { stage } }), stageEvent(app.id, app.stage, stage, u.id)]);
   if (app.stage === "OFFER" && app.offer?.status === "EXTENDED") await db.offer.update({ where: { id: app.offer.id }, data: { status: "WITHDRAWN" } });
   await notify(app.student.userId, "Application update", `${app.opportunity.title} is now: ${DEFAULT_LABEL[stage].toLowerCase()}`);
   revalidatePath("/dashboard", "layout");
@@ -99,7 +102,7 @@ export async function scheduleInterview(_: Result, fd: FormData): Promise<Result
   if (clash) return { error: "An interview is already scheduled at that time." };
   await db.$transaction([
     db.interview.create({ data: { applicationId: app.id, scheduledAt: d.scheduledAt, minutes: d.minutes, mode: d.mode, detail: d.detail, notes: d.notes || null, createdById: u.id } }),
-    ...(app.stage === "APPLIED" || app.stage === "UNDER_REVIEW" || app.stage === "SHORTLISTED" ? [db.application.update({ where: { id: app.id }, data: { stage: "INTERVIEW" } })] : []),
+    ...(app.stage === "APPLIED" || app.stage === "UNDER_REVIEW" || app.stage === "SHORTLISTED" ? [db.application.update({ where: { id: app.id }, data: { stage: "INTERVIEW" } }), stageEvent(app.id, app.stage, "INTERVIEW", u.id)] : []),
   ]);
   const when = d.scheduledAt.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
   await notify(app.student.userId, "Interview scheduled", `${app.opportunity.title} · ${when} IST · ${d.mode.toLowerCase()}. Details and calendar file are in your Interviews page.`);
@@ -127,6 +130,7 @@ export async function extendOffer(_: Result, fd: FormData): Promise<Result> {
   await db.$transaction([
     db.offer.upsert({ where: { applicationId: app.id }, create: { applicationId: app.id, summary: r.data.summary, joiningDate: r.data.joiningDate ?? null }, update: { summary: r.data.summary, joiningDate: r.data.joiningDate ?? null, status: "EXTENDED", respondedAt: null } }),
     db.application.update({ where: { id: app.id }, data: { stage: "OFFER" } }),
+    ...(app.stage !== "OFFER" ? [stageEvent(app.id, app.stage, "OFFER", u.id)] : []),
   ]);
   await audit(u.id, "offer.extended", `${app.opportunity.title} (${app.id})`);
   await notify(app.student.userId, "You have an offer", `${app.opportunity.title}. Review and respond in your Applications page.`);
@@ -138,7 +142,7 @@ export async function markHired(applicationId: string) {
   const { u, company } = await verifiedCompany();
   const app = await ownedApp(applicationId, company.id);
   if (!app || app.stage !== "OFFER" || app.offer?.status !== "ACCEPTED") throw new Error("Only candidates who accepted an offer can be marked as hired.");
-  await db.application.update({ where: { id: app.id }, data: { stage: "HIRED" } });
+  await db.$transaction([db.application.update({ where: { id: app.id }, data: { stage: "HIRED" } }), stageEvent(app.id, "OFFER", "HIRED", u.id)]);
   await audit(u.id, "application.hired", `${app.opportunity.title} (${app.id})`);
   await notify(app.student.userId, "Congratulations", `${company.name} marked you as hired for ${app.opportunity.title}.`);
   revalidatePath("/dashboard", "layout");
@@ -266,8 +270,8 @@ export async function reviewSubmission(_: Result, fd: FormData): Promise<Result>
   if (r.data.outcome === "SHORTLISTED") {
     const key = { opportunityId_studentId: { opportunityId: sub.challenge.opportunityId, studentId: sub.studentId } };
     const app = await db.application.findUnique({ where: key });
-    if (!app) await db.application.create({ data: { opportunityId: sub.challenge.opportunityId, studentId: sub.studentId, stage: "SHORTLISTED" } });
-    else if (app.stage === "APPLIED" || app.stage === "UNDER_REVIEW") await db.application.update({ where: { id: app.id }, data: { stage: "SHORTLISTED" } });
+    if (!app) await db.application.create({ data: { opportunityId: sub.challenge.opportunityId, studentId: sub.studentId, stage: "SHORTLISTED", events: { create: { toStage: "SHORTLISTED", actorId: u.id } } } });
+    else if (app.stage === "APPLIED" || app.stage === "UNDER_REVIEW") await db.$transaction([db.application.update({ where: { id: app.id }, data: { stage: "SHORTLISTED" } }), stageEvent(app.id, app.stage, "SHORTLISTED", u.id)]);
   }
   if (r.data.awardSkill && sub.challenge.skillTag) {
     const basis = `challenge:${sub.id}`;
@@ -300,4 +304,34 @@ export async function saveCareerSlug(_: Result, fd: FormData): Promise<Result> {
   revalidatePath("/dashboard", "layout");
   revalidatePath(`/careers/${slug}`);
   return { ok: true };
+}
+
+/** Interviewer scorecard. Private to the hiring team; it never moves a candidate between stages. */
+export async function saveInterviewFeedback(_: Result, fd: FormData): Promise<Result> {
+  const { u, company } = await verifiedCompany();
+  const r = feedbackSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const iv = await db.interview.findFirst({ where: { id: r.data.interviewId, application: { opportunity: { companyId: company.id } } }, select: { id: true, status: true } });
+  if (!iv) return { error: "Interview not found." };
+  if (iv.status !== "COMPLETED") return { error: "Mark the interview as completed before adding feedback." };
+  const data = { rating: r.data.rating, recommendation: r.data.recommendation, strengths: r.data.strengths || null, concerns: r.data.concerns || null };
+  await db.interviewFeedback.upsert({ where: { interviewId_authorId: { interviewId: iv.id, authorId: u.id } }, create: { interviewId: iv.id, authorId: u.id, ...data }, update: data });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function saveTemplate(_: Result, fd: FormData): Promise<Result> {
+  const { company } = await verifiedCompany();
+  const r = templateSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  if ((await db.messageTemplate.count({ where: { companyId: company.id } })) >= 20) return { error: "You can keep up to 20 templates. Delete one first." };
+  await db.messageTemplate.create({ data: { companyId: company.id, name: r.data.name, body: r.data.body } });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function deleteTemplate(id: string) {
+  const { company } = await verifiedCompany();
+  await db.messageTemplate.deleteMany({ where: { id, companyId: company.id } });
+  revalidatePath("/dashboard", "layout");
 }

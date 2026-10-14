@@ -3,7 +3,9 @@ import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel, fmtTime } from "@/components/dash/ui";
-import { extendOffer, markHired, saveNotes, scheduleInterview, setStage } from "@/app/actions/employer";
+import { extendOffer, markHired, saveInterviewFeedback, saveNotes, scheduleInterview, setStage } from "@/app/actions/employer";
+import { daysBetween } from "@/lib/stage-history";
+import Link from "next/link";
 import { Thread } from "@/components/dash/thread";
 import { PIPELINE, stageLabels } from "@/lib/stages";
 
@@ -17,10 +19,12 @@ export default async function Page() {
   const apps = await db.application.findMany({
     where: { opportunity: { companyId: mem.company.id }, stage: { in: [...PIPELINE, "REJECTED"] } }, orderBy: { createdAt: "desc" },
     include: {
-      opportunity: true, offer: true, interviews: { where: { status: "SCHEDULED" }, orderBy: { scheduledAt: "asc" } },
+      opportunity: true, offer: true, interviews: { orderBy: { scheduledAt: "asc" }, include: { feedback: { include: { author: { select: { name: true } } } } } },
+      answers: { include: { question: true }, orderBy: { question: { position: "asc" } } }, events: { orderBy: { createdAt: "asc" } },
       messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true, phone: true } } } }, referrer: { include: { user: { select: { name: true } } } },
     },
   });
+  const templates = await db.messageTemplate.findMany({ where: { companyId: mem.company.id }, orderBy: { name: "asc" }, select: { id: true, name: true, body: true } });
   return (
     <>
       <PageTitle title="Pipeline" sub="Move candidates forward, schedule interviews, extend offers and keep private notes. Candidates are never rejected automatically." />
@@ -40,7 +44,33 @@ export default async function Page() {
                       {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email ?? a.student.user.phone}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
                       <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Passport</a>
                       <p className="mt-1 text-xs text-ink-soft">Source: {sourceLabel(a.source)}{a.referrer && <> · Referred by {a.referrer.user.name}</>}</p>
-                      {a.interviews[0] && <p className="mt-2 text-xs text-ink-soft">Next interview: {fmtTime(a.interviews[0].scheduledAt)} IST</p>}
+                      {a.interviews.find((i) => i.status === "SCHEDULED") && <p className="mt-2 text-xs text-ink-soft">Next interview: {fmtTime(a.interviews.find((i) => i.status === "SCHEDULED")!.scheduledAt)} IST</p>}
+                      <p className="text-xs text-ink-soft">In this stage for {daysBetween(a.events.at(-1)?.createdAt ?? a.createdAt, new Date())} days</p>
+                      {a.answers.length > 0 && (
+                        <details className="mt-2"><summary className="cursor-pointer font-semibold">Screening answers ({a.answers.length})</summary>
+                          <dl className="mt-2 space-y-2 text-xs">{a.answers.map((x) => <div key={x.id}><dt className="font-semibold">{x.question.text}</dt><dd className="whitespace-pre-line text-ink-soft">{x.answer}</dd></div>)}</dl>
+                          <p className="mt-1 text-[11px] text-ink-soft">Read by people only. Answers never score or filter candidates.</p>
+                        </details>)}
+                      {a.interviews.some((i) => i.status === "COMPLETED") && (
+                        <details className="mt-2"><summary className="cursor-pointer font-semibold">Interview feedback{(() => { const f = a.interviews.flatMap((i) => i.feedback); return f.length ? ` (${f.length} · avg ${(f.reduce((n, x) => n + x.rating, 0) / f.length).toFixed(1)}/5)` : ""; })()}</summary>
+                          {a.interviews.filter((i) => i.status === "COMPLETED").map((iv) => (
+                            <div key={iv.id} className="mt-2 rounded-lg border border-line p-2">
+                              <p className="text-xs font-semibold">Interview on {fmtTime(iv.scheduledAt)} IST</p>
+                              <ul className="mt-1 space-y-1 text-xs">{iv.feedback.map((f) => <li key={f.id}><b>{f.author.name}</b>: {f.rating}/5 · {f.recommendation.replace("_", " ").toLowerCase()}{f.strengths && <> · Strengths: {f.strengths}</>}{f.concerns && <> · Concerns: {f.concerns}</>}</li>)}</ul>
+                              <ActionForm action={saveInterviewFeedback} submit="Save my feedback" success="Saved" className="mt-2 space-y-2">
+                                <input type="hidden" name="interviewId" value={iv.id} />
+                                <label className="block text-sm font-semibold">Rating (1 to 5)<select name="rating" className={sel} defaultValue={iv.feedback.find((f) => f.authorId === u.id)?.rating ?? 3}>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}</select></label>
+                                <label className="block text-sm font-semibold">Recommendation<select name="recommendation" className={sel} defaultValue={iv.feedback.find((f) => f.authorId === u.id)?.recommendation ?? "YES"}><option value="STRONG_YES">Strong yes</option><option value="YES">Yes</option><option value="NO">No</option><option value="STRONG_NO">Strong no</option></select></label>
+                                <Field label="Strengths" name="strengths" maxLength={800} defaultValue={iv.feedback.find((f) => f.authorId === u.id)?.strengths ?? ""} />
+                                <Field label="Concerns" name="concerns" maxLength={800} defaultValue={iv.feedback.find((f) => f.authorId === u.id)?.concerns ?? ""} />
+                              </ActionForm>
+                            </div>))}
+                          <p className="mt-1 text-[11px] text-ink-soft">Private to your team. Feedback is advice for people and never moves a candidate by itself.</p>
+                        </details>)}
+                      <details className="mt-2"><summary className="cursor-pointer font-semibold">Stage history</summary>
+                        <ol className="mt-2 space-y-1 text-xs text-ink-soft">{a.events.map((e) => <li key={e.id}>{fmtTime(e.createdAt)}: {e.fromStage ? `${labels[e.fromStage as keyof typeof labels] ?? e.fromStage} → ` : ""}{labels[e.toStage as keyof typeof labels] ?? e.toStage}</li>)}{a.events.length === 0 && <li>No history recorded before this feature.</li>}</ol>
+                      </details>
+                      {a.offer && <p className="mt-2 text-xs"><Link className="font-semibold underline" href={`/dashboard/pipeline/${a.id}/offer`}>Printable offer letter</Link></p>}
                       {a.offer && <p className="mt-2 text-xs text-ink-soft">Offer: {a.offer.status.toLowerCase()}</p>}
                       <div className="mt-3 flex flex-wrap gap-2">
                         {direct && <ActionButton variant="primary" action={setStage.bind(null, a.id, direct)}>Move to {labels[direct]}</ActionButton>}
@@ -68,7 +98,7 @@ export default async function Page() {
                         </details>)}
                       <details className="mt-2"><summary className="cursor-pointer font-semibold">Notes & messages</summary>
                         <ActionForm action={saveNotes} submit="Save notes" success="Saved" className="mt-2 space-y-2"><input type="hidden" name="applicationId" value={a.id} /><Field label="Private notes" name="notes" defaultValue={a.employerNotes ?? ""} maxLength={1000} /></ActionForm>
-                        <Thread applicationId={a.id} messages={a.messages.map((m) => ({ id: m.id, body: m.body, mine: m.senderId === u.id, who: m.sender.name, at: m.createdAt.toISOString() }))} />
+                        <Thread applicationId={a.id} templates={templates} messages={a.messages.map((m) => ({ id: m.id, body: m.body, mine: m.senderId === u.id, who: m.sender.name, at: m.createdAt.toISOString() }))} />
                       </details>
                     </article>);
                 })}</div>

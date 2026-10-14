@@ -29,6 +29,7 @@ export default async function Page() {
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Pay (as shown to students)" name="payText" required placeholder="₹20,000 / month · or: certificate only" /><Field label="Monthly amount (₹) for filters" name="monthlyINR" type="number" min={0} defaultValue={0} /></div>
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Location" name="location" required /><Field label="Deadline" name="deadline" type="date" required /></div>
             <Field label="Eligibility" name="eligibility" required placeholder="2026 graduates, any branch" />
+            <Area label="Screening questions (optional)" name="questions" hint="One per line, up to 5. Candidates answer when applying. Answers are read by your team; they never score or reject anyone." />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Graduation years" name="gradYears" placeholder="2025, 2026" /><Field label="Skills" name="skills" placeholder="React, SQL" /></div>
           </ActionForm>
         </Panel>

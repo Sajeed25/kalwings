@@ -52,6 +52,14 @@ export const opportunitySchema = z.object({
   .refine((o) => o.unpaid || /\d/.test(o.payText), { message: "Paid roles must state the amount", path: ["payText"] });
 
 export const noteSchema = z.object({ applicationId: z.string().cuid(), notes: text(1000) });
+export const feedbackSchema = z.object({
+  interviewId: z.string().cuid(),
+  rating: z.coerce.number().int().min(1, "Choose a rating from 1 to 5").max(5),
+  recommendation: z.enum(["STRONG_YES", "YES", "NO", "STRONG_NO"]),
+  strengths: text(800).optional().default(""),
+  concerns: text(800).optional().default(""),
+});
+export const templateSchema = z.object({ name: text(60).min(2, "Give the template a name"), body: text(1000).min(10, "Write the message") });
 export const messageSchema = z.object({ applicationId: z.string().cuid(), body: text(1000).min(1) });
 export const reportSchema = z.object({ targetType: z.enum(["OPPORTUNITY", "MENTOR", "STUDENT", "COMPANY", "POST", "COMMENT", "GROUP"]), targetId: z.string().cuid(), reason: text(500).min(10) });
 
