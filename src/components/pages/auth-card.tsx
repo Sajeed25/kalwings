@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/brand";
 import { loginWithPassword, requestOtp, submitOtp, type AuthState } from "@/app/actions/auth";
 
-const f = "mt-1.5 h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px]";
+const f = "mt-1.5 h-11 w-full rounded-lg border border-line bg-bg px-3.5 text-[15px]";
 const errs: Record<string, string> = { "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified.", suspended: "This account has been suspended. Please contact support." };
 
 export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean }) {
@@ -20,11 +20,15 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
   const error = (passwordMode ? s3.error : code ? s2.error : s1.error) ?? (errorCode ? errs[errorCode] : undefined);
 
   return (
-    <div className="container flex min-h-[70vh] items-center justify-center py-16">
-      <div className="card w-full max-w-md p-8">
-        <Logo />
-        <h1 className="mt-6 text-3xl font-extrabold">{join ? "Join Kalwings" : "Welcome back"}</h1>
-        <p className="mt-1 text-ink-soft">{join ? "Free for students. Always." : (passwordMode ? "Log in with your password." : "Log in with a one-time code or your password.")}</p>
+    <div className="container grid min-h-[75vh] items-center gap-12 py-12 lg:grid-cols-2">
+      <div className="hidden max-w-lg lg:block">
+        <h1 className="text-4xl font-semibold leading-tight">Hire freshers on proof of skill, not résumés.</h1>
+        <p className="mt-4 text-lg text-ink-soft">Students show real work. Employers see it before they hire. Every listing shows pay, work mode, location and eligibility, and every employer is verified.</p>
+      </div>
+      <div className="card mx-auto w-full max-w-md p-8">
+        <div className="lg:hidden"><Logo /></div>
+        <h2 className="mt-6 text-2xl font-semibold lg:mt-0">{join ? "Create your account" : "Sign in"}</h2>
+        <p className="mt-1 text-ink-soft">{join ? "Free for students." : (passwordMode ? "Use your password." : "We will email or text you a one-time code.")}</p>
         {error && <p role="alert" className="mt-4 rounded-lg bg-danger/15 p-3 text-sm text-danger">{error}</p>}
 
         {passwordMode ? (
@@ -59,7 +63,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
             <Button size="lg" className="w-full" disabled={p2}>{p2 ? "Checking…" : join ? "Create my account" : "Log in"}</Button>
           </form>
         )}
-        <p className="mt-6 text-center text-sm text-ink-soft">{join ? <>Already a member? <Link className="font-semibold text-ink underline" href="/login">Log in</Link></> : <>New here? <Link className="font-semibold text-ink underline" href="/join">Join Kalwings</Link></>}</p>
+        <p className="mt-6 text-center text-sm text-ink-soft">{join ? <>Already a member? <Link className="font-semibold text-ink underline" href="/login">Log in</Link></> : <>New here? <Link className="font-semibold text-ink underline" href="/join">Create an account</Link></>}</p>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export default function Page() {
   const mail = <a className="text-accent underline" href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>;
   return (
     <Prose>
-      <h1 className="text-4xl font-extrabold md:text-5xl">Trust &amp; Safety</h1>
+      <h1 className="text-4xl font-semibold md:text-5xl">Trust &amp; Safety</h1>
       <p>Last updated {LEGAL.updated}. These are the rules built into the product, not just promises.</p>
 
       <h2 className={H}>Evidence, not claims</h2>

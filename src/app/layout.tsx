@@ -1,17 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { ServiceWorkerRegister } from "@/components/sw-register";
-import { RevealObserver } from "@/components/reveal-observer";
 import { site } from "@/lib/site";
 
 const orgLd = { "@context": "https://schema.org", "@type": "Organization", name: "Kalwings", url: site.url, slogan: site.tagline, description: site.description, address: { "@type": "PostalAddress", addressRegion: "Telangana", addressCountry: "IN" } };
 
-// BRAND FONT (single swap point). Montserrat is a PLACEHOLDER chosen to sit with the geometric KALWINGS wordmark.
-// To match another font (e.g. the one on os.nexpreneur.com), change ONLY this import/constructor and keep variable "--font-brand".
-const brandFont = Montserrat({ subsets: ["latin"], variable: "--font-brand", display: "swap" });
+// BRAND FONT (single swap point): change only this constructor and keep the variable name "--font-brand".
+const brandFont = Inter({ subsets: ["latin"], variable: "--font-brand", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -25,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#0B0E1A",
   width: "device-width",
   initialScale: 1,
 };
@@ -38,12 +36,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-IN" className={brandFont.variable} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} /></head>
       <body>
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-black focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
         <Navbar />
-        <main id="main">{children}</main>
+        <main id="main" className="min-h-[70vh]">{children}</main>
         <Footer />
         <ServiceWorkerRegister />
-        <RevealObserver />
       </body>
     </html>
   );

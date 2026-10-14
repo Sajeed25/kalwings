@@ -40,14 +40,14 @@ export default async function Page({ params }: { params: Promise<{ username: str
   return (
     <div className="container max-w-3xl py-12">
       <article className="card overflow-hidden">
-        <header className="flex items-start justify-between gap-4 bg-black p-8 text-white">
+        <header className="flex items-start justify-between gap-4 bg-[#0B0E1A] p-8 text-white">
           <div className="flex items-start gap-5">
             {p.avatarId
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={`/api/files/${p.avatarId}`} alt={`Photo of ${p.user.name}`} className="h-20 w-20 shrink-0 rounded-2xl object-cover" width={80} height={80} />
               : null}
             <div><div className="flex items-center gap-2"><LogoMark className="h-6 w-6" /><span className="text-sm text-white/70">Kalwings Talent Passport</span></div>
-              <h1 className="mt-4 text-4xl font-extrabold">{p.user.name}</h1><p className="mt-1 text-white/80">{p.headline}</p>
+              <h1 className="mt-4 text-4xl font-semibold">{p.user.name}</h1><p className="mt-1 text-white/80">{p.headline}</p>
               <p className="text-sm text-white/60">{[p.college?.name, p.city, p.graduationYear && `Class of ${p.graduationYear}`].filter(Boolean).join(" · ")}</p></div></div>
           <div className="w-24 shrink-0 rounded-xl bg-white p-1.5" role="img" aria-label={`QR code linking to ${url}`} dangerouslySetInnerHTML={{ __html: qr }} />
         </header>

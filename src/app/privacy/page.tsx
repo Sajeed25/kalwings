@@ -11,7 +11,7 @@ export default function Page() {
   const mail = <a className="text-accent underline" href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>;
   return (
     <Prose>
-      <h1 className="text-4xl font-extrabold md:text-5xl">Privacy Policy</h1>
+      <h1 className="text-4xl font-semibold md:text-5xl">Privacy Policy</h1>
       <p>Last updated {LEGAL.updated}. This explains how {LEGAL.brand} (&quot;we&quot;, &quot;us&quot;), based in {LEGAL.place}, handles personal data on {LEGAL.site}. We follow the principles of India&apos;s Digital Personal Data Protection Act, 2023. Questions or requests: {mail}.</p>
       <p>The short version: we collect what we need to run the platform, your contact details stay private unless you choose otherwise, you decide who sees each part of your profile, we don&apos;t sell your data, and you can export or delete your account yourself.</p>
 

@@ -2,6 +2,7 @@ import { requirePageRole } from "@/lib/session";
 import { ActionForm, Field } from "@/components/dash/action-form";
 import { PageTitle, Panel } from "@/components/dash/ui";
 import { Button } from "@/components/ui/button";
+import { Appearance } from "@/components/dash/appearance";
 import { deleteMyAccount, removePassword, setPassword } from "@/app/actions/account";
 import { sessionAgeSeconds } from "@/lib/session";
 import { PASSWORD_MIN } from "@/lib/password";
@@ -12,8 +13,9 @@ export default async function Page() {
   const hasPw = !!u.passwordHash;
   return (
     <>
-      <PageTitle title="Account & data" sub="Your data is yours: download it any time, or delete it." />
+      <PageTitle title="Settings" sub="Appearance, sign-in, and your data: download it any time, or delete it." />
       <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Appearance"><Appearance /></Panel>
         <Panel title="Password login (optional)">
           <p className="text-sm text-ink-soft">{hasPw ? "Password login is on. You can still always log in with an email code." : "Email codes always work. Add a password if you'd like to log in with your email and password instead."}</p>
           <ActionForm action={setPassword} reset submit={hasPw ? "Change password" : "Turn on password login"} success={hasPw ? "Password changed" : "Password login is on"} className="mt-4 space-y-3">

@@ -32,6 +32,8 @@ const nextConfig = {
     ["/assessments", "/dashboard/assessments"], ["/profile", "/dashboard/profile"], ["/portfolio", "/dashboard/portfolio"], ["/applications", "/dashboard/applications"], ["/messages", "/dashboard/applications"],
     ["/notifications", "/dashboard/notifications"], ["/settings", "/dashboard/account"], ["/register", "/join"], ["/forgot-password", "/login"], ["/verify", "/login"],
     ["/jobs", "/opportunities?type=JOB"], ["/internships", "/opportunities?type=INTERNSHIP"],
+    // Marketing pages live on the main site.
+    ["/students", "https://kalwings.com"], ["/employers", "https://kalwings.com"], ["/colleges", "https://kalwings.com"], ["/about", "https://kalwings.com"], ["/press", "https://kalwings.com"],
   ].map(([source, destination]) => ({ source, destination, permanent: false })),
   headers: async () => [
     {

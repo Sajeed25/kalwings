@@ -1,30 +1,9 @@
-import { Hero } from "@/components/home/hero";
-import { TrustStrip, Impact } from "@/components/home/trust-impact";
-import { Problem, Journey } from "@/components/home/problem-journey";
-import { Pillars } from "@/components/home/pillars";
-import { MentorWall } from "@/components/home/mentor-wall-section";
-import { LiveOpportunities } from "@/components/home/live-opportunities";
-import { ChallengeSpotlight } from "@/components/home/challenge";
-import { Community, Stories, Recognition, AudienceSplit, Team, FinalCta } from "@/components/home/rest";
+import { redirect } from "next/navigation";
+import { getUser } from "@/lib/session";
 
-export default function Home() {
-  return (
-    <>
-      <Hero />
-      <TrustStrip />
-      <Impact />
-      <Problem />
-      <Journey />
-      <Pillars />
-      <MentorWall />
-      <LiveOpportunities />
-      <ChallengeSpotlight />
-      <Community />
-      <Stories />
-      <Recognition />
-      <AudienceSplit />
-      <Team />
-      <FinalCta />
-    </>
-  );
+export const dynamic = "force-dynamic";
+
+/** The marketing site lives at kalwings.com. This is the app: go straight to the workspace, or to sign-in. */
+export default async function Home() {
+  redirect((await getUser()) ? "/dashboard" : "/login");
 }

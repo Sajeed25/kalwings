@@ -36,11 +36,11 @@ export default async function Page() {
           <Panel title="Where candidates are now">
             <ul className="space-y-3">{[...PIPELINE, "REJECTED" as const].map((s) => (
               <li key={s} className="grid grid-cols-[130px_1fr_40px] items-center gap-3 text-sm"><span>{s === "REJECTED" ? "Rejected" : labels[s]}</span>
-                <span className="h-3 rounded bg-muted" role="img" aria-label={`${by(s)} candidates`}><span className="block h-3 rounded bg-neon" style={{ width: `${(by(s) / max) * 100}%` }} /></span><b className="text-right">{by(s)}</b></li>))}</ul>
+                <span className="h-3 rounded bg-muted" role="img" aria-label={`${by(s)} candidates`}><span className="block h-3 rounded bg-primary" style={{ width: `${(by(s) / max) * 100}%` }} /></span><b className="text-right">{by(s)}</b></li>))}</ul>
             <p className="mt-3 text-xs text-ink-soft">Withdrawn applications: {by("WITHDRAWN")}.</p>
           </Panel>
           <Panel title="Applications per week">
-            <ul className="space-y-2 text-sm">{weekly.map((n, i) => <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n} applications`}><span className="block h-3 rounded bg-neon" style={{ width: `${(n / wmax) * 100}%` }} /></span><b className="text-right">{n}</b></li>)}</ul>
+            <ul className="space-y-2 text-sm">{weekly.map((n, i) => <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n} applications`}><span className="block h-3 rounded bg-primary" style={{ width: `${(n / wmax) * 100}%` }} /></span><b className="text-right">{n}</b></li>)}</ul>
           </Panel>
           <Panel title="How fast you move">
             <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{speed.map(({ s, v }) => <li key={s} className="rounded-lg border border-line p-3"><p className="text-ink-soft">Apply → {s === "HIRED" ? "hired (time to hire)" : labels[s]}</p><p className="font-display text-xl font-bold">{v ? `${v.d} days` : "No data yet"}</p>{v && <p className="text-xs text-ink-soft">average of {v.n} candidate{v.n === 1 ? "" : "s"}</p>}</li>)}</ul>

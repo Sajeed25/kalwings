@@ -11,7 +11,7 @@ function Weekly({ title, rows }: { title: string; rows: number[] }) {
   const max = Math.max(1, ...rows);
   return (
     <Panel title={title}><ul className="space-y-2 text-sm">{rows.map((n, i) => (
-      <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n}`}><span className="block h-3 rounded bg-neon" style={{ width: `${(n / max) * 100}%` }} /></span><b className="text-right">{n}</b></li>))}</ul></Panel>
+      <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n}`}><span className="block h-3 rounded bg-primary" style={{ width: `${(n / max) * 100}%` }} /></span><b className="text-right">{n}</b></li>))}</ul></Panel>
   );
 }
 

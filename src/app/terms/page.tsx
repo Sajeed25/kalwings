@@ -11,7 +11,7 @@ export default function Page() {
   const mail = <a className="text-accent underline" href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>;
   return (
     <Prose>
-      <h1 className="text-4xl font-extrabold md:text-5xl">Terms of Use</h1>
+      <h1 className="text-4xl font-semibold md:text-5xl">Terms of Use</h1>
       <p>Last updated {LEGAL.updated}. These terms are an agreement between you and {LEGAL.brand} (&quot;we&quot;, &quot;us&quot;), based in {LEGAL.place}, for your use of {LEGAL.site} and related services. By creating an account or using the site you agree to them and to our <Link className="text-accent underline" href="/privacy">Privacy Policy</Link>. If you do not agree, please do not use {LEGAL.brand}.</p>
 
       <h2 className={H}>1. What Kalwings is</h2>

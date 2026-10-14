@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
       <Block>
         <form role="search" aria-label="Describe what you want" className="mb-6 flex flex-wrap gap-2"><label className="sr-only" htmlFor="nl">Describe what you want</label>
           <input id="nl" name="nl" placeholder="Describe what you want, e.g. remote React internship, paid, class of 2026" className="h-11 min-w-[260px] flex-1 rounded-lg border border-line bg-surface px-3" />
-          <button className="h-11 rounded-lg bg-neon px-5 font-semibold text-black">Find</button></form>
+          <button className="h-11 rounded-lg bg-primary px-5 font-semibold text-white">Find</button></form>
         {interpreted && <p className="mb-4 text-sm text-ink-soft" role="status">We read that as: {interpreted}. Adjust the filters below if that is not what you meant.</p>}
         {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">Listings are temporarily unavailable. Please check back in a few minutes.</p>}
         <OpportunityBrowser items={res.items} total={res.total} page={res.page} pages={res.pages} query={query} />

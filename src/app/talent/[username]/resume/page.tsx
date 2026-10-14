@@ -26,7 +26,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
     <div className="container max-w-3xl py-10">
       <div className="no-print mb-6 flex items-center justify-between"><Link href={`/talent/${key}`} className="text-sm font-semibold text-accent underline">← Back to Passport</Link><PrintButton /></div>
       <article className="card p-8 print:border-0 print:p-0">
-        <h1 className="text-3xl font-extrabold">{p.user.name}</h1>
+        <h1 className="text-3xl font-semibold">{p.user.name}</h1>
         <p className="mt-1">{p.headline}</p>
         <p className="text-sm text-ink-soft">{[p.college?.name, p.city, p.graduationYear && `Class of ${p.graduationYear}`].filter(Boolean).join(" · ")}</p>
         <p className="text-sm text-ink-soft">{site.url}/talent/{key}{p.githubUrl && ` · ${p.githubUrl}`}</p>

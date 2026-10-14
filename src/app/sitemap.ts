@@ -4,11 +4,11 @@ import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const paths = ["", "/opportunities", "/mentors", "/challenges", "/community", "/students", "/employers", "/colleges", "/about", "/press", "/contact", "/help", "/privacy", "/terms", "/trust"];
+const paths = ["/opportunities", "/mentors", "/challenges", "/community", "/contact", "/help", "/privacy", "/terms", "/trust"];
 
 /** Static pages plus REAL (non-sample) verified opportunities and mentors. If the database is down, only static pages are listed. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base: MetadataRoute.Sitemap = paths.map((p) => ({ url: `${site.url}${p}`, changeFrequency: "weekly", priority: p === "" ? 1 : 0.7 }));
+  const base: MetadataRoute.Sitemap = paths.map((p) => ({ url: `${site.url}${p}`, changeFrequency: "weekly", priority: 0.7 }));
   try {
     const [opps, mentors, careers] = await Promise.all([
       db.opportunity.findMany({ where: { moderated: "VERIFIED", closedAt: null, deadline: { gt: new Date() }, company: { status: "VERIFIED", isSample: false, members: { none: { user: { suspendedAt: { not: null } } } } } }, select: { id: true, createdAt: true }, take: 5000 }),

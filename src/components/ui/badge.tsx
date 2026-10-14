@@ -5,7 +5,7 @@ const tones: Record<Tone, string> = {
   neutral: "bg-muted text-ink-soft",
   accent: "bg-accent/15 text-accent",
   spot: "bg-spot/15 text-spot",
-  dark: "bg-black text-white",
+  dark: "bg-primary text-white",
   sample: "border border-dashed border-ink-soft/40 text-ink-soft",
 };
 

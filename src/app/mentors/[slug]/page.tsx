@@ -33,7 +33,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           ? <img src={`/api/files/${m.avatarId}`} alt={`Photo of ${m.user.name}`} className="aspect-[4/5] w-full rounded-card-lg object-cover" width={640} height={800} />
           : <PhotoPlaceholder label="mentor" className="aspect-[4/5] rounded-card-lg" />}
         <div>
-          <h1 className="text-4xl font-extrabold md:text-5xl">{m.user.name}</h1>
+          <h1 className="text-4xl font-semibold md:text-5xl">{m.user.name}</h1>
           <p className="mt-2 text-lg text-ink-soft">{m.roleTitle} · {m.company} · {m.country}</p>
           <ul className="mt-4 flex flex-wrap items-center gap-2">{asList(m.tags).map((t) => <li key={t}><Badge tone="accent">{t}</Badge></li>)}{m.isSample && <li><SampleTag /></li>}</ul>
           {m.bio && <p className="mt-6 text-ink-soft">{m.bio}</p>}
