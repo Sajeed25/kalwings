@@ -3,6 +3,7 @@ import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Field } from "@/components/dash/action-form";
 import { Empty, PageTitle, Panel, Status, fmt } from "@/components/dash/ui";
 import { suspendUser, unsuspendUser } from "@/app/actions/admin";
+import { AddUserForm } from "@/components/dash/add-user-form";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requirePageRole("PLATFORM_ADMIN");
@@ -16,7 +17,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   });
   return (
     <>
-      <PageTitle title="Users" sub="Suspend accounts that break the rules. Suspended users are signed out at once, can't log in, and their profile or listings disappear from public pages. Fully reversible." />
+      <PageTitle title="Users" sub="Add people directly (including HR at other companies), or suspend accounts that break the rules. Suspended users are signed out at once, can't log in, and their profile or listings disappear from public pages. Fully reversible." />
+      <Panel title="Add a user" className="mb-6"><AddUserForm /></Panel>
       <form className="card mb-6 flex flex-wrap gap-3 p-4" role="search"><input name="q" defaultValue={q} placeholder="Search name or email" aria-label="Search users" className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-accent px-6 font-semibold text-black">Search</button></form>
       <Panel>{users.length ? <ul className="divide-y divide-line">{users.map((u) => (
         <li key={u.id} className="py-4">

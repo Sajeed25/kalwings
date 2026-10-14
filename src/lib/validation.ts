@@ -196,3 +196,14 @@ export const driveSchema = z.object({
   gradYears: text(60).optional().default(""), minCompleteness: z.coerce.number().int().min(0).max(100).default(0),
 });
 export const studentDepartmentSchema = z.object({ departmentId: z.string().cuid().optional().or(z.literal("")) });
+
+/** Admin-created accounts. Company and college fields apply only to their roles. */
+export const adminUserSchema = z.object({
+  name: text(80).min(2, "Enter the person's name"),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address").max(254),
+  role: z.enum(["STUDENT", "MENTOR", "EMPLOYER", "COLLEGE_ADMIN", "PLATFORM_ADMIN"]),
+  companyName: text(120).optional().default(""),
+  companyWebsite: text(400).optional().default(""),
+  collegeName: text(160).optional().default(""),
+  city: text(80).optional().default(""),
+});

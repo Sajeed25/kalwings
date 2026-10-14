@@ -31,6 +31,7 @@ Merge a PR into `main`; GitHub CI runs; Hostinger pulls, builds (`npm run build`
 - Uploaded images live in the database, so they are covered by the same backups.
 
 ## Routine tasks
+- **Add people directly** (platform admin): Dashboard > Users > "Add a user". Pick a role; for HR or recruiters at other companies enter the company (an existing one is joined, a new one is created as verified); for college admins enter the college. They sign in with an emailed one-time code; no password is set. Each addition is in the audit log.
 - **First/extra admin**: add the email to `ADMIN_EMAILS` and sign in, or `DATABASE_URL=... npm run make-admin -- email`.
 - **Never run `npm run db:seed` in production**. If it ever ran there, run `npm run db:unseed`.
 - **Rotate secrets** (every 6 to 12 months or after any exposure): generate a new `AUTH_SECRET` (`openssl rand -base64 48`), new mailbox password, new DB password; update env vars in hPanel; redeploy.

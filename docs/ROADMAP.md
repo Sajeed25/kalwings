@@ -70,3 +70,6 @@ The app no longer has a landing page: kalwings.com is the marketing site, and ap
 
 ## Addendum: premium look
 Second design pass (the first one wrongly changed the logo; the original purple-to-green logo is back). Two typefaces, warm dark palette with an orange accent and sticker colours, pill controls, icon sidebar, kanban-style pipeline columns, colour initials tiles for people without photos, and company logo upload (`Company.logoId`, `COMPANY_LOGO` upload kind). No functionality changed. See `docs/FEATURES.md`.
+
+## Addendum: sign-in is email only; admins can add users
+Mobile-number sign-in is hidden everywhere and refused by the server unless `MOBILE_LOGIN=true` (set only after an SMS provider exists). Platform admins can add accounts directly from Dashboard > Users: students, mentors, college admins, other platform admins, and HR or recruiters who work at other companies (their company is created or confirmed as verified in the same step). The person signs in with an emailed code.

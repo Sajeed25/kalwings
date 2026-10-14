@@ -707,6 +707,34 @@ await ph.fill('input[name=identifier]', '9876543210'); await ph.evaluate(() => {
 await ph.click('button:has-text("Send one-time code")'); await ph.waitForSelector('p[role=alert]', { timeout: 20000 });
 ok((await ph.locator('p[role=alert]').innerText()).includes('valid email'), 'the server refuses a mobile number even if the form is tampered with');
 
+// --- platform admin adds users directly (HR at other companies, college admins) after verifying them
+await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' });
+const addUser = async (page, o) => {
+  await page.fill('form[aria-label="Add a user"] input[name=name]', o.name); await page.fill('form[aria-label="Add a user"] input[name=email]', o.email);
+  await page.selectOption('form[aria-label="Add a user"] select[name=role]', o.role);
+  if (o.company) await page.fill('form[aria-label="Add a user"] input[name=companyName]', o.company);
+  if (o.website) await page.fill('form[aria-label="Add a user"] input[name=companyWebsite]', o.website);
+  if (o.college) await page.fill('form[aria-label="Add a user"] input[name=collegeName]', o.college);
+  await page.click('form[aria-label="Add a user"] button:has-text("Add user")');
+};
+const hrEmail = `hr${tag}@example.com`;
+await addUser(admin, { name: `Pat HR ${tag}`, email: hrEmail, role: 'EMPLOYER', company: `Globex ${tag}`, website: 'https://globex.example' });
+await admin.waitForSelector('form[aria-label="Add a user"] >> text=Added'); ok((await admin.locator('form[aria-label="Add a user"] [role=status]').innerText()).includes('(new, verified)'), 'admin adds an HR user and a new verified company in one step');
+await admin.goto(`${B}/dashboard/users?q=${encodeURIComponent(hrEmail)}`); ok(await admin.locator(`text=Pat HR ${tag}`).count() > 0, 'the new user appears in the users list');
+await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' }); await addUser(admin, { name: 'Dup', email: hrEmail, role: 'EMPLOYER', company: `Globex ${tag}` });
+await admin.waitForSelector('form[aria-label="Add a user"] [role=alert]'); ok((await admin.locator('form[aria-label="Add a user"] [role=alert]').innerText()).includes('already exists'), 'a duplicate email is refused');
+await addUser(admin, { name: `Sam HR ${tag}`, email: `hr2${tag}@example.com`, role: 'EMPLOYER', company: `GLOBEX ${tag}` });
+await admin.waitForFunction((t) => document.querySelector('form[aria-label="Add a user"] [role=status]')?.textContent?.includes(`hr2${t}@example.com`), tag); ok(!(await admin.locator('form[aria-label="Add a user"] [role=status]').innerText()).includes('(new, verified)'), 'a second HR joins the existing company instead of creating a duplicate');
+// own forwarded IP so this late sign-in is not counted against the per-IP code limit the earlier logins used up
+const hrCtx = await b.newContext({ viewport: { width: 1300, height: 900 }, extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.50' } }); const hr = await hrCtx.newPage(); hr.on('pageerror', (e) => { console.log('PAGEERROR', e.message); fails++; });
+await auth(hr, 'login', hrEmail);
+await hr.goto(`${B}/dashboard/company`, { waitUntil: 'networkidle' });
+ok(await hr.locator(`h2:has-text("Globex ${tag}")`).count() > 0 && await hr.locator('text=Recruiting team').count() > 0 && await hr.locator(`text=Sam HR ${tag}`).count() > 0, 'the added HR signs in with an email code and lands in the verified company with their colleague');
+await hr.goto(`${B}/dashboard/roles`); ok(await hr.locator('button:has-text("Submit for review")').count() === 1, 'the HR can post roles straight away (company is verified)');
+await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' }); await addUser(admin, { name: `Dean ${tag}`, email: `dean${tag}@example.com`, role: 'COLLEGE_ADMIN', college: `Delta Institute ${tag}` });
+await admin.waitForSelector('form[aria-label="Add a user"] >> text=Added'); ok((await admin.locator('form[aria-label="Add a user"] [role=status]').innerText()).includes('(new, verified)'), 'admin adds a college admin with a verified college');
+await employer.goto(`${B}/dashboard/users`); ok(!/\/dashboard\/users/.test(employer.url()) || await employer.locator('form[aria-label="Add a user"]').count() === 0, 'only platform admins can add users');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 
