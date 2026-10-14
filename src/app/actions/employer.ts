@@ -3,8 +3,9 @@ import { revalidatePath } from "next/cache";
 import type { ApplicationStage } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
-import { companySchema, opportunitySchema, noteSchema, interviewSchema, offerSchema, inviteSchema, stageLabelsSchema, csv } from "@/lib/validation";
+import { companySchema, opportunitySchema, noteSchema, challengeSchema, parseRubric, reviewSchema, interviewSchema, offerSchema, inviteSchema, stageLabelsSchema, csv } from "@/lib/validation";
 import { audit } from "@/lib/audit";
+import { completeness } from "@/lib/completeness";
 import { DEFAULT_LABEL } from "@/lib/stages";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
@@ -36,6 +37,7 @@ export async function postOpportunity(_: Result, fd: FormData): Promise<Result> 
   const r = opportunitySchema.safeParse(obj(fd));
   if (!r.success) return fail(r.error);
   const d = r.data;
+  if (d.type === "CHALLENGE") return { error: "Create challenges under Challenges: they need a brief and a scoring rubric." };
   await db.opportunity.create({
     data: {
       companyId: company.id, title: d.title, type: d.type, description: d.description, payText: d.unpaid ? `Unpaid — ${d.payText}` : d.payText,
@@ -210,4 +212,66 @@ export async function toggleShortlist(studentId: string) {
   if (await db.shortlist.findUnique({ where: key })) await db.shortlist.delete({ where: key });
   else await db.shortlist.create({ data: { companyId: company.id, studentId } });
   revalidatePath("/dashboard", "layout");
+}
+
+export async function createChallenge(_: Result, fd: FormData): Promise<Result> {
+  const { company } = await verifiedCompany();
+  const r = challengeSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const d = r.data;
+  if (d.unpaid && !/unpaid|certificate|no stipend|none/i.test(d.payText)) return { error: "For unpaid challenges say so plainly, e.g. 'Unpaid, certificate only'.", fieldErrors: { payText: "State that it is unpaid" } };
+  if (!d.unpaid && !/\d/.test(d.payText)) return { error: "Paid challenges must state the amount.", fieldErrors: { payText: "State the amount" } };
+  const rubric = parseRubric(d.rubric);
+  if (typeof rubric === "string") return { error: rubric, fieldErrors: { rubric } };
+  await db.opportunity.create({
+    data: {
+      companyId: company.id, title: d.title, type: "CHALLENGE", description: d.description, payText: d.unpaid ? `Unpaid: ${d.payText}` : d.payText,
+      unpaid: d.unpaid, monthlyINR: 0, workMode: d.workMode, location: d.location, eligibility: d.eligibility, gradYears: [], skills: d.skillTag ? [d.skillTag] : [],
+      deadline: d.deadline, moderated: "PENDING",
+      challenge: { create: { kind: d.kind, style: d.style, allowTeams: d.allowTeams, brief: d.brief, rubric, skillTag: d.skillTag || null } },
+    },
+  });
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+/** Human review against the published rubric. Shortlisting feeds the hiring pipeline; a skill is awarded only if the reviewer ticks it. */
+export async function reviewSubmission(_: Result, fd: FormData): Promise<Result> {
+  const { u, company } = await verifiedCompany();
+  const r = reviewSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const sub = await db.submission.findFirst({
+    where: { id: r.data.submissionId, status: { not: "WITHDRAWN" }, challenge: { opportunity: { companyId: company.id } } },
+    include: { challenge: { include: { opportunity: true } }, student: true },
+  });
+  if (!sub) return { error: "Submission not found." };
+  const rubric = sub.challenge.rubric as { criterion: string; max: number }[];
+  const raw = obj(fd);
+  const scores: { criterion: string; points: number; comment: string }[] = [];
+  for (let i = 0; i < rubric.length; i++) {
+    const pts = Number(raw[`p${i}`]);
+    if (!Number.isInteger(pts) || pts < 0 || pts > rubric[i].max) return { error: `"${rubric[i].criterion}": enter whole points from 0 to ${rubric[i].max}.` };
+    scores.push({ criterion: rubric[i].criterion, points: pts, comment: String(raw[`c${i}`] ?? "").slice(0, 300) });
+  }
+  const total = scores.reduce((n, x) => n + x.points, 0);
+  const max = rubric.reduce((n, x) => n + x.max, 0);
+  await db.submission.update({ where: { id: sub.id }, data: { scores, totalScore: total, maxScore: max, feedback: r.data.feedback, status: r.data.outcome, reviewedAt: new Date() } });
+  if (r.data.outcome === "SHORTLISTED") {
+    const key = { opportunityId_studentId: { opportunityId: sub.challenge.opportunityId, studentId: sub.studentId } };
+    const app = await db.application.findUnique({ where: key });
+    if (!app) await db.application.create({ data: { opportunityId: sub.challenge.opportunityId, studentId: sub.studentId, stage: "SHORTLISTED" } });
+    else if (app.stage === "APPLIED" || app.stage === "UNDER_REVIEW") await db.application.update({ where: { id: app.id }, data: { stage: "SHORTLISTED" } });
+  }
+  if (r.data.awardSkill && sub.challenge.skillTag) {
+    const basis = `challenge:${sub.id}`;
+    if (!(await db.skillEvidence.findFirst({ where: { studentId: sub.studentId, basis } }))) {
+      await db.skillEvidence.create({ data: { studentId: sub.studentId, skill: sub.challenge.skillTag, basis, explanation: `Challenge "${sub.challenge.opportunity.title}" by ${company.name}: reviewer scored ${total}/${max} against a published rubric and awarded this skill.` } });
+      const p = await db.studentProfile.findUniqueOrThrow({ where: { id: sub.studentId }, include: { projects: true } });
+      await db.studentProfile.update({ where: { id: p.id }, data: { completeness: completeness(p, await db.skillEvidence.count({ where: { studentId: p.id } })).score } });
+    }
+    await audit(u.id, "skill.awarded", `${sub.challenge.skillTag} → ${sub.studentId} (${sub.id})`);
+  }
+  await notify(sub.student.userId, "Your challenge submission was reviewed", `${sub.challenge.opportunity.title}: ${total}/${max}. Open Submissions to read the feedback.`);
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
 }

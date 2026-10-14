@@ -266,6 +266,43 @@ await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=U
 await anon.goto(`${B}/recruiter/analytics`); ok(/\/login/.test(anon.url()), '/recruiter/analytics forwards to the protected dashboard (login first)');
 await anon.goto(`${B}/jobs`); ok(anon.url().includes('/opportunities?type=JOB'), '/jobs forwards to filtered opportunities');
 
+// --- challenge-to-hire: create, moderate, discover, submit, review, shortlist, evidence
+const chTitle = `Sensor Dashboard ${tag}`; const chDeadline = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+await employer.goto(`${B}/dashboard/roles`); ok(await employer.locator('option[value=CHALLENGE]').count() === 0, 'challenges are created under Challenges, not the plain role form');
+await employer.goto(`${B}/dashboard/challenges`);
+const fillCh = async (rubric) => {
+  await employer.fill('input[name=title]', chTitle); await employer.fill('textarea[name=description]', 'Build a small dashboard that visualises noisy sensor data and explains the trade-offs you made.');
+  await employer.fill('textarea[name=brief]', 'You get a CSV of temperature readings with gaps and spikes. Clean it, chart it, and explain your approach in a short write-up.');
+  await employer.fill('textarea[name=rubric]', rubric); await employer.fill('input[name=skillTag]', 'Data Viz');
+  await employer.check('input[name=unpaid]'); await employer.fill('input[name=payText]', 'Unpaid, certificate only'); await employer.fill('input[name=location]', 'Pan-India'); await employer.fill('input[name=eligibility]', 'Final-year and recent graduates'); await employer.fill('input[name=deadline]', chDeadline);
+  await employer.click('button:has-text("Submit for moderation")');
+};
+await fillCh('only one line'); await employer.waitForSelector('p[role=alert]'); ok((await employer.locator('p[role=alert]').first().innerText()).toLowerCase().includes('rubric') || (await employer.locator('p[role=alert]').first().innerText()).includes('criteri'), 'rubric with fewer than 2 criteria is refused');
+await fillCh('Correctness | 40 | Cleans the data properly\nClarity | 30 | Chart is readable\nWrite-up | 30 | Explains trade-offs'); await employer.waitForSelector('text=Submitted. It goes live');
+await student.goto(`${B}/challenges`); ok(await student.locator(`text=${chTitle}`).count() === 0, 'unmoderated challenge is not public');
+await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: chTitle }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1500);
+await student.goto(`${B}/challenges`); ok(await student.locator(`text=${chTitle}`).count() > 0, 'approved challenge is listed on /challenges');
+await student.locator(`a:has-text("${chTitle}")`).first().click(); await student.waitForURL(/\/challenges\/[a-z0-9]+$/);
+const chUrl = student.url(); const chOppId = chUrl.split('/').pop();
+ok(await student.locator('text=How it is judged').count() > 0 && await student.locator('td:has-text("Correctness")').count() > 0, 'challenge page shows the brief and rubric');
+await student.goto(`${B}/opportunities/${chOppId}`); ok(student.url().endsWith(`/challenges/${chOppId}`), 'opportunity URL for a challenge redirects to the challenge page');
+await student.fill('input[name=title]', 'My dashboard'); await student.fill('textarea[name=summary]', 'I interpolated the gaps, removed spikes with a rolling median, and charted the result with annotations.'); await student.fill('input[name=workUrl]', 'https://github.com/example/dashboard');
+await student.click('button:has-text("Submit")'); await student.waitForSelector('text=Submission saved');
+await student.fill('input[name=title]', 'My dashboard v2'); await student.click('button:has-text("Update submission")'); await student.waitForSelector('text=Submission saved');
+await employer.goto(`${B}/dashboard/challenges`); await employer.locator(`a:has-text("${chTitle}")`).click(); await employer.waitForSelector('text=My dashboard v2');
+ok(await employer.locator('text=1 submission').count() > 0, 'resubmitting updates the same submission (one per candidate)');
+const rec3b = await rec3.goto(`${B}/dashboard/challenges/anything`); ok(rec3b.status() === 404 || /dashboard/.test(rec3.url()), 'unrelated recruiter cannot open a challenge review page');
+await employer.locator('summary:has-text("Review and score")').click();
+await employer.fill('input[name=p0]', '999'); await employer.fill('input[name=p1]', '20'); await employer.fill('input[name=p2]', '25'); await employer.fill('textarea[name=feedback]', 'Good cleaning approach; the chart needs clearer axes.');
+await employer.selectOption('select[name=outcome]', 'SHORTLISTED'); await employer.check('input[name=awardSkill]'); await employer.evaluate(() => document.querySelectorAll('input[name=p0]').forEach((i) => i.removeAttribute('max'))); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('p[role=alert]');
+ok((await employer.locator('p[role=alert]').first().innerText()).includes('0 to 40'), 'rubric points above the maximum are refused');
+await employer.fill('input[name=p0]', '35'); await employer.click('button:has-text("Save review")'); await employer.waitForSelector('text=Saved');
+await student.goto(`${B}/dashboard/submissions`); const subTxt = await student.locator('main, body').first().innerText(); ok(subTxt.includes('80/100') && subTxt.includes('chart needs clearer axes'), 'candidate sees rubric score and feedback');
+await student.goto(`${B}/dashboard/applications`); ok(await student.locator(`text=${chTitle}`).count() > 0, 'shortlisting adds the candidate to the hiring pipeline');
+await student.goto(`${B}/dashboard/passport`); const key2 = (await student.locator('a[href^="/talent/"]').first().getAttribute('href')); await anon.goto(B + key2);
+ok(await anon.locator('li:has-text("Data Viz")').count() > 0 && (await anon.locator('summary:has-text("Why these are shown")').count()) > 0, 'awarded skill appears on the Passport as evidence-backed with a reason');
+await student.goto(chUrl); ok(await student.locator('text=Your submission was reviewed').count() > 0 && await student.locator('button:has-text("Update submission")').count() === 0, 'reviewed submissions cannot be edited');
+
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
 await student.goto(`${B}/dashboard/passport`);
@@ -304,7 +341,7 @@ await student.goto(`${B}/dashboard`); const cardHref = await student.locator('a:
 const suspend = async (who, reason) => {
   await admin.goto(`${B}/dashboard/users?q=${who}`);
   const row = admin.locator('li', { hasText: who }).first(); await row.locator('summary:has-text("Suspend")').click();
-  await row.locator('input[name=reason]').fill(reason); await row.locator('button:has-text("Suspend account")').click(); await admin.waitForSelector('text=Suspended');
+  await row.locator('input[name=reason]').fill(reason); await row.locator('button:has-text("Suspend account")').click(); await admin.waitForSelector('li:has-text("' + who + '") >> text=Suspended', { timeout: 15000 }); await admin.waitForTimeout(500);
 };
 await admin.goto(`${B}/dashboard/users?q=admin@sample`); ok(await admin.locator('li', { hasText: 'admin@sample.kalwings.test' }).locator('summary:has-text("Suspend")').count() === 0, 'platform admins have no suspend control');
 await suspend(`stu${tag}@example.com`, 'Posting fake projects (test)');

@@ -93,3 +93,50 @@ export const inviteSchema = z.object({ email: z.string().trim().toLowerCase().em
 export const stageLabelsSchema = z.object({
   UNDER_REVIEW: text(24).optional().default(""), SHORTLISTED: text(24).optional().default(""), INTERVIEW: text(24).optional().default(""), OFFER: text(24).optional().default(""), HIRED: text(24).optional().default(""),
 });
+
+const rubricLine = z.string().trim();
+export const challengeSchema = z.object({
+  title: text(120).min(3),
+  description: text(600).min(30, "Add a short public summary (30+ characters)"),
+  kind: z.enum(["CODING", "SOFTWARE", "DATA_SQL", "DESIGN", "BUSINESS_CASE", "MARKETING", "HARDWARE_IOT", "RESEARCH", "OTHER"]),
+  style: z.enum(["COMPETITIVE", "COLLABORATIVE", "PORTFOLIO"]),
+  allowTeams: z.coerce.boolean().default(false),
+  brief: text(5000).min(50, "The brief needs the problem, deliverables and constraints (50+ characters)"),
+  rubric: rubricLine.min(5, "Add at least 2 criteria"),
+  skillTag: text(60).optional().default(""),
+  unpaid: z.coerce.boolean().default(false),
+  payText: text(80).min(2, "Say what participants receive (prize, stipend, interview or 'Certificate only')"),
+  workMode: z.enum(["REMOTE", "HYBRID", "ONSITE"]),
+  location: text(80).min(2),
+  eligibility: text(120).min(3),
+  deadline: z.coerce.date().refine((d) => d.getTime() > Date.now(), "Deadline must be in the future"),
+});
+
+/** One criterion per line: "Criterion | max points | what good looks like". 2 to 8 criteria, 1 to 100 points each. */
+export function parseRubric(text: string): { criterion: string; max: number; description: string }[] | string {
+  const rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (rows.length < 2 || rows.length > 8) return "Use 2 to 8 rubric lines, one criterion per line.";
+  const out: { criterion: string; max: number; description: string }[] = [];
+  for (const r of rows) {
+    const [criterion, max, ...rest] = r.split("|").map((x) => x.trim());
+    const n = Number(max);
+    if (!criterion || criterion.length > 80 || !Number.isInteger(n) || n < 1 || n > 100) return `Rubric line "${r.slice(0, 40)}" must look like: Criterion | max points (1-100) | description`;
+    out.push({ criterion, max: n, description: rest.join(" | ").slice(0, 200) });
+  }
+  return out;
+}
+
+export const submissionSchema = z.object({
+  challengeId: z.string().cuid(),
+  title: text(120).min(3),
+  summary: text(1500).min(30, "Describe your approach (30+ characters)"),
+  workUrl: url,
+  teamNote: text(300).optional().default(""),
+});
+
+export const reviewSchema = z.object({
+  submissionId: z.string().cuid(),
+  feedback: text(1500).min(10, "Give the candidate some written feedback"),
+  outcome: z.enum(["REVIEWED", "SHORTLISTED", "NOT_SELECTED"]),
+  awardSkill: z.coerce.boolean().default(false),
+});

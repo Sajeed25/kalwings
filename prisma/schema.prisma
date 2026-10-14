@@ -50,6 +50,32 @@ enum ApplicationStage {
   WITHDRAWN
 }
 
+enum ChallengeKind {
+  CODING
+  SOFTWARE
+  DATA_SQL
+  DESIGN
+  BUSINESS_CASE
+  MARKETING
+  HARDWARE_IOT
+  RESEARCH
+  OTHER
+}
+
+enum ChallengeStyle {
+  COMPETITIVE
+  COLLABORATIVE
+  PORTFOLIO
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  SHORTLISTED
+  NOT_SELECTED
+  WITHDRAWN
+}
+
 enum InterviewMode {
   VIDEO
   PHONE
@@ -145,6 +171,7 @@ model StudentProfile {
   sessions               MentorSession[]
   endorsements           Endorsement[]
   shortlistedBy          Shortlist[]
+  submissions            Submission[]
 }
 
 // Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL.
@@ -290,6 +317,7 @@ model Opportunity {
   deadline     DateTime
   sponsored    Boolean            @default(false) // must be labelled "Sponsored"; never implies verification
   moderated    VerificationStatus @default(PENDING)
+  challenge    Challenge?
   applications Application[]
   saved        SavedOpportunity[]
   createdAt    DateTime           @default(now())
@@ -309,6 +337,43 @@ model Application {
   createdAt     DateTime         @default(now())
 
   @@unique([opportunityId, studentId])
+}
+
+// Details of an Opportunity whose type is CHALLENGE. Rubric: [{criterion, max, description}]. Scoring is by a human reviewer.
+model Challenge {
+  id            String         @id @default(cuid())
+  opportunityId String         @unique
+  opportunity   Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  kind          ChallengeKind
+  style         ChallengeStyle @default(PORTFOLIO)
+  allowTeams    Boolean        @default(false)
+  brief         String         @db.Text
+  rubric        Json
+  skillTag      String?        @db.VarChar(60) // skill a reviewer may award as verified evidence
+  submissions   Submission[]
+  createdAt     DateTime       @default(now())
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  challengeId String
+  challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String           @db.VarChar(120)
+  summary     String           @db.Text
+  workUrl     String           @db.VarChar(400) // repository, document or demo link
+  teamNote    String?          @db.VarChar(300) // self-declared teammates and roles
+  status      SubmissionStatus @default(SUBMITTED)
+  scores      Json? // [{criterion, points, comment}] from the human reviewer
+  totalScore  Int?
+  maxScore    Int?
+  feedback    String?          @db.Text
+  reviewedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@unique([challengeId, studentId])
+  @@index([challengeId, status])
 }
 
 model Interview {
