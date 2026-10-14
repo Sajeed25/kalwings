@@ -4,6 +4,7 @@ import { explainMatch } from "../src/lib/matching";
 import { parseNaturalQuery } from "../src/lib/nlsearch";
 import { checkJobDescription } from "../src/lib/jdcheck";
 import { profileFeedback } from "../src/lib/feedback";
+import { publicOrigin } from "../src/lib/origin";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
 
@@ -39,5 +40,12 @@ t("a clean description passes without block flags", () => {
 t("profile feedback only asks for things, never invents them", () => {
   const f = profileFeedback({ headline: "Student", bio: null, city: null, githubUrl: null, graduationYear: null, skillsClaimed: ["C"], lookingFor: null }, { projects: [], evidence: 0, entries: 0 });
   assert.ok(f.filter((x) => x.level === "do-first").length >= 4); assert.ok(f.every((x) => !/you have \d+ evidence/i.test(x.text)));
+});
+t("OAuth origin prefers the configured https site URL over an internal proxy address", () => {
+  const req = (h: Record<string, string>, origin: string) => ({ headers: { get: (k: string) => h[k.toLowerCase()] ?? null }, nextUrl: { origin } });
+  assert.equal(publicOrigin(req({}, "http://localhost:3000"), "https://app.kalwings.com/"), "https://app.kalwings.com");
+  assert.equal(publicOrigin(req({ "x-forwarded-host": "app.kalwings.com", "x-forwarded-proto": "https" }, "http://localhost:3000"), undefined), "https://app.kalwings.com");
+  assert.equal(publicOrigin(req({ "x-forwarded-host": "evil.com/x", "x-forwarded-proto": "https" }, "http://localhost:3000"), undefined), "http://localhost:3000");
+  assert.equal(publicOrigin(req({}, "http://localhost:3000"), "http://example.com"), "http://localhost:3000");
 });
 console.log(`\n${n} unit tests passed`);
