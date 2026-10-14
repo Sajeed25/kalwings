@@ -100,7 +100,7 @@ async function AdminHome() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title={`Company verification (${pc.length})`}>
           {pc.length ? <ul className="divide-y divide-line">{pc.map((c) => (
-            <li key={c.id} className="py-3"><p className="font-semibold">{c.name}{c.isSample && " (sample)"}</p><p className="text-sm text-ink-soft">{c.website} · {c.members[0]?.user.email ?? c.members[0]?.user.phone}</p>{c.about && <p className="mt-1 text-sm">{c.about}</p>}
+            <li key={c.id} className="py-3"><p className="font-semibold">{c.name}{c.isSample && " (sample)"}</p><p className="text-sm text-ink-soft">{c.website} · {c.members[0]?.user.email}</p>{c.about && <p className="mt-1 text-sm">{c.about}</p>}
               <div className="mt-2 flex gap-2"><ActionButton variant="primary" action={reviewCompany.bind(null, c.id, "VERIFIED")}>Verify</ActionButton><ActionButton action={reviewCompany.bind(null, c.id, "REJECTED")}>Reject</ActionButton></div></li>))}</ul> : <Empty>Queue is clear.</Empty>}
         </Panel>
         <Panel title={`Mentor verification (${pm.length})`}>

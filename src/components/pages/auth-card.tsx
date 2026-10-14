@@ -34,12 +34,12 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
       <div className="card-lg mx-auto w-full max-w-md rounded-card-lg border border-line bg-surface p-8 md:p-10">
         <div className="lg:hidden"><Logo /></div>
         <h2 className="mt-6 text-3xl font-bold lg:mt-0">{join ? "Create your " : "Welcome "}<span className="serif-accent text-[1.12em]">{join ? "account" : "back"}</span></h2>
-        <p className="mt-2 text-ink-soft">{join ? "Free for students." : (passwordMode ? "Use your password." : "We will email or text you a one-time code.")}</p>
+        <p className="mt-2 text-ink-soft">{join ? "Free for students." : (passwordMode ? "Use your password." : "We will email you a one-time code.")}</p>
         {error && <p role="alert" className="mt-4 rounded-lg bg-danger/15 p-3 text-sm text-danger">{error}</p>}
 
         {passwordMode ? (
           <form action={a3} className="mt-6 space-y-4">
-            <label className="block text-sm font-semibold">Email or mobile number<input className={f} name="identifier" type="text" autoComplete="username" required defaultValue={s3.identifier} /></label>
+            <label className="block text-sm font-semibold">Email<input className={f} name="identifier" type="email" placeholder="you@example.com" autoComplete="username" required defaultValue={s3.identifier} /></label>
             <label className="block text-sm font-semibold">Password<input className={f} name="password" type="password" autoComplete="current-password" required maxLength={128} /></label>
             <Button size="lg" className="w-full" disabled={p3}>{p3 ? "Checking…" : "Log in"}</Button>
             <p className="text-sm text-ink-soft">Don&apos;t have a password, or forgot it? <button type="button" className="font-semibold text-ink underline" onClick={() => setUsePassword(false)}>Log in with an email code</button>, then set a new one under Account &amp; data.</p>
@@ -53,7 +53,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
                 </select>
               </label>
             )}
-            <label className="block text-sm font-semibold">Email or mobile number<input className={f} name="identifier" autoComplete="username" required /></label>
+            <label className="block text-sm font-semibold">Email<input className={f} name="identifier" type="email" placeholder="you@example.com" autoComplete="username" required /></label>
             <Button size="lg" className="w-full" disabled={p1}>{p1 ? "Sending…" : "Send one-time code"}</Button>
             {googleEnabled && <Button asChild size="lg" variant="secondary" className="w-full"><a href={`/api/auth/google?role=${role}`}>Continue with Google</a></Button>}
             {!join && <button type="button" className="w-full text-center text-sm font-semibold text-ink underline" onClick={() => setUsePassword(true)}>Use my password instead</button>}
@@ -61,8 +61,8 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
         ) : (
           <form action={a2} className="mt-6 space-y-4">
             <input type="hidden" name="identifier" value={s1.identifier} />
-            <p className="text-sm text-ink-soft">We sent a 6-digit code to <b className="text-ink">{s1.identifier}</b>.</p>
-            {s1.devCode && <p className="rounded-xl border border-dashed border-spot/60 bg-spot/10 p-3 text-sm text-spot">Dev mode — no email/SMS provider is connected. Your code is <b>{s1.devCode}</b>.</p>}
+            <p className="text-sm text-ink-soft">We emailed a 6-digit code to <b className="text-ink">{s1.identifier}</b>.</p>
+            {s1.devCode && <p className="rounded-xl border border-dashed border-spot/60 bg-spot/10 p-3 text-sm text-spot">Dev mode — no email provider is connected. Your code is <b>{s1.devCode}</b>.</p>}
             {join && <label className="block text-sm font-semibold">Your name<input className={f} name="name" defaultValue={s2.name} autoComplete="name" required minLength={2} /></label>}
             {join && <input type="hidden" name="role" value={s1.role} />}
             <label className="block text-sm font-semibold">6-digit code<input className={f} name="code" inputMode="numeric" pattern="\d{6}" maxLength={6} autoComplete="one-time-code" required /></label>

@@ -55,7 +55,7 @@ export default async function Page() {
           <ActionForm action={addDepartment} reset submit="Add department" success="Added" className="space-y-2"><Field label="Department name" name="name" required maxLength={80} /></ActionForm>
         </Panel>
         <Panel title="Drives and reports">
-          <p className="text-sm text-ink-soft">Run campus placement drives with verified companies, then export reports. Reports include only students who opted in, never email or phone, and every download is logged.</p>
+          <p className="text-sm text-ink-soft">Run campus placement drives with verified companies, then export reports. Reports include only students who opted in, never email, and every download is logged.</p>
           <p className="mt-3"><Link className="font-semibold underline" href="/dashboard/drives">Placement drives</Link></p>
           <ul className="mt-3 space-y-1 text-sm"><li><a className="font-semibold underline" href="/api/college/report?type=roster">Download student roster (CSV)</a></li><li><a className="font-semibold underline" href="/api/college/report?type=drives">Download drives summary (CSV)</a></li></ul>
         </Panel>

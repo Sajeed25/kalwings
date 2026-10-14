@@ -24,7 +24,7 @@ export default function Page() {
       <ul>
         <li>You must be 18 or older and able to enter a binding agreement.</li>
         <li>Give accurate information and keep it up to date. One person, one account; do not impersonate anyone.</li>
-        <li>You sign in with one-time codes sent to your email or phone. Keep access to them secure; you are responsible for activity on your account. Tell us promptly if you suspect misuse.</li>
+        <li>You sign in with one-time codes sent to your email. Keep access to them secure; you are responsible for activity on your account. Tell us promptly if you suspect misuse.</li>
         <li>Recruiters, colleges and mentors must be who they say they are. We may require proof and may refuse or remove verification.</li>
       </ul>
 

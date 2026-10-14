@@ -698,6 +698,15 @@ await anon.goto(`${B}/opportunities?q=${encodeURIComponent('Embedded Intern ' + 
 ok(await anon.locator(`article:has-text("Embedded Intern ${tag}") img[alt$="logo"]`).count() > 0, 'listing cards show the company logo');
 await anon.goto(`${B}/careers/acme-${tag}`, { waitUntil: 'networkidle' }); ok(await anon.locator('main img[alt$="logo"]').count() > 0, 'career page shows the company logo');
 
+// --- email-only sign-in: mobile is hidden and refused
+const em = await user(); await em.goto(`${B}/login`, { waitUntil: 'networkidle' });
+ok(!/mobile|phone|SMS/i.test(await em.locator('main').innerText()) && await em.locator('input[name=identifier][type=email]').count() === 1, 'sign-in asks for an email only, with no mention of mobile');
+await em.goto(`${B}/join`, { waitUntil: 'networkidle' }); ok(!/mobile|phone|SMS/i.test(await em.locator('main').innerText()), 'create-account page has no mobile option');
+const ph = await user(); await ph.goto(`${B}/login`, { waitUntil: 'networkidle' });
+await ph.fill('input[name=identifier]', '9876543210'); await ph.evaluate(() => { const i = document.querySelector('input[name=identifier]'); i.type = 'text'; });
+await ph.click('button:has-text("Send one-time code")'); await ph.waitForSelector('p[role=alert]', { timeout: 20000 });
+ok((await ph.locator('p[role=alert]').innerText()).includes('valid email'), 'the server refuses a mobile number even if the form is tampered with');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 

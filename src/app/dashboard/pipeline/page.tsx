@@ -24,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
     include: {
       opportunity: true, offer: true, tags: { orderBy: { label: "asc" } }, interviews: { orderBy: { scheduledAt: "asc" }, include: { feedback: { include: { author: { select: { name: true } } } } } },
       answers: { include: { question: true }, orderBy: { question: { position: "asc" } } }, events: { orderBy: { createdAt: "asc" } },
-      messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true, phone: true } } } }, referrer: { include: { user: { select: { name: true } } } },
+      messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true } } } }, referrer: { include: { user: { select: { name: true } } } },
     },
   });
   const allTags = await db.candidateTag.groupBy({ by: ["label"], where: { application: { opportunity: { companyId: mem.company.id } } }, orderBy: { label: "asc" } });
@@ -49,7 +49,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
                       <div className="flex items-start justify-between gap-2"><p className="font-display font-bold">{a.student.user.name}</p>
                         <input type="checkbox" name="ids" value={a.id} form="bulk-form" aria-label={`Select ${a.student.user.name}, ${a.opportunity.title}`} className="mt-1 h-4 w-4 accent-neon" /></div>
                       {a.tags.length > 0 && <ul className="mt-1 flex flex-wrap gap-1">{a.tags.map((t) => <li key={t.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"><Link href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className="underline-offset-2 hover:underline">{t.label}</Link><ActionButton variant="ghost" action={removeTag.bind(null, a.id, t.label)}>×<span className="sr-only"> remove tag {t.label}</span></ActionButton></li>)}</ul>}<p className="text-ink-soft">{a.opportunity.title}</p>
-                      {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email ?? a.student.user.phone}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
+                      {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
                       <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Passport</a>
                       <p className="mt-1 text-xs text-ink-soft">Source: {sourceLabel(a.source)}{a.referrer && <> · Referred by {a.referrer.user.name}</>}</p>
                       {a.interviews.find((i) => i.status === "SCHEDULED") && <p className="mt-2 text-xs text-ink-soft">Next interview: {fmtTime(a.interviews.find((i) => i.status === "SCHEDULED")!.scheduledAt)} IST</p>}
