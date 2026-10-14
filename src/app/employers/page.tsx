@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { PageHero, Block, FeatureGrid, DraftNotice } from "@/components/pages/shell";
+import { PageHero, Block, FeatureGrid } from "@/components/pages/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = { title: "For Employers", description: "Hire proven freshers. See the work, not just the résumé." };
 
 const tiers = [
-  { n: "Starter", p: "[₹ — set price]", d: "For teams making their first fresher hires.", f: ["Verified company profile", "3 active roles, 1 challenge, 2 assessments", "Talent search", "Pipeline, interviews and offers", "2 team seats"] },
-  { n: "Growth", p: "[₹ — set price]", d: "For teams hiring through the year.", f: ["Everything in Starter", "20 active roles, 5 challenges, 10 assessments", "Match notes and hiring analytics", "10 team seats"], hl: true },
+  { n: "Starter", p: "Contact us", d: "For teams making their first fresher hires.", f: ["Verified company profile", "3 active roles, 1 challenge, 2 assessments", "Talent search", "Pipeline, interviews and offers", "2 team seats"] },
+  { n: "Growth", p: "Contact us", d: "For teams hiring through the year.", f: ["Everything in Starter", "20 active roles, 5 challenges, 10 assessments", "Match notes and hiring analytics", "10 team seats"], hl: true },
   { n: "Enterprise", p: "Talk to us", d: "For campus-scale and multi-city hiring.", f: ["Everything in Growth", "100 active roles, 25 challenges, 50 assessments", "25 team seats", "Dedicated success manager"] },
 ];
 
@@ -28,7 +28,7 @@ export default function Page() {
       </Block>
       <Block className="bg-muted">
         <h2 className="text-3xl font-extrabold md:text-4xl">Pricing</h2>
-        <div className="mt-6 max-w-2xl"><DraftNotice>Limits are real and enforced; prices are placeholders. Set real prices before launch. Plans are assigned by our team until online payments are connected.</DraftNotice></div>
+        <p className="mt-4 max-w-2xl text-ink-soft">Limits below are enforced in the product. Plans are set up by our team and online payment is not available yet, so <Link className="font-semibold text-accent underline" href="/contact?topic=employer">contact us</Link> for current pricing.</p>
         <ul className="mt-8 grid gap-6 md:grid-cols-3">
           {tiers.map((t) => (
             <li key={t.n} className={`card flex flex-col p-8 ${t.hl ? "border-accent ring-2 ring-accent/40" : ""}`}>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { PageHero, Block, DraftNotice } from "@/components/pages/shell";
+import { PageHero, Block } from "@/components/pages/shell";
+import { LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Help Centre" };
 const faqs = [
@@ -15,7 +16,7 @@ export default function Page() {
       <Block>
         <div className="max-w-3xl space-y-3">
           {faqs.map(([q, a]) => (<details key={q} className="card group p-5"><summary className="cursor-pointer font-display text-lg font-bold">{q}</summary><p className="mt-2 text-ink-soft">{a}</p></details>))}
-          <div className="pt-4"><DraftNotice>Draft answers — review for accuracy before launch.</DraftNotice></div>
+          <p className="pt-4 text-ink-soft">Still stuck? Write to <a className="font-semibold text-accent underline" href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a> or use the <a className="font-semibold text-accent underline" href="/contact">contact form</a>.</p>
         </div>
       </Block>
     </>

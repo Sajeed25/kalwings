@@ -12,7 +12,7 @@ export function TalentCard() {
             <div className="placeholder-img grid h-14 w-14 place-items-center rounded-lg font-display text-xl font-extrabold text-black dark:text-white">S</div>
             <div>
               <p className="font-display text-lg font-bold leading-tight">Sample Student</p>
-              <p className="text-sm text-ink-soft">B.Tech ECE · Class of 2026</p>
+              <p className="text-sm text-ink-soft">B.Tech CSE · Class of 2026</p>
             </div>
           </div>
           <LogoMark className="h-7 w-7" />
@@ -20,7 +20,7 @@ export function TalentCard() {
 
         <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-ink-soft">Verified skills</p>
         <ul className="mt-2 space-y-2">
-          {[["Embedded C", "Assessed · 82%"], ["Python", "Project evidence"], ["Circuit design", "Mentor-reviewed"]].map(([s, e]) => (
+          {[["Java", "Assessed · 82%"], ["Spring Boot", "Project evidence"], ["React", "Mentor-reviewed"]].map(([s, e]) => (
             <li key={s} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2.5 text-sm">
               <span className="flex items-center gap-2 font-medium"><BadgeCheck className="h-4 w-4 text-accent" />{s}</span>
               <span className="text-ink-soft">{e}</span>
@@ -32,7 +32,7 @@ export function TalentCard() {
           <div className="rounded-xl border border-line p-3">
             <Trophy className="h-4 w-4 text-spot" />
             <p className="mt-1.5 text-sm font-semibold leading-snug">Challenge finalist</p>
-            <p className="text-xs text-ink-soft">Sample challenge</p>
+            <p className="text-xs text-ink-soft">Example challenge</p>
           </div>
           <div className="rounded-xl border border-line p-3">
             <GitBranch className="h-4 w-4 text-accent" />

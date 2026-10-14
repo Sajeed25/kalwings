@@ -22,13 +22,11 @@ export function SampleTag({ className }: { className?: string }) {
   return <Badge tone="sample" className={className} title="Placeholder content — replace before launch">Sample</Badge>;
 }
 
-/** Placeholder for real photography. Clearly labelled. */
+/** Shown when a person has not uploaded a photo. */
 export function PhotoPlaceholder({ label, className }: { label: string; className?: string }) {
   return (
-    <div role="img" aria-label={`Photo placeholder: ${label}`} className={cn("placeholder-img relative flex items-end overflow-hidden", className)}>
-      <span className="m-3 rounded-md bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-soft">
-        Replace with photo · {label}
-      </span>
+    <div role="img" aria-label={`No photo yet: ${label}`} className={cn("placeholder-img relative grid place-items-center overflow-hidden", className)}>
+      <svg aria-hidden viewBox="0 0 24 24" className="h-1/3 w-1/3 max-w-16 text-ink-soft/50" fill="currentColor"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z" /></svg>
     </div>
   );
 }
