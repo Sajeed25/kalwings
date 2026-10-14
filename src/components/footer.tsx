@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Instagram, Linkedin, Youtube } from "lucide-react";
+import { Github, Instagram, Linkedin, Youtube } from "@/components/ui/social-icons";
 import { Logo } from "@/components/ui/brand";
 
 const cols = [
