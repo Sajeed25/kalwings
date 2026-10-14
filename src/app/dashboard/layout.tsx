@@ -21,7 +21,7 @@ export default async function DashLayout({ children }: { children: React.ReactNo
   const user = await requirePageRole();
   const unread = await db.notification.count({ where: { userId: user.id, readAt: null } });
   return (
-    <div className="container grid gap-8 py-8 lg:grid-cols-[230px_1fr]">
+    <div className="container grid grid-cols-[minmax(0,1fr)] gap-8 py-8 lg:grid-cols-[230px_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-24 lg:h-fit">
         <div className="card p-4">
           <p className="truncate font-display font-bold">{user.name}</p>

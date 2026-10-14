@@ -17,7 +17,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   return (
     <>
       <PageTitle title="Users" sub="Suspend accounts that break the rules. Suspended users are signed out at once, can't log in, and their profile or listings disappear from public pages. Fully reversible." />
-      <form className="card mb-6 flex gap-3 p-4"><input name="q" defaultValue={q} placeholder="Search name, email or phone" className="h-11 flex-1 rounded-xl border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-accent px-6 font-semibold text-black">Search</button></form>
+      <form className="card mb-6 flex flex-wrap gap-3 p-4" role="search"><input name="q" defaultValue={q} placeholder="Search name, email or phone" aria-label="Search users" className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-accent px-6 font-semibold text-black">Search</button></form>
       <Panel>{users.length ? <ul className="divide-y divide-line">{users.map((u) => (
         <li key={u.id} className="py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

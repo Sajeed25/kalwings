@@ -34,7 +34,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <li key={t.id}><Panel>
               <div className="flex flex-wrap items-center justify-between gap-3"><p className="font-semibold">{t.student.user.name} <span className="font-normal text-ink-soft">· <a className="underline" href={`/talent/${t.student.username ?? t.student.slug}`}>Talent Passport</a> · {fmtTime(t.createdAt)} IST{t.language && ` · ${labels[t.language] ?? t.language}`}</span></p>
                 <div className="flex items-center gap-3">{t.passed !== null && <b className="text-sm">{t.passed}/{t.total}</b>}<Status s={t.status} /></div></div>
-              {t.code && <details className="mt-3"><summary className="cursor-pointer font-semibold">View code</summary><pre className="mt-2 overflow-x-auto rounded-lg bg-black p-3 text-xs text-white">{t.code}</pre></details>}
+              {t.code && <details className="mt-3"><summary className="cursor-pointer font-semibold">View code</summary><pre tabIndex={0} className="mt-2 overflow-x-auto rounded-lg bg-black p-3 text-xs text-white">{t.code}</pre></details>}
               {t.results && <details className="mt-3"><summary className="cursor-pointer font-semibold">Test results</summary><Results results={(t.results as unknown as TestOutcome[])} passed={t.passed ?? 0} total={t.total ?? 0} /></details>}
               {a.kind === "WRITTEN" && (
                 <details className="mt-3"><summary className="cursor-pointer font-semibold">{t.status === "PENDING_REVIEW" ? "Read and score" : "Update review"}</summary>

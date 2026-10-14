@@ -23,7 +23,7 @@ export default async function Page() {
   return (
     <>
       <PageTitle title="Pipeline" sub="Move candidates forward, schedule interviews, extend offers and keep private notes. Candidates are never rejected automatically." />
-      <div className="overflow-x-auto pb-4">
+      <div className="overflow-x-auto pb-4" role="region" aria-label="Pipeline board, scroll sideways for more stages" tabIndex={0}>
         <div className="grid min-w-[1320px] grid-cols-6 gap-4">
           {PIPELINE.map((stage, ci) => {
             const col = apps.filter((a) => a.stage === stage);
