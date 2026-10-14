@@ -360,8 +360,8 @@ await student2.goto(`${B}/community/teammates?skill=cad`); ok(await student2.loc
 await student2.goto(`${B}/community/teammates?skill=zzzz`); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'teammate search filters by skill');
 // report + admin moderation
 await student2.goto(B + gHref); await art(student2, `Need a CAD partner ${tag}`).locator('summary:text-is("Report")').click(); await art(student2, `Need a CAD partner ${tag}`).locator('textarea[name=reason]').fill('This looks like an advert, not a project.'); await art(student2, `Need a CAD partner ${tag}`).locator('button:has-text("Send report")').click(); await student2.waitForSelector('text=Thanks, our team');
-await admin.goto(`${B}/dashboard/reports`); await admin.locator('li', { hasText: 'This looks like an advert' }).first().locator('button:has-text("Hide content")').click(); await admin.waitForTimeout(1500);
-await student2.goto(B + gHref); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'hidden post disappears for other members');
+await admin.goto(`${B}/dashboard/reports`); await admin.locator('li', { hasText: 'This looks like an advert' }).first().locator('button:has-text("Hide content")').click(); await admin.waitForTimeout(3000);
+await student2.goto(B + gHref, { waitUntil: "networkidle" }); ok(await student2.locator(`text=Need a CAD partner ${tag}`).count() === 0, 'hidden post disappears for other members');
 await student.goto(B + gHref); ok(await student.locator(`text=Need a CAD partner ${tag}`).count() > 0 && await student.locator('text=Hidden').count() > 0, 'group moderator still sees hidden content, marked as hidden');
 // moderator hides a comment
 await art(student, `Debugging I2C ${tag}`).locator('summary:has-text("comment")').click(); await art(student, `Debugging I2C ${tag}`).locator('li:has-text("pull-up") button:has-text("Hide")').click(); await student.waitForTimeout(1500);
@@ -734,6 +734,73 @@ await hr.goto(`${B}/dashboard/roles`); ok(await hr.locator('button:has-text("Sub
 await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' }); await addUser(admin, { name: `Dean ${tag}`, email: `dean${tag}@example.com`, role: 'COLLEGE_ADMIN', college: `Delta Institute ${tag}` });
 await admin.waitForSelector('form[aria-label="Add a user"] >> text=Added'); ok((await admin.locator('form[aria-label="Add a user"] [role=status]').innerText()).includes('(new, verified)'), 'admin adds a college admin with a verified college');
 await employer.goto(`${B}/dashboard/users`); ok(!/\/dashboard\/users/.test(employer.url()) || await employer.locator('form[aria-label="Add a user"]').count() === 0, 'only platform admins can add users');
+
+// --- admin console: plans, companies, listings, colleges, mentors, site settings
+const submitted = async (page, label, kind) => { await page.waitForSelector(`form[aria-label="${label}"] [role=${kind}]`); return page.locator(`form[aria-label="${label}"] [role=${kind}]`).innerText(); };
+await admin.goto(`${B}/dashboard/plans`, { waitUntil: 'networkidle' });
+const proForm = admin.locator('form[aria-label="Add a plan"]');
+await proForm.locator('input[name=key]').fill(`PRO${tag.toUpperCase().replace(/[^A-Z0-9]/g, '')}`); await proForm.locator('input[name=label]').fill(`Campus Pro ${tag}`); await proForm.locator('input[name=priceText]').fill('₹4,999 / month');
+await proForm.locator('textarea[name=features]').fill('Priority support\nUnlimited shortlists');
+await proForm.locator('input[name=listings]').fill('7'); await proForm.locator('input[name=challenges]').fill('2'); await proForm.locator('input[name=assessments]').fill('3'); await proForm.locator('input[name=team]').fill('4');
+await proForm.locator('button:has-text("Add plan")').click(); ok((await submitted(admin, 'Add a plan', 'status')).includes('Plan added'), 'admin adds a new plan');
+await admin.reload({ waitUntil: 'networkidle' }); ok(await admin.locator(`h2:has-text("Campus Pro ${tag}")`).count() > 0, 'the new plan is listed with its price');
+const starterForm = admin.locator('form[aria-label="Edit plan Starter"]'); await starterForm.locator('input[name=listings]').fill('4'); await starterForm.locator('button:has-text("Save plan")').click();
+ok((await submitted(admin, 'Edit plan Starter', 'status')).includes('Plan saved'), 'admin edits a plan limit');
+// --- companies
+const coName = `Initech ${tag}`;
+await admin.goto(`${B}/dashboard/companies`, { waitUntil: 'networkidle' });
+const addCo = admin.locator('form[aria-label="Add a company"]'); await addCo.locator('input[name=name]').fill(coName); await addCo.locator('input[name=website]').fill('https://initech.example'); await addCo.locator('button:has-text("Add company")').click();
+ok((await submitted(admin, 'Add a company', 'status')).includes('Added'), 'admin adds a company directly');
+await addCo.locator('input[name=name]').fill(coName); await addCo.locator('button:has-text("Add company")').click(); ok((await submitted(admin, 'Add a company', 'alert')).includes('already exists'), 'a duplicate company name is refused');
+await admin.goto(`${B}/dashboard/companies?q=${encodeURIComponent(coName)}`); await admin.locator(`a:has-text("${coName}")`).click(); await admin.waitForURL(/\/dashboard\/companies\/.+/);
+ok(await admin.locator('form[aria-label="Post a listing"]').count() === 1, 'a verified company offers the post-a-listing form');
+const lf = admin.locator('form[aria-label="Post a listing"]'); const listTitle = `Admin Posted Intern ${tag}`;
+await lf.locator('input[name=title]').fill(listTitle); await lf.locator('textarea[name=description]').fill('Work on real internal tools with a small team, ship weekly, learn code review.');
+await lf.locator('input[name=payText]').fill('₹12,000 / month'); await lf.locator('input[name=monthlyINR]').fill('12000'); await lf.locator('input[name=location]').fill('Chennai'); await lf.locator('input[name=eligibility]').fill('B.E / B.Tech');
+await lf.locator('input[name=deadline]').fill(new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10)); await lf.locator('button:has-text("Post listing")').click();
+ok((await submitted(admin, 'Post a listing', 'status')).includes('live'), 'admin posts a listing for a company and it goes live');
+await anon.goto(`${B}/opportunities`, { waitUntil: 'networkidle' }); ok(await anon.locator(`text=${listTitle}`).count() > 0, 'the admin-posted listing is visible to the public');
+await admin.reload({ waitUntil: 'networkidle' }); await admin.locator('li', { hasText: listTitle }).locator('button:has-text("Close")').click(); await admin.waitForTimeout(1200);
+await anon.goto(`${B}/opportunities`, { waitUntil: 'networkidle' }); ok(await anon.locator(`text=${listTitle}`).count() === 0, 'a listing the admin closes disappears from the public list');
+// --- colleges
+const colName = `Zeta Institute ${tag}`;
+await admin.goto(`${B}/dashboard/colleges`, { waitUntil: 'networkidle' }); const addCol = admin.locator('form[aria-label="Add a college"]'); await addCol.locator('input[name=name]').fill(colName); await addCol.locator('input[name=city]').fill('Coimbatore'); await addCol.locator('button:has-text("Add college")').click();
+ok((await submitted(admin, 'Add a college', 'status')).includes('Added'), 'admin adds a verified college');
+// --- mentors
+const mEmail = `mentor${tag}@example.com`;
+await admin.goto(`${B}/dashboard/mentors`, { waitUntil: 'networkidle' }); const addM = admin.locator('form[aria-label="Add a mentor"]');
+for (const [k, v] of Object.entries({ name: `Maya Mentor ${tag}`, email: mEmail, roleTitle: 'Staff Engineer', company: 'Globex', country: 'India', domain: 'Backend', tags: 'APIs, Databases' })) await addM.locator(`input[name=${k}]`).fill(v);
+await addM.locator('textarea[name=bio]').fill('I mentor freshers on backend engineering.'); await addM.locator('button:has-text("Add mentor")').click();
+ok((await submitted(admin, 'Add a mentor', 'status')).includes('Added Maya'), 'admin adds a mentor with full profile details');
+for (const [k, v] of Object.entries({ name: 'Dup Mentor', email: mEmail, roleTitle: 'X Role', company: 'X', country: 'India', domain: 'Backend' })) await addM.locator(`input[name=${k}]`).fill(v); await addM.locator('button:has-text("Add mentor")').click(); ok((await submitted(admin, 'Add a mentor', 'alert')).includes('already belongs'), 'a duplicate mentor email is refused');
+const mCtx = await b.newContext({ viewport: { width: 1300, height: 900 }, extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.60' } }); const mp = await mCtx.newPage(); mp.on('pageerror', (e) => { console.log('PAGEERROR', e.message); fails++; });
+await auth(mp, 'login', mEmail); await mp.goto(`${B}/dashboard/mentoring`, { waitUntil: 'networkidle' });
+ok(await mp.locator('input[name=roleTitle]').inputValue() === 'Staff Engineer', 'the admin-added mentor signs in and sees the details the admin entered');
+await mp.fill('input[name=roleTitle]', 'Principal Engineer'); await mp.locator('form:has(input[name=roleTitle]) button').first().click(); await mp.waitForTimeout(1200); await mp.reload({ waitUntil: 'networkidle' });
+ok(await mp.locator('input[name=roleTitle]').inputValue() === 'Principal Engineer', 'the mentor can update their own details afterwards');
+// --- role change: a user asks, the admin decides; the account and its data are kept
+await mp.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' });
+await mp.locator('form[aria-label="Request a role change"] select[name=role]').selectOption('STUDENT'); await mp.locator('form[aria-label="Request a role change"] textarea[name=reason]').fill('I would like to apply for roles myself too.'); await mp.locator('form[aria-label="Request a role change"] button:has-text("Send request")').click();
+await mp.waitForSelector('text=Waiting for an admin'); ok(await mp.locator('form[aria-label="Request a role change"]').count() === 0, 'a user can request a role change; the pending request replaces the form');
+await admin.goto(`${B}/dashboard/users`, { waitUntil: 'networkidle' }); const rq = admin.locator('li', { hasText: `Maya Mentor ${tag}` }).filter({ hasText: 'Mentor → Student' });
+ok(await rq.count() === 1, 'the admin sees the role request');
+await rq.locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1500);
+await mp.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' }); ok(await mp.locator('text=signed in as').first().innerText().then((t) => /Student/.test(t)), 'approving moves the user to the new role');
+await mp.goto(`${B}/dashboard/profile`, { waitUntil: 'networkidle' }); ok(!/login/.test(mp.url()) && await mp.locator('h1').count() > 0, 'the new role opens its pages (a student profile was created)');
+await admin.goto(`${B}/dashboard/users?q=${encodeURIComponent(mEmail)}`, { waitUntil: 'networkidle' }); await admin.locator('summary:has-text("Change role")').first().click();
+await admin.locator(`form[aria-label="Change role for Maya Mentor ${tag}"] select[name=role]`).selectOption('MENTOR'); await admin.locator(`form[aria-label="Change role for Maya Mentor ${tag}"] button:has-text("Change role")`).click();
+ok((await submitted(admin, `Change role for Maya Mentor ${tag}`, 'status')).includes('Role changed'), 'the admin can change any user\'s role directly');
+await admin.goto(`${B}/dashboard/users?q=admin@sample.kalwings.test`, { waitUntil: 'networkidle' }); await admin.locator('li', { hasText: 'admin@sample.kalwings.test' }).locator('summary:has-text("Change role")').click();
+await admin.locator('form[aria-label^="Change role for"]:visible select[name=role]').selectOption('STUDENT'); await admin.locator('form[aria-label^="Change role for"]:visible button:has-text("Change role")').click();
+ok((await submitted(admin, (await admin.locator('form[aria-label^="Change role for"]:visible').getAttribute('aria-label')), 'alert')).includes("own role"), 'an admin cannot change their own role');
+// --- site settings
+await admin.goto(`${B}/dashboard/site`, { waitUntil: 'networkidle' }); const sf = admin.locator('form[aria-label="Site settings"]');
+await sf.locator('input[name=announcement]').fill(`Maintenance Sunday ${tag}`); await sf.locator('input[name=signup_COLLEGE_ADMIN]').uncheck(); await sf.locator('button:has-text("Save settings")').click();
+ok((await submitted(admin, 'Site settings', 'status')).includes('saved'), 'admin saves site settings');
+await anon.goto(`${B}/login`, { waitUntil: 'networkidle' }); ok(await anon.locator(`[data-testid=announcement]:has-text("Maintenance Sunday ${tag}")`).count() === 1, 'the announcement banner shows on the sign-in page');
+await sf.locator('input[name=announcement]').fill(''); await sf.locator('input[name=signup_COLLEGE_ADMIN]').check(); await sf.locator('button:has-text("Save settings")').click(); await submitted(admin, 'Site settings', 'status');
+await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=plan.updated').count() > 0 && await admin.locator('text=mentor.created').count() > 0, 'console changes are in the audit log');
+await employer.goto(`${B}/dashboard/companies`); ok(!/\/dashboard\/companies/.test(employer.url()), 'only platform admins can open the companies console');
 
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');

@@ -22,9 +22,12 @@ Freshers cannot show what they can do, and employers cannot see it. Everything b
 | Employer | Campus | Drives with partner colleges |
 | Mentor | Mentoring | Profile, availability, session requests, community |
 | College | Placements | Departments, shared student progress, drives, reports |
-| Platform admin | Reviews | Listing moderation, profile verification, employer plans, abuse reports |
-| Platform admin | Platform | Insights, users, contact inbox |
+| Platform admin | Reviews | Listing moderation, profile verification, abuse reports |
+| Platform admin | Directory | Companies (add, verify, plan, logo, HR, post listings), colleges, mentors (full details), users (add, change role, suspend) |
+| Platform admin | Platform | Employer plans (rename, price, limits, add), site settings (banner, support email, who can sign up), insights, contact inbox |
 | Platform admin | Operations | Audit log, server errors |
+
+Any signed-in user can ask for a different role under Settings > Change my role. Nothing changes until a platform admin approves it from Users. Role changes keep the account and all its data; no user is ever deleted by an admin action.
 
 ## Overlaps found, and what was done
 

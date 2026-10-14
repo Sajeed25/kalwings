@@ -9,6 +9,7 @@ import { clientIp } from "@/lib/request";
 import { uniqueSlug } from "@/lib/slug";
 import { rateLimit } from "@/lib/rate-limit";
 import { maybePromoteAdmin } from "@/lib/admin-bootstrap";
+import { signupClosedMessage } from "@/lib/settings";
 import { PASSWORD_MAX, fakeVerify, verifyPassword } from "@/lib/password";
 
 const DOWN = "We're having trouble connecting right now. Please try again in a few minutes.";
@@ -21,6 +22,10 @@ export async function requestOtp(prev: AuthState, fd: FormData): Promise<AuthSta
   if (!id) return { ...prev, step: "identify", error: "Enter a valid email address." };
   let r: Awaited<ReturnType<typeof issueOtp>>;
   try {
+    if (prev.mode === "join" && !(await db.user.findUnique({ where: { email: id.value }, select: { id: true } }))) {
+      const closed = await signupClosedMessage(String(fd.get("role") ?? "STUDENT")); // fail before emailing a code
+      if (closed) return { ...prev, step: "identify", error: closed };
+    }
     r = await issueOtp(id.value, await clientIp());
   } catch (e) {
     console.error("[auth] requestOtp failed:", e instanceof Error ? e.message : e);
@@ -45,6 +50,8 @@ export async function submitOtp(prev: AuthState, fd: FormData): Promise<AuthStat
     if (!user) {
       if (prev.mode === "login") return { ...prev, step: "identify", error: "No account found. Join Kalwings first." };
       const r = (role ?? "STUDENT") as Exclude<Role, "PLATFORM_ADMIN">;
+      const closed = await signupClosedMessage(r);
+      if (closed) return { ...prev, step: "identify", error: closed };
       user = await db.user.create({
         data: {
           name: name?.trim() || identifier.split("@")[0],

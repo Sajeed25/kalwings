@@ -32,6 +32,8 @@ Merge a PR into `main`; GitHub CI runs; Hostinger pulls, builds (`npm run build`
 
 ## Routine tasks
 - **Add people directly** (platform admin): Dashboard > Users > "Add a user". Pick a role; for HR or recruiters at other companies enter the company (an existing one is joined, a new one is created as verified); for college admins enter the college. They sign in with an emailed one-time code; no password is set. Each addition is in the audit log.
+- **Admin console** (platform admin): Companies (add, verify, edit, logo, plan, add HR, post listings for them, close/reopen), Colleges, Mentors (every profile detail; the mentor is emailed and can edit their own profile after signing in), Employer plans (rename, set price text and limits, add or switch off plans; changes apply at once), Site settings (announcement banner, support email, per-role sign-up on/off). Every change is audit-logged.
+- **Roles**: Users > "Change role" moves an account to another role without touching its data. Users can request a change under Settings > Change my role; pending requests appear at the top of Users. Admins cannot change their own role or demote the last admin.
 - **First/extra admin**: add the email to `ADMIN_EMAILS` and sign in, or `DATABASE_URL=... npm run make-admin -- email`.
 - **Never run `npm run db:seed` in production**. If it ever ran there, run `npm run db:unseed`.
 - **Rotate secrets** (every 6 to 12 months or after any exposure): generate a new `AUTH_SECRET` (`openssl rand -base64 48`), new mailbox password, new DB password; update env vars in hPanel; redeploy.

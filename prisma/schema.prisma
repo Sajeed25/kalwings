@@ -128,12 +128,6 @@ enum DriveOutcome {
   NOT_SELECTED
 }
 
-enum Plan {
-  STARTER
-  GROWTH
-  ENTERPRISE
-}
-
 enum InterviewMode {
   VIDEO
   PHONE
@@ -202,6 +196,7 @@ model User {
   comments          Comment[]
   blocksMade        Block[]             @relation("blocker")
   blocksReceived    Block[]             @relation("blocked")
+  roleRequests      RoleChangeRequest[]
 }
 
 model StudentProfile {
@@ -355,7 +350,7 @@ model Company {
   shortlists    Shortlist[]
   slug          String?            @unique @db.VarChar(40) // public career page: /careers/<slug>
   logoId        String? // Upload.id of the company logo
-  plan          Plan               @default(STARTER) // set by a platform admin; no online payments yet
+  plan          String             @default("STARTER") @db.VarChar(40) // PlanConfig.key; assigned by a platform admin
   stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
   invites       CompanyInvite[]
   members       EmployerMember[]
@@ -876,4 +871,46 @@ model Upload {
   createdAt DateTime @default(now())
 
   @@index([ownerId])
+}
+
+// Employer plans, editable by a platform admin (names, prices, limits, features). Company.plan holds a key.
+model PlanConfig {
+  key         String   @id @db.VarChar(40)
+  label       String   @db.VarChar(60)
+  priceText   String   @db.VarChar(80) // shown as typed, e.g. "₹2,999 / month", "Free", "Contact us"
+  description String?  @db.VarChar(300)
+  features    Json? // string[]
+  listings    Int
+  challenges  Int
+  assessments Int
+  team        Int
+  highlight   Boolean  @default(false)
+  active      Boolean  @default(true)
+  position    Int      @default(0)
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+// Platform-wide settings an admin can change (announcement banner, contact email, which roles can sign up).
+model SiteSetting {
+  key       String   @id @db.VarChar(60)
+  value     String   @db.Text
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A signed-in user asking a platform admin to change their role. An admin approves or declines; nothing changes until approved.
+model RoleChangeRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromRole      Role
+  requestedRole Role
+  reason        String    @db.VarChar(500)
+  status        String    @default("PENDING") @db.VarChar(12) // PENDING | APPROVED | DECLINED
+  decidedById   String?
+  decisionNote  String?   @db.VarChar(300)
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId])
 }

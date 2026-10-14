@@ -5,8 +5,7 @@ import { requireActionRole } from "@/lib/session";
 import { audit, notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
 import { adminUserSchema } from "@/lib/validation";
-import { emailConfigured, sendEmail } from "@/lib/email";
-import { site } from "@/lib/site";
+import { emailAccountReady } from "@/lib/account-email";
 import { uniqueSlug } from "@/lib/slug";
 
 type Decision = "VERIFIED" | "REJECTED";
@@ -97,14 +96,14 @@ export async function reviewEntry(id: string, d: Decision) {
   revalidatePath("/dashboard", "layout");
 }
 
-const PLANS = ["STARTER", "GROWTH", "ENTERPRISE"] as const;
 /** Plans are assigned by a platform admin until an online payment provider is chosen. */
 export async function setPlan(companyId: string, plan: string) {
   const a = await requireActionRole("PLATFORM_ADMIN");
-  if (!(PLANS as readonly string[]).includes(plan)) throw new Error("Invalid plan");
-  const c = await db.company.update({ where: { id: companyId }, data: { plan: plan as (typeof PLANS)[number] }, include: { members: true } });
+  const row = await db.planConfig.findUnique({ where: { key: plan } });
+  if (!row) throw new Error("Unknown plan");
+  const c = await db.company.update({ where: { id: companyId }, data: { plan: row.key }, include: { members: true } });
   await audit(a.id, `company.plan_${plan.toLowerCase()}`, `${c.name} (${companyId})`);
-  await Promise.all(c.members.map((m) => notify(m.userId, "Your plan changed", `${c.name} is now on the ${plan.toLowerCase()} plan.`)));
+  await Promise.all(c.members.map((m) => notify(m.userId, "Your plan changed", `${c.name} is now on the ${row.label} plan.`)));
   revalidatePath("/dashboard", "layout");
 }
 
@@ -165,16 +164,7 @@ export async function createUser(_: CreateUserResult, fd: FormData): Promise<Cre
   }
   await audit(a.id, "user.created", `${d.email} as ${d.role.toLowerCase().replace("_", " ")}${detail}`.slice(0, 190));
 
-  let note = `Added ${d.name} (${d.email}) as ${d.role.toLowerCase().replace("_", " ")}${detail}.`;
-  if (emailConfigured()) {
-    try {
-      await sendEmail({ to: d.email, subject: "Your Kalwings account is ready", text: `Hi ${d.name},\n\nAn administrator has set up a Kalwings account for you.\n\nSign in at ${site.url}/login with this email address (${d.email}). We will email you a one-time code; there is no password to remember.\n\nIf you were not expecting this, you can ignore this email.` });
-      note += " We emailed them how to sign in.";
-    } catch (e) {
-      console.error(`[email] account-ready email was not sent: ${e instanceof Error ? e.message : e}`);
-      note += ` The notification email could not be sent, so tell them to sign in at ${site.url}/login with this email.`;
-    }
-  } else note += ` Email is not configured, so tell them to sign in at ${site.url}/login with this email.`;
+  const note = `Added ${d.name} (${d.email}) as ${d.role.toLowerCase().replace("_", " ")}${detail}.${await emailAccountReady({ name: d.name, email: d.email })}`;
   revalidatePath("/dashboard", "layout");
   return { ok: true, note };
 }

@@ -2,6 +2,11 @@ import { requirePageRole } from "@/lib/session";
 import { ActionForm, Field } from "@/components/dash/action-form";
 import { PageTitle, Panel } from "@/components/dash/ui";
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/db";
+import { ConsoleForm, lbl } from "@/components/dash/console-form";
+import { inputCls } from "@/components/dash/action-form";
+import { ActionButton } from "@/components/dash/action-form";
+import { cancelRoleRequest, requestRoleChange } from "@/app/actions/console";
 import { Appearance } from "@/components/dash/appearance";
 import { deleteMyAccount, removePassword, setPassword } from "@/app/actions/account";
 import { sessionAgeSeconds } from "@/lib/session";
@@ -11,6 +16,9 @@ export default async function Page() {
   const u = await requirePageRole();
   const fresh = (await sessionAgeSeconds()) <= 600;
   const hasPw = !!u.passwordHash;
+  const reqs = await db.roleChangeRequest.findMany({ where: { userId: u.id }, orderBy: { createdAt: "desc" }, take: 5 });
+  const pending = reqs.find((r) => r.status === "PENDING");
+  const RN: Record<string, string> = { STUDENT: "Student", MENTOR: "Mentor", EMPLOYER: "Employer", COLLEGE_ADMIN: "College admin", PLATFORM_ADMIN: "Platform admin" };
   return (
     <>
       <PageTitle title="Settings" sub="Appearance, sign-in, and your data: download it any time, or delete it." />
@@ -27,6 +35,17 @@ export default async function Page() {
             <details className="mt-5 text-sm"><summary className="cursor-pointer font-semibold">Turn off password login</summary>
               <ActionForm action={removePassword} reset submit="Remove password" success="Password removed" className="mt-3 space-y-3"><Field label="Current password" name="current" type="password" autoComplete="current-password" required /></ActionForm>
             </details>)}
+        </Panel>
+        <Panel title="Change my role">
+          <p className="text-sm text-ink-soft">You are signed in as <b>{RN[u.role]}</b>. If you need a different role, ask an admin. Nothing changes until they approve, and your account and data stay as they are.</p>
+          {pending ? (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"><p>Waiting for an admin: <b>{RN[pending.requestedRole]}</b> · “{pending.reason}”</p><ActionButton action={cancelRoleRequest.bind(null, pending.id)}>Withdraw request</ActionButton></div>
+          ) : (
+            <ConsoleForm action={requestRoleChange} label="Request a role change" submit="Send request" className="mt-4 grid gap-3" resetOnSuccess>
+              <label className={lbl}>I need to be a<select name="role" className={inputCls + " h-11"}>{Object.entries(RN).filter(([v]) => v !== u.role).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+              <label className={lbl}>Why?<textarea name="reason" required minLength={10} maxLength={500} rows={3} className={inputCls} /></label>
+            </ConsoleForm>)}
+          {reqs.filter((r) => r.status !== "PENDING").slice(0, 2).map((r) => <p key={r.id} className="mt-3 text-xs text-ink-soft">Earlier request for {RN[r.requestedRole]}: {r.status.toLowerCase()}.</p>)}
         </Panel>
         <Panel title="Download my data">
           <p className="text-sm text-ink-soft">Get a JSON file with your profile, projects, applications, sessions, messages you sent and notifications. It never includes other people&apos;s contact details.</p>

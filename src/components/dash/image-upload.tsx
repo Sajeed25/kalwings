@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /** Picks an image, downscales it in the browser (canvas → JPEG), uploads it, then refreshes the page. */
-export function ImageUpload({ kind, projectId, currentUrl, label, maxDim = 1024, round }: { kind: "AVATAR" | "PROJECT" | "COMPANY_LOGO"; projectId?: string; currentUrl?: string | null; label: string; maxDim?: number; round?: boolean }) {
+export function ImageUpload({ kind, projectId, companyId, mentorId, currentUrl, label, maxDim = 1024, round }: { kind: "AVATAR" | "PROJECT" | "COMPANY_LOGO"; projectId?: string; companyId?: string; mentorId?: string; currentUrl?: string | null; label: string; maxDim?: number; round?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -30,7 +30,7 @@ export function ImageUpload({ kind, projectId, currentUrl, label, maxDim = 1024,
       if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error("Choose a PNG, JPEG or WebP image");
       const blob = await shrink(file);
       const fd = new FormData();
-      fd.set("file", blob, "image.jpg"); fd.set("kind", kind); if (projectId) fd.set("projectId", projectId);
+      fd.set("file", blob, "image.jpg"); fd.set("kind", kind); if (projectId) fd.set("projectId", projectId); if (companyId) fd.set("companyId", companyId); if (mentorId) fd.set("mentorId", mentorId);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
