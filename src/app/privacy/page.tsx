@@ -20,7 +20,7 @@ export default function Page() {
 
       <h2 className={H}>2. What we collect</h2>
       <ul>
-        <li><b>Account:</b> your name, email address and/or mobile number (used to sign you in), and your role. If you choose to turn on password login, we store only a salted one-way hash of your password, never the password itself.</li>
+        <li><b>Account:</b> your name and email address (used to sign you in), and your role. If you choose to turn on password login, we store only a salted one-way hash of your password, never the password itself.</li>
         <li><b>Profile and Talent Passport (students):</b> headline, bio, city, graduation year, college and department, skills, links such as GitHub, what you are looking for, projects, photos and screenshots you upload, experience, achievements, hackathons and certificates, and any evidence links you give us.</li>
         <li><b>Activity:</b> applications and their status, messages with employers, interviews and offers, challenge submissions, assessment answers and code, mentor session requests, community posts and comments, reports you file, and notifications.</li>
         <li><b>Organisations:</b> company or college name, website, team members, plan, and drive details. Mentors: role, company, country and domain.</li>
@@ -40,7 +40,7 @@ export default function Page() {
 
       <h2 className={H}>4. Who can see what</h2>
       <ul>
-        <li><b>Your email and phone are private by default.</b> Employers see them only if you switch on &quot;share my contact details&quot; in Profile. They never appear on your Talent Passport, college rosters or reports.</li>
+        <li><b>Your email is private by default.</b> Employers see them only if you switch on &quot;share my contact details&quot; in Profile. They never appear on your Talent Passport, college rosters or reports.</li>
         <li><b>Talent Passport:</b> you choose, for the whole Passport and separately for projects, endorsements and experience entries, whether it is visible to anyone with the link, only to verified recruiters, or only to you. Private and suspended profiles are excluded from recruiter search. Passport pages ask search engines not to index them.</li>
         <li><b>Employers</b> you apply to see your application, your Passport (subject to your settings) and the messages in that application. Employers who invite you to a challenge or assessment see your submission for it.</li>
         <li><b>Your college</b> sees your name, headline, department and progress only if you chose that college and ticked the sharing box. You can withdraw at any time and you disappear from its roster and future reports.</li>

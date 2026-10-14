@@ -6,7 +6,7 @@ import { LEGAL } from "@/lib/legal";
 export const metadata: Metadata = { title: "Help Centre" };
 const faqs = [
   ["Is Kalwings free for students?", "Yes. Building a profile, learning and applying are free for students."],
-  ["Who can see my phone number and email?", "No one by default. Your contact details stay private until you choose to share them."],
+  ["Who can see my email?", "No one by default. Your contact details stay private until you choose to share them."],
   ["Do badges guarantee a job?", "No. Badges show a skill backed by a defined assessment or evidence. Kalwings never promises a guaranteed job."],
   ["How are employers verified?", "Companies are reviewed by the Kalwings team before they can post roles or search talent."],
 ];

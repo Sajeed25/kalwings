@@ -46,7 +46,7 @@ export default async function Page() {
             </ActionForm>
           </Panel>)}
         <Panel title="Privacy">
-          <p className="text-sm text-ink-soft">Your email and phone are <b>private by default</b>. Employers only see them if you opt in below.</p>
+          <p className="text-sm text-ink-soft">Your email is <b>private by default</b>. Employers only see them if you opt in below.</p>
           <p className="mt-4 text-sm">Contact details: <b>{p.contactVisible ? "visible to verified employers you apply to" : "hidden"}</b></p>
           <div className="mt-3"><ActionButton action={toggleContactVisible}>{p.contactVisible ? "Hide my contact details" : "Share with employers I apply to"}</ActionButton></div>
         </Panel>

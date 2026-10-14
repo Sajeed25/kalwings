@@ -7,13 +7,7 @@ import { emailConfigured, sendEmail } from "@/lib/email";
 const TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
-export function normaliseIdentifier(raw: string): { kind: "email" | "phone"; value: string } | null {
-  const v = raw.trim();
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length <= 254) return { kind: "email", value: v.toLowerCase() };
-  const digits = v.replace(/[\s()-]/g, "");
-  if (/^\+?\d{10,14}$/.test(digits)) return { kind: "phone", value: digits.startsWith("+") ? digits : digits.length === 10 ? `+91${digits}` : `+${digits}` };
-  return null;
-}
+export { normaliseIdentifier } from "@/lib/identifier";
 
 const hash = (id: string, code: string) => createHash("sha256").update(`${process.env.AUTH_SECRET}:${id}:${code}`).digest("hex");
 

@@ -18,7 +18,7 @@ export type AuthState = { step: "identify" | "code"; identifier?: string; devCod
 export async function requestOtp(prev: AuthState, fd: FormData): Promise<AuthState> {
   const parsed = identifierSchema.safeParse({ identifier: fd.get("identifier") });
   const id = parsed.success ? normaliseIdentifier(parsed.data.identifier) : null;
-  if (!id) return { ...prev, step: "identify", error: "Enter a valid email or 10-digit mobile number." };
+  if (!id) return { ...prev, step: "identify", error: "Enter a valid email address." };
   let r: Awaited<ReturnType<typeof issueOtp>>;
   try {
     r = await issueOtp(id.value, await clientIp());
@@ -69,7 +69,7 @@ export async function submitOtp(prev: AuthState, fd: FormData): Promise<AuthStat
 export async function loginWithPassword(prev: AuthState, fd: FormData): Promise<AuthState> {
   const id = normaliseIdentifier(String(fd.get("identifier") ?? ""));
   const pw = String(fd.get("password") ?? "");
-  const wrong: AuthState = { ...prev, step: "identify", error: "Incorrect email, mobile number or password." };
+  const wrong: AuthState = { ...prev, step: "identify", error: "Incorrect email or password." };
   if (!id || !pw || pw.length > PASSWORD_MAX) return wrong;
   const dest = "/dashboard";
   try {

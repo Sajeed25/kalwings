@@ -120,7 +120,7 @@ The Dockerfile, compose file and deploy workflow are **untested** (no Docker in 
 - [ ] Real email delivery works (sign up with a second address).
 - [ ] `/api/health` is OK; set an uptime monitor on it.
 - [ ] No sample users: `npm run db:unseed` against production if you ever ran the seed there.
-- [ ] Mobile sign-in is **not available in production** (no SMS provider) — the form says so.
+- [x] Sign-in is **email only**. Mobile sign-in is hidden everywhere and refused by the server (`MOBILE_LOGIN` is unset). Set `MOBILE_LOGIN=true` only after an SMS provider is wired.
 - [ ] Replace placeholders (README → "Where to replace placeholders"); lawyer-review Privacy/Terms.
 - [ ] Schedule database backups: see `docs/OPERATIONS.md` (`npm run backup`) and test a restore.
 - [ ] Read `docs/SECURITY.md` ("Before launch"): rotate any secret that was ever shown in a screenshot.

@@ -8,6 +8,7 @@ import { publicOrigin } from "../src/lib/origin";
 import { MIGRATIONS } from "../src/lib/migrations.generated";
 import { cdata, cleanSource, shareLinks, slugProblem, xmlEscape } from "../src/lib/distribution-utils";
 import { cleanTag } from "../src/lib/tags";
+import { normaliseIdentifier } from "../src/lib/identifier";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -92,5 +93,13 @@ t("share links carry the source tag and encode the title", () => {
 t("tags are normalised, capped and stripped of markup characters", () => {
   assert.equal(cleanTag("  Strong   Portfolio "), "strong portfolio"); assert.equal(cleanTag("a,b<c>"), "a b c");
   for (const bad of ["", "x", "y".repeat(31), undefined, 4]) assert.equal(cleanTag(bad as unknown), null);
+});
+t("sign-in is email only: mobile numbers are refused unless MOBILE_LOGIN is on", () => {
+  delete process.env.MOBILE_LOGIN;
+  assert.deepEqual(normaliseIdentifier(" Me@Example.COM "), { kind: "email", value: "me@example.com" });
+  for (const phone of ["9876543210", "+919876543210", "98765 43210"]) assert.equal(normaliseIdentifier(phone), null);
+  process.env.MOBILE_LOGIN = "true";
+  assert.deepEqual(normaliseIdentifier("9876543210"), { kind: "phone", value: "+919876543210" });
+  delete process.env.MOBILE_LOGIN;
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

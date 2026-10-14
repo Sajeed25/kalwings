@@ -30,7 +30,7 @@ export default function Page() {
 
       <h2 className={H}>Your privacy and control</h2>
       <ul>
-        <li>Email and phone are private by default and never shown on a Talent Passport, college roster or report.</li>
+        <li>Your email is private by default and never shown on a Talent Passport, college roster or report.</li>
         <li>You choose who sees your Passport and each section of it. College sharing and drive participation are opt-in and reversible.</li>
         <li>Matching and assessment scores are advisory. Nobody is automatically rejected by a score.</li>
       </ul>

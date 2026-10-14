@@ -11,6 +11,7 @@
 | `CONTACT_TO` | no | Inbox for contact-form emails |
 | `SANDBOX_URL`, `SANDBOX_TOKEN` | no | Isolated Judge0-compatible runner; unset = coding assessments off |
 | `GOOGLE_CLIENT_ID/SECRET` | no | Google sign-in |
+| `MOBILE_LOGIN` | no | Leave unset. Mobile sign-in is hidden and refused; set `true` only after an SMS provider is connected |
 | `AUTO_MIGRATE` | no | Defaults to on: when the server starts it applies any pending database migrations itself (the SQL is embedded in the build, so it needs no Prisma CLI or `prisma/` folder, which Hostinger doesn't deploy). It records them in Prisma's `_prisma_migrations` table, so `prisma migrate status` still agrees. Set `false` to turn it off. Look for `[migrate] ok` or `[migrate] FAILED` in the runtime log. |
 
 ## Deploy and rollback

@@ -36,7 +36,7 @@ export default async function Page() {
               <VisSelect name="projectsVisibility" label="Projects" value={p.projectsVisibility} />
               <VisSelect name="endorsementsVisibility" label="Mentor endorsements" value={p.endorsementsVisibility} />
               <VisSelect name="entriesVisibility" label="Experience, achievements, hackathons, certificates" value={p.entriesVisibility} />
-              <p className="text-xs text-ink-soft">Email and phone are never shown on a Passport.</p>
+              <p className="text-xs text-ink-soft">Your email is never shown on a Passport.</p>
             </ActionForm>
           </Panel>
         </div>
