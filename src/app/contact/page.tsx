@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PageHero, Block } from "@/components/pages/shell";
 import { ActionForm, Area, Field, inputCls } from "@/components/dash/action-form";
 import { sendContact } from "@/app/actions/contact";
+import { LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Contact" };
 
@@ -21,6 +22,7 @@ export default function Page() {
             {/* Honeypot — hidden from people and assistive tech */}
             <div aria-hidden className="absolute -left-[9999px]"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
           </ActionForm>
+          <p className="mt-6 text-sm text-ink-soft">Prefer email? Write to <a className="text-accent underline" href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>. Privacy requests and complaints go to the same address.</p>
         </div>
       </Block>
     </>
