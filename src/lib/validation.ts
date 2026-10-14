@@ -140,3 +140,35 @@ export const reviewSchema = z.object({
   outcome: z.enum(["REVIEWED", "SHORTLISTED", "NOT_SELECTED"]),
   awardSkill: z.coerce.boolean().default(false),
 });
+
+export type TestCase = { input: string; expected: string; hidden: boolean };
+/** Tests are separated by a line "###"; input and expected output by a line "=>"; start a test with "[hidden]" to hide it from candidates. */
+export function parseTests(text: string): TestCase[] | string {
+  const blocks = text.replace(/\r\n/g, "\n").split(/^###\s*$/m).map((b) => b.trim()).filter(Boolean);
+  if (blocks.length < 1 || blocks.length > 15) return "Add 1 to 15 tests.";
+  const out: TestCase[] = [];
+  for (const raw of blocks) {
+    let b = raw, hidden = false;
+    if (/^\[hidden\]/i.test(b)) { hidden = true; b = b.replace(/^\[hidden\]\s*/i, ""); }
+    const parts = b.split(/^=>\s*$/m);
+    if (parts.length !== 2 || !parts[1].trim()) return 'Each test needs input, a line with only "=>", then the expected output.';
+    const input = parts[0].replace(/^\n+|\n+$/g, ""), expected = parts[1].trim();
+    if (input.length > 2000 || expected.length > 2000) return "Each test's input and output must be under 2000 characters.";
+    out.push({ input: input + "\n", expected, hidden });
+  }
+  return out;
+}
+
+export const assessmentSchema = z.object({
+  kind: z.enum(["CODING", "WRITTEN"]),
+  title: text(120).min(3),
+  instructions: text(4000).min(30, "Write clear instructions (30+ characters)"),
+  items: text(6000).min(3, "Add the tests or questions"),
+  timeLimitMs: z.coerce.number().int().min(500).max(10000).default(2000),
+  memoryMb: z.coerce.number().int().min(32).max(512).default(128),
+  closesAt: z.union([z.coerce.date(), z.literal("")]).optional().transform((v) => (v === "" || v === undefined ? undefined : v)),
+});
+
+export const attemptSchema = z.object({ assessmentId: z.string().cuid(), language: z.string().max(20), code: z.string().min(1, "Write some code first").max(20000, "Code is limited to 20,000 characters") });
+export const writtenAttemptSchema = z.object({ assessmentId: z.string().cuid() });
+export const writtenReviewSchema = z.object({ attemptId: z.string().cuid(), feedback: text(1500).min(10, "Give the candidate some written feedback") });
