@@ -3,7 +3,6 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import { PageHero, Block } from "@/components/pages/shell";
-import { Community } from "@/components/home/rest";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
@@ -47,7 +46,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
         <form className="mb-6 flex flex-wrap gap-2" role="search"><label className="sr-only" htmlFor="q">Search groups</label>
           <input id="q" name="q" defaultValue={q} placeholder="Search groups" className="h-11 min-w-[220px] flex-1 rounded-lg border border-line bg-surface px-3" />
           <select name="kind" defaultValue={kind ?? ""} aria-label="Group type" className="h-11 rounded-lg border border-line bg-surface px-3"><option value="">All types</option><option value="INTEREST">Interest</option><option value="PROJECT">Project</option></select>
-          <button className="h-11 rounded-lg bg-neon px-4 font-semibold text-black">Search</button></form>
+          <button className="h-11 rounded-lg bg-primary px-4 font-semibold text-white">Search</button></form>
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {groups.length ? <ul className="grid gap-4 sm:grid-cols-2">{groups.map((g) => (
             <li key={g.id} className="card card-hover p-5"><Badge tone="accent">{g.kind.toLowerCase()}</Badge><h3 className="mt-2 text-lg font-bold"><Link href={`/community/${g.slug}`} className="hover:underline">{g.name}</Link></h3>
@@ -62,7 +61,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
               </ActionForm></section>)}
         </div>
       </Block>
-      <Community />
     </>
   );
 }

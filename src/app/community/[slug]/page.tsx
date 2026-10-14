@@ -39,7 +39,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <Link href="/community" className="text-sm font-semibold text-accent">← All groups</Link>
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <div><div className="flex flex-wrap gap-2"><Badge tone="accent">{g.kind.toLowerCase()}</Badge>{g.archivedAt && <Badge tone="spot">Archived</Badge>}</div>
-          <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{g.name}</h1><p className="mt-1 max-w-2xl text-ink-soft">{g.description}</p><p className="mt-1 text-sm text-ink-soft">{g._count.members} member{g._count.members === 1 ? "" : "s"}</p></div>
+          <h1 className="mt-2 text-3xl font-semibold md:text-4xl">{g.name}</h1><p className="mt-1 max-w-2xl text-ink-soft">{g.description}</p><p className="mt-1 text-sm text-ink-soft">{g._count.members} member{g._count.members === 1 ? "" : "s"}</p></div>
         <div className="flex flex-wrap gap-2">
           {writer && g.kind !== "COLLEGE" && !g.archivedAt && (mem ? <ActionButton confirm="Leave this group?" action={leaveGroup.bind(null, g.id)}>Leave</ActionButton> : <ActionButton variant="primary" action={joinGroup.bind(null, g.id)}>Join group</ActionButton>)}
           {me.role === "PLATFORM_ADMIN" && <ActionButton action={archiveGroup.bind(null, g.id, !g.archivedAt)}>{g.archivedAt ? "Restore group" : "Archive group"}</ActionButton>}

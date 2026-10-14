@@ -38,7 +38,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <Link href="/challenges" className="text-sm font-semibold text-accent">← All challenges</Link>
       <div className="mt-6 max-w-3xl">
         <div className="flex flex-wrap gap-2"><Badge tone="spot">{KIND_LABEL[c.kind]}</Badge><Badge tone="accent">{STYLE_LABEL[c.style]}</Badge>{c.allowTeams && <Badge>Teams allowed</Badge>}{o.company.isSample && <SampleTag />}</div>
-        <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{o.title}</h1>
+        <h1 className="mt-3 text-4xl font-semibold md:text-5xl">{o.title}</h1>
         <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
         <p className="mt-2 text-sm text-ink-soft">{STYLE_HELP[c.style]}</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">

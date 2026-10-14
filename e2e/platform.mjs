@@ -670,6 +670,21 @@ await employer.reload(); await employer.check(`input[aria-label^="Select Weird S
 employer.once('dialog', (d) => d.accept()); await bulk.locator('select[name=action]').selectOption('REJECTED'); await bulk.locator('button:text-is("Apply")').click(); await bulk.locator('text=Moved 1 candidate').waitFor();
 await employer.reload(); ok(await employer.locator(`article:has-text("Weird Source ${tag}")`).count() === 0, 'bulk reject asks for confirmation, then removes the candidate from the board');
 
+// --- app shell: no landing page, dark by default, theme in Settings, one workspace with every feature
+const fresh = await user(); await fresh.goto(`${B}/`); ok(/\/login$/.test(fresh.url()), 'signed-out visitors go straight to sign-in (the landing page is kalwings.com)');
+ok(await fresh.locator('html[data-theme=dark]').count() === 1, 'dark theme is the default');
+ok(await fresh.locator('header button[aria-label*="mode"]').count() === 0, 'no light/dark toggle in the page header');
+const mk = await anon.request.get(`${B}/students`, { maxRedirects: 0 }); ok([301, 302, 307, 308].includes(mk.status()) && (mk.headers()['location'] || '').startsWith('https://kalwings.com'), 'marketing pages forward to kalwings.com');
+await student.goto(`${B}/`); ok(/\/dashboard$/.test(student.url()), 'signed-in users land in their workspace');
+ok(await student.locator('#ws-h').count() === 1 && await student.locator('main >> text=Career copilot').count() > 0 && await student.locator('main >> text=Campus drives').count() > 0 && await student.locator('main >> text=Mentor sessions').count() > 0, 'student workspace lists every feature');
+await employer.goto(`${B}/dashboard`); ok(await employer.locator('#ws-h').count() === 1 && await employer.locator('main >> text=Talent search').count() > 0 && await employer.locator('main >> text=Analytics').count() > 0, 'employer workspace lists every feature');
+await student.goto(`${B}/dashboard/portfolio`); ok(await student.locator('nav[aria-label=Section] >> text=Public profile').count() > 0 && await student.locator('nav[aria-label=Section] >> text=Details').count() > 0, 'related profile screens share one tab bar');
+await employer.goto(`${B}/dashboard/challenges`); ok(await employer.locator('nav[aria-label=Section] >> text=Assessments').count() > 0 && await employer.locator('nav[aria-label=Section] >> text=Description check').count() > 0, 'roles, challenges and assessments share one tab bar');
+await student.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' }); await student.locator('label:has-text("Light") input').check();
+ok(await student.locator('html[data-theme=light]').count() === 1, 'Settings > Appearance switches to light');
+await student.reload(); ok(await student.locator('html[data-theme=light]').count() === 1, 'the theme choice is remembered');
+await student.locator('label:has-text("Dark") input').check(); ok(await student.locator('html[data-theme=dark]').count() === 1, 'and back to dark');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 

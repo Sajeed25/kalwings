@@ -7,7 +7,7 @@ const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || u
 let bad = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) bad++; };
 const p = await (await b.newContext()).newPage();
 const pageErrors = []; p.on('pageerror', (e) => pageErrors.push(e.message));
-for (const path of ['/', '/students', '/employers', '/colleges', '/about', '/contact', '/help', '/privacy', '/join', '/login', '/challenges']) {
+for (const path of ['/', '/contact', '/help', '/privacy', '/join', '/login', '/challenges']) {
   const r = await p.goto(B + path); ok(r.status() === 200, `${path} loads without the database (200)`);
 }
 let r = await p.goto(B + '/opportunities'); ok(r.status() === 200 && (await p.content()).includes('temporarily unavailable'), '/opportunities shows a friendly notice, not a crash');

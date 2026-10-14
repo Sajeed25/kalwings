@@ -59,7 +59,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <Link href="/opportunities" className="text-sm font-semibold text-accent">← All opportunities</Link>
       <div className="mt-6 max-w-3xl">
         <div className="flex gap-2"><Badge tone="accent">{TYPE_LABEL[o.type]}</Badge>{o.company.isSample && <SampleTag />}</div>
-        <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{o.title}</h1>
+        <h1 className="mt-3 text-4xl font-semibold md:text-5xl">{o.title}</h1>
         <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">
           {[["Pay", o.payText + (o.unpaid ? " (Unpaid)" : "")], ["Location", o.location], ["Work mode", MODE[o.workMode]], ["Eligibility", o.eligibility], ["Deadline", o.deadline.toLocaleDateString("en-IN", { dateStyle: "long", timeZone: "Asia/Kolkata" })], ["Skills", asList(o.skills).join(", ") || "—"]].map(([k, v]) => (

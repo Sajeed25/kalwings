@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { PageTitle, Panel, Stat, Empty, Status } from "@/components/dash/ui";
 import { reviewCollege, reviewCompany, reviewMentor } from "@/app/actions/admin";
 import { ActionButton } from "@/components/dash/action-form";
+import { Workspace } from "@/components/dash/workspace";
 
 export default async function Overview() {
   const u = await requirePageRole();
+  const home = await roleHome(u);
+  return (<>{home}<Workspace role={u.role} /></>);
+}
+
+async function roleHome(u: Awaited<ReturnType<typeof requirePageRole>>) {
   switch (u.role) {
     case "STUDENT": return <StudentHome userId={u.id} name={u.name} />;
     case "MENTOR": return <MentorHome userId={u.id} />;

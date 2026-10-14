@@ -8,9 +8,7 @@ export const site = {
 
 export const nav = [
   { label: "Opportunities", href: "/opportunities" },
-  { label: "Community", href: "/community" },
-  { label: "Mentors", href: "/mentors" },
   { label: "Challenges", href: "/challenges" },
-  { label: "For Employers", href: "/employers" },
-  { label: "For Colleges", href: "/colleges" },
+  { label: "Mentors", href: "/mentors" },
+  { label: "Community", href: "/community" },
 ];

@@ -33,7 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
     <>
       <PageTitle title="Pipeline" sub="Move candidates forward, schedule interviews, extend offers and keep private notes. Candidates are never rejected automatically." />
       <BulkBar stageNames={{ UNDER_REVIEW: labels.UNDER_REVIEW, SHORTLISTED: labels.SHORTLISTED, REJECTED: labels.REJECTED }} />
-      {(allTags.length > 0 || tagFilter) && <p className="mb-4 text-sm"><span className="font-semibold">Filter by tag: </span>{tagFilter && <Link href="/dashboard/pipeline" className="mr-2 font-semibold underline">All candidates</Link>}{allTags.map((t) => <Link key={t.label} href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className={`mr-2 inline-block rounded-full border border-line px-2.5 py-0.5 ${t.label === tagFilter ? "bg-black text-white" : "hover:bg-muted"}`}>{t.label}</Link>)}</p>}
+      {(allTags.length > 0 || tagFilter) && <p className="mb-4 text-sm"><span className="font-semibold">Filter by tag: </span>{tagFilter && <Link href="/dashboard/pipeline" className="mr-2 font-semibold underline">All candidates</Link>}{allTags.map((t) => <Link key={t.label} href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className={`mr-2 inline-block rounded-full border border-line px-2.5 py-0.5 ${t.label === tagFilter ? "bg-primary text-white" : "hover:bg-muted"}`}>{t.label}</Link>)}</p>}
       <div className="overflow-x-auto pb-4" role="region" aria-label="Pipeline board, scroll sideways for more stages" tabIndex={0}>
         <div className="grid min-w-[1320px] grid-cols-6 gap-4">
           {PIPELINE.map((stage, ci) => {

@@ -64,3 +64,6 @@ The public site no longer shows placeholders. Homepage trust strip, impact figur
 
 ## Addendum: bulk actions and tags
 On the pipeline, recruiters can tick candidates and move them to Under review, Shortlisted or Rejected (reject asks for confirmation), or add and remove private tags, up to 50 at a time. Candidates in Offer, Hired or withdrawn are skipped so those steps stay one-at-a-time. Tags are private team notes (max 10 per candidate), filterable on the pipeline, never shown to candidates and never used to score or filter automatically. Not built: saved filters, tag colours, tag-based automation.
+
+## Addendum: app-first corporate redesign
+The app no longer has a landing page: kalwings.com is the marketing site, and app.kalwings.com opens at sign-in, then the role's workspace. Marketing pages (students, employers, colleges, about, press) were removed and forward to kalwings.com. New flat navy and blue-lavender theme (no gradients), Inter, dark by default with light mode in Settings > Appearance. Overlapping screens were merged into tabs and every feature is listed once in `src/lib/modules.ts` (sidebar, tabs and the workspace grid). See `docs/FEATURES.md`. Still to do: apply the exact wording from kalwings.com, and the official logo.

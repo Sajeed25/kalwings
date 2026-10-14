@@ -10,7 +10,7 @@ export function Panel({ title, children, className, action }: { title?: string; 
 }
 
 export function PageTitle({ title, sub }: { title: string; sub?: string }) {
-  return <div className="mb-8"><h1 className="text-3xl font-extrabold md:text-4xl">{title}</h1>{sub && <p className="mt-1 text-ink-soft">{sub}</p>}</div>;
+  return <div className="mb-8"><h1 className="text-2xl font-semibold md:text-3xl">{title}</h1>{sub && <p className="mt-1 text-ink-soft">{sub}</p>}</div>;
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
@@ -18,11 +18,11 @@ export function Empty({ children }: { children: React.ReactNode }) {
 }
 
 export function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div className="card p-5"><p className="text-sm text-ink-soft">{label}</p><p className="mt-1 font-display text-3xl font-extrabold">{value}</p></div>;
+  return <div className="card p-5"><p className="text-sm text-ink-soft">{label}</p><p className="mt-1 font-display text-3xl font-semibold">{value}</p></div>;
 }
 
 const tone: Record<string, string> = {
-  VERIFIED: "bg-accent/15 text-accent", PENDING: "bg-spot/10 text-spot ", REJECTED: "bg-danger/15 text-danger",
+  VERIFIED: "bg-accent/15 text-accent", PENDING: "bg-spot/10 text-spot", REJECTED: "bg-danger/15 text-danger",
 };
 export function Status({ s }: { s: string }) {
   return <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", tone[s] ?? "bg-muted text-ink-soft")}>{s.replace("_", " ").toLowerCase()}</span>;
