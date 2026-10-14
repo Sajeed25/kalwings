@@ -3,64 +3,69 @@
 @tailwind utilities;
 
 /*
- * Brand tokens (RGB triplets so Tailwind alpha modifiers work).
- * Dark navy is the default. Accent is the blue-lavender of the Kalwings mark: flat colour, no gradients.
- * Contrast: ink 15:1 and ink-soft 7:1 on bg; accent text 8:1 on bg; white on primary 4.8:1.
- * Light mode is a setting (Account > Appearance), not a header toggle.
+ * Tokens (RGB triplets so Tailwind alpha modifiers work). Dark is the default; light is a setting.
+ * Warm near-black, warm white text, one hot accent (orange) for actions, soft "sticker" colours for highlights.
+ * Contrast: ink 16:1, ink-soft 7:1, accent text 8:1 on bg; dark text on primary 6.8:1; stickers always carry dark text.
  */
 :root {
-  --bg: 11 14 26;             /* #0B0E1A */
-  --surface: 17 21 38;        /* #111526 */
-  --muted: 24 29 50;          /* #181D32 */
-  --ink: 238 240 248;         /* #EEF0F8 */
-  --ink-soft: 156 163 189;    /* #9CA3BD */
-  --line: 38 45 74;           /* #262D4A */
-  --primary: 91 99 240;       /* #5B63F0 buttons, white text */
-  --accent: 160 168 255;      /* #A0A8FF text-safe lavender-blue */
-  --spot: 196 181 253;        /* #C4B5FD lavender, secondary text */
+  --bg: 14 14 17;
+  --surface: 22 22 27;
+  --muted: 31 31 38;
+  --ink: 245 242 236;
+  --ink-soft: 160 158 168;
+  --line: 44 44 52;
+  --primary: 255 91 46;       /* #FF5B2E */
+  --on-primary: 14 14 17;
+  --accent: 255 138 101;      /* text-safe orange on dark */
+  --spot: 201 184 255;        /* lavender text */
+  --lilac: 201 184 255;       /* #C9B8FF */
+  --sun: 255 214 107;         /* #FFD66B */
+  --mint: 140 240 190;        /* #8CF0BE */
   --danger: 248 113 113;
 }
 :root[data-theme="light"] {
-  --bg: 255 255 255;
-  --surface: 248 249 252;
-  --muted: 241 243 249;
-  --ink: 15 18 38;
-  --ink-soft: 82 88 112;
-  --line: 223 227 238;
-  --primary: 79 70 229;       /* #4F46E5 */
-  --accent: 67 56 202;        /* #4338CA */
-  --spot: 109 40 217;
+  --bg: 247 244 239;
+  --surface: 255 255 255;
+  --muted: 239 235 228;
+  --ink: 17 17 20;
+  --ink-soft: 98 95 104;
+  --line: 224 219 210;
+  --primary: 255 91 46;
+  --on-primary: 17 17 20;
+  --accent: 194 65 12;        /* #C2410C text-safe on paper */
+  --spot: 91 33 182;
   --danger: 185 28 28;
 }
 
 @layer base {
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; color-scheme: dark; }
   html[data-theme="light"] { color-scheme: light; }
+  html[data-theme="light"] { color-scheme: light; }
   body { @apply bg-bg font-sans text-ink antialiased; font-size: 1rem; line-height: 1.65; }
-  h1, h2, h3, h4 { @apply font-display font-semibold; letter-spacing: -0.01em; }
-  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 3px; border-radius: 4px; }
-  ::selection { background: rgb(var(--primary) / 0.35); color: inherit; }
+  h1, h2, h3, h4 { @apply font-display font-bold; letter-spacing: -0.025em; }
+  /* Every form control shares one shape and one focus style. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea { border-radius: 0.875rem; background-color: rgb(var(--bg)); transition: border-color .15s, box-shadow .15s; }
+  input:not([type="checkbox"]):not([type="radio"]):focus-visible, select:focus-visible, textarea:focus-visible { outline: none; border-color: rgb(var(--primary)); box-shadow: 0 0 0 3px rgb(var(--primary) / 0.25); }
+  input::placeholder, textarea::placeholder { color: rgb(var(--ink-soft) / 0.7); }
+  :focus-visible { outline: 2px solid rgb(var(--primary)); outline-offset: 3px; border-radius: 6px; }
+  ::selection { background: rgb(var(--primary) / 0.4); color: inherit; }
 }
 
 @layer components {
-  .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-accent; }
-  .h-section { @apply text-2xl font-semibold leading-tight md:text-3xl; }
-  /* Flat, bordered surfaces. No shadows, no gradients. */
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.14em] text-accent; }
+  .h-section { @apply text-2xl font-bold leading-tight md:text-3xl; }
+  /* Rounded, bordered surfaces. */
   .card { @apply rounded-card border border-line bg-surface; }
-  .card-hover { @apply transition duration-150 hover:border-accent/60; }
-  /* A person has not uploaded a photo yet. */
+  .card-hover { @apply transition duration-200 hover:-translate-y-0.5 hover:border-ink/30; }
+  /* The second font: one serif italic word inside a sans heading. */
+  .serif-accent { @apply font-serif font-normal italic tracking-normal; }
+  /* A person or company has not uploaded an image yet. */
   .placeholder-img { @apply bg-muted; }
+  /* Sticker colours: soft fills with dark text, for highlights and stat tiles. */
+  .sticker-lilac { @apply bg-lilac text-[#14121f]; } .sticker-sun { @apply bg-sun text-[#1c1708]; } .sticker-mint { @apply bg-mint text-[#07140d]; } .sticker-primary { @apply bg-primary text-on-primary; }
 }
 
-/* Scroll reveal (toggled by <RevealObserver />). Only hides content when JS is running (html.js). */
-html.js .reveal { opacity: 0; transform: translateY(20px); transition: opacity .5s cubic-bezier(.21,.6,.35,1), transform .5s cubic-bezier(.21,.6,.35,1); }
-html.js .reveal.is-visible { opacity: 1; transform: none; }
-html.js .draw .draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s ease-in-out; }
-html.js .draw.is-visible .draw-line { stroke-dashoffset: 0; }
-
 @media (prefers-reduced-motion: reduce) {
-  html.js .reveal { opacity: 1; transform: none; }
-  html.js .draw .draw-line { stroke-dashoffset: 0; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 

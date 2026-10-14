@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/brand";
 import { loginWithPassword, requestOtp, submitOtp, type AuthState } from "@/app/actions/auth";
 
-const f = "mt-1.5 h-11 w-full rounded-lg border border-line bg-bg px-3.5 text-[15px]";
+const f = "mt-1.5 h-12 w-full border border-line bg-bg px-4 text-[15px]";
 const errs: Record<string, string> = { "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified.", suspended: "This account has been suspended. Please contact support." };
 
 export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean }) {
@@ -20,15 +20,21 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
   const error = (passwordMode ? s3.error : code ? s2.error : s1.error) ?? (errorCode ? errs[errorCode] : undefined);
 
   return (
-    <div className="container grid min-h-[75vh] items-center gap-12 py-12 lg:grid-cols-2">
-      <div className="hidden max-w-lg lg:block">
-        <h1 className="text-4xl font-semibold leading-tight">Hire freshers on proof of skill, not résumés.</h1>
-        <p className="mt-4 text-lg text-ink-soft">Students show real work. Employers see it before they hire. Every listing shows pay, work mode, location and eligibility, and every employer is verified.</p>
+    <div className="container grid min-h-[78vh] items-center gap-14 py-12 lg:grid-cols-[1.1fr_minmax(0,460px)]">
+      <div className="hidden lg:block">
+        <h1 className="max-w-xl text-6xl font-bold leading-[1.02]">Hire on <span className="serif-accent text-[1.12em]">proof</span>, not résumés.</h1>
+        <p className="mt-6 max-w-lg text-lg text-ink-soft">Students show real work. Employers see it before they hire.</p>
+        <ul className="mt-10 flex max-w-xl flex-wrap gap-3 text-[15px] font-semibold">
+          <li className="sticker-lilac -rotate-2 rounded-full px-5 py-2.5">Pay shown upfront</li>
+          <li className="sticker-sun rotate-1 rounded-full px-5 py-2.5">Verified employers</li>
+          <li className="sticker-mint -rotate-1 rounded-full px-5 py-2.5">Work scored by people</li>
+          <li className="sticker-primary rotate-2 rounded-full px-5 py-2.5">No auto-rejections</li>
+        </ul>
       </div>
-      <div className="card mx-auto w-full max-w-md p-8">
+      <div className="card-lg mx-auto w-full max-w-md rounded-card-lg border border-line bg-surface p-8 md:p-10">
         <div className="lg:hidden"><Logo /></div>
-        <h2 className="mt-6 text-2xl font-semibold lg:mt-0">{join ? "Create your account" : "Sign in"}</h2>
-        <p className="mt-1 text-ink-soft">{join ? "Free for students." : (passwordMode ? "Use your password." : "We will email or text you a one-time code.")}</p>
+        <h2 className="mt-6 text-3xl font-bold lg:mt-0">{join ? "Create your " : "Welcome "}<span className="serif-accent text-[1.12em]">{join ? "account" : "back"}</span></h2>
+        <p className="mt-2 text-ink-soft">{join ? "Free for students." : (passwordMode ? "Use your password." : "We will email or text you a one-time code.")}</p>
         {error && <p role="alert" className="mt-4 rounded-lg bg-danger/15 p-3 text-sm text-danger">{error}</p>}
 
         {passwordMode ? (

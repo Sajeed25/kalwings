@@ -67,3 +67,6 @@ On the pipeline, recruiters can tick candidates and move them to Under review, S
 
 ## Addendum: app-first corporate redesign
 The app no longer has a landing page: kalwings.com is the marketing site, and app.kalwings.com opens at sign-in, then the role's workspace. Marketing pages (students, employers, colleges, about, press) were removed and forward to kalwings.com. New flat navy and blue-lavender theme (no gradients), Inter, dark by default with light mode in Settings > Appearance. Overlapping screens were merged into tabs and every feature is listed once in `src/lib/modules.ts` (sidebar, tabs and the workspace grid). See `docs/FEATURES.md`. Still to do: apply the exact wording from kalwings.com, and the official logo.
+
+## Addendum: premium look
+Second design pass (the first one wrongly changed the logo; the original purple-to-green logo is back). Two typefaces, warm dark palette with an orange accent and sticker colours, pill controls, icon sidebar, kanban-style pipeline columns, colour initials tiles for people without photos, and company logo upload (`Company.logoId`, `COMPANY_LOGO` upload kind). No functionality changed. See `docs/FEATURES.md`.

@@ -2,12 +2,12 @@ import { cn } from "@/lib/utils";
 
 export function PageHero({ eyebrow, title, lead, children }: { eyebrow: string; title: React.ReactNode; lead?: string; children?: React.ReactNode }) {
   return (
-    <section className="border-b border-line py-10 md:py-14">
+    <section className="pb-4 pt-10 md:pt-14">
       <div className="container">
         <div className="max-w-3xl">
           <p className="eyebrow">{eyebrow}</p>
-          <h1 className="mt-2 text-3xl font-semibold leading-tight md:text-4xl">{title}</h1>
-          {lead && <p className="mt-3 text-lg text-ink-soft">{lead}</p>}
+          <h1 className="mt-3 text-4xl font-bold leading-[1.05] md:text-6xl">{title}</h1>
+          {lead && <p className="mt-4 max-w-2xl text-lg text-ink-soft">{lead}</p>}
           {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
         </div>
       </div>
@@ -16,7 +16,7 @@ export function PageHero({ eyebrow, title, lead, children }: { eyebrow: string; 
 }
 
 export function Block({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <section className={cn("py-16 md:py-20", className)}><div className="container">{children}</div></section>;
+  return <section className={cn("py-8 md:py-12", className)}><div className="container">{children}</div></section>;
 }
 
 export function Prose({ children }: { children: React.ReactNode }) {

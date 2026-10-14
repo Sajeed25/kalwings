@@ -12,7 +12,7 @@ const TYPE = TYPE_LABEL;
 export const toCardOpp = (o: DbOpp & { company: Company }): Opportunity & { isSample: boolean } => ({
   id: o.id, company: o.company.name, role: o.title, type: TYPE[o.type], pay: o.payText, unpaid: o.unpaid, location: o.location, mode: MODE[o.workMode],
   eligibility: o.eligibility, deadline: o.deadline.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }),
-  verified: o.company.status === "VERIFIED", skills: asList(o.skills), monthly: o.monthlyINR, isSample: o.company.isSample,
+  verified: o.company.status === "VERIFIED", skills: asList(o.skills), monthly: o.monthlyINR, isSample: o.company.isSample, logoId: o.company.logoId,
 });
 
 export const toCardMentor = (m: MentorProfile & { user: User }, guided: number): Mentor & { id: string; isSample: boolean } => ({

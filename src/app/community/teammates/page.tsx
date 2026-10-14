@@ -23,7 +23,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
     <>
       <PageHero eyebrow="Community" title="Find teammates." lead="Project calls from open groups, newest first. Filter by the skill you can offer." />
       <Block>
-        <form className="mb-6 flex max-w-md gap-2" role="search"><label className="sr-only" htmlFor="skill">Skill</label><input id="skill" name="skill" defaultValue={skill} placeholder="e.g. React, SQL, CAD" className="h-11 flex-1 rounded-lg border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-primary px-4 font-semibold text-white">Filter</button></form>
+        <form className="mb-6 flex max-w-md gap-2" role="search"><label className="sr-only" htmlFor="skill">Skill</label><input id="skill" name="skill" defaultValue={skill} placeholder="e.g. React, SQL, CAD" className="h-11 flex-1 rounded-lg border border-line bg-surface px-3" /><button className="h-11 rounded-lg bg-primary px-4 font-semibold text-on-primary">Filter</button></form>
         {posts.length ? <ul className="grid gap-4 lg:grid-cols-2">{posts.map((p) => <li key={p.id}><PostCard p={p} me={me} canMod={me.role === "PLATFORM_ADMIN"} showGroup /></li>)}</ul> : <p className="card p-8 text-center text-sm text-ink-soft">No project calls match. <Link href="/community" className="underline">Browse groups</Link> and post one.</p>}
       </Block>
     </>

@@ -1,3 +1,4 @@
+import { CompanyLogo } from "@/components/ui/company-logo";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionButton } from "@/components/dash/action-form";
@@ -15,7 +16,7 @@ export default async function Page() {
       <PageTitle title="Application tracker" sub="Applied → Under review → Shortlisted → Interview → Offer → Hired. Outcomes are never guaranteed." />
       {apps.length ? <div className="space-y-4">{apps.map((a) => (
         <Panel key={a.id}>
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-display text-lg font-bold">{a.opportunity.title}</p><p className="text-sm text-ink-soft">{a.opportunity.company.name} · applied {fmt(a.createdAt)}</p></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-4"><CompanyLogo name={a.opportunity.company.name} logoId={a.opportunity.company.logoId} /><div><p className="font-display text-lg font-bold">{a.opportunity.title}</p><p className="text-sm text-ink-soft">{a.opportunity.company.name} · applied {fmt(a.createdAt)}</p></div></div>
             <div className="flex items-center gap-3"><Status s={a.stage} />{WITHDRAWABLE.includes(a.stage) && <ActionButton variant="ghost" confirm="Withdraw this application?" action={withdrawApplication.bind(null, a.id)}>Withdraw</ActionButton>}</div></div>
           {a.interviews.map((i) => <p key={i.id} className="mt-3 rounded-lg border border-line p-3 text-sm"><b>Interview:</b> {fmtTime(i.scheduledAt)} IST · {i.minutes} min · {i.mode.toLowerCase()} · {i.detail} <a className="ml-2 font-semibold underline" href={`/api/interviews/${i.id}/ics`}>Add to calendar</a></p>)}
           {a.offer && (

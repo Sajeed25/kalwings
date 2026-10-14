@@ -16,6 +16,7 @@ export function Navbar() {
   useEffect(() => setSignedIn(document.cookie.includes("kw_in=1")), []);
   useEffect(() => setOpen(false), [path]);
 
+  if (app) return null; // the dashboard sidebar carries the logo
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
@@ -27,7 +28,7 @@ export function Navbar() {
         )}
         <div className="flex items-center gap-2">
           {signedIn
-            ? (!app && <Button asChild size="sm"><Link href="/dashboard">Open workspace</Link></Button>)
+            ? (!app && <Button asChild size="sm"><Link href="/dashboard">Workspace</Link></Button>)
             : <><Button asChild variant="ghost" size="sm"><Link href="/login">Log in</Link></Button><Button asChild size="sm" className="hidden sm:inline-flex"><Link href="/join">Create account</Link></Button></>}
           {!app && <button aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(!open)} className="grid h-10 w-10 place-items-center rounded-md text-ink md:hidden">{open ? <X /> : <Menu />}</button>}
         </div>

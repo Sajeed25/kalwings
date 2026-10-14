@@ -11,8 +11,8 @@ export function SectionTabs({ groups }: { groups: Tab[][] }) {
   const group = groups.find((g) => g.some(on));
   if (!group) return null;
   return (
-    <nav aria-label="Section" className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
-      {group.map((t) => <Link key={t.href} href={t.href} aria-current={on(t) ? "page" : undefined} className={cn("-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition", on(t) ? "border-primary text-ink" : "border-transparent text-ink-soft hover:text-ink")}>{t.label}</Link>)}
-    </nav>
+    <nav aria-label="Section" className="mb-8 flex max-w-full overflow-x-auto"><div className="inline-flex gap-1 rounded-full bg-muted p-1">
+      {group.map((t) => <Link key={t.href} href={t.href} aria-current={on(t) ? "page" : undefined} className={cn("whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold transition", on(t) ? "bg-ink text-bg" : "text-ink-soft hover:text-ink")}>{t.label}</Link>)}
+    </div></nav>
   );
 }

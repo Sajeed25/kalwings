@@ -5,16 +5,16 @@ import { cn } from "@/lib/utils";
 
 // Primary = solid brand blue with white text. Flat: no glow, no gradient.
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-primary text-white hover:brightness-110",
-        secondary: "border border-ink/25 text-ink hover:border-accent hover:text-accent",
+        primary: "bg-primary text-on-primary hover:brightness-110",
+        secondary: "border border-ink/20 text-ink hover:bg-ink/5",
         ghost: "text-ink hover:bg-muted",
         dark: "bg-ink text-bg hover:opacity-90",
       },
-      size: { sm: "h-9 px-4 text-sm", md: "h-11 px-5 text-[15px]", lg: "h-[52px] px-7 text-base" },
+      size: { sm: "h-9 px-4 text-sm", md: "h-11 px-6 text-[15px]", lg: "h-[52px] px-8 text-base" },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },

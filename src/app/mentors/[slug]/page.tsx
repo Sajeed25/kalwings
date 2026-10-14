@@ -1,3 +1,4 @@
+import { tileFill } from "@/components/ui/company-logo";
 import type { Metadata } from "next";
 import { asList } from "@/lib/lists";
 import Link from "next/link";
@@ -5,7 +6,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import { Block } from "@/components/pages/shell";
-import { Badge, PhotoPlaceholder, SampleTag } from "@/components/ui/badge";
+import { Badge, SampleTag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ActionForm, Area, Field } from "@/components/dash/action-form";
 import { requestSession } from "@/app/actions/student";
@@ -31,7 +32,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         {m.avatarId
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={`/api/files/${m.avatarId}`} alt={`Photo of ${m.user.name}`} className="aspect-[4/5] w-full rounded-card-lg object-cover" width={640} height={800} />
-          : <PhotoPlaceholder label="mentor" className="aspect-[4/5] rounded-card-lg" />}
+          : <div role="img" aria-label={`${m.user.name}, no photo yet`} className={`grid aspect-[4/5] place-items-center rounded-card-lg font-serif text-8xl italic ${tileFill(m.user.name)}`}>{m.user.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("")}</div>}
         <div>
           <h1 className="text-4xl font-semibold md:text-5xl">{m.user.name}</h1>
           <p className="mt-2 text-lg text-ink-soft">{m.roleTitle} · {m.company} · {m.country}</p>

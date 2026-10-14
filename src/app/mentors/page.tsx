@@ -1,3 +1,4 @@
+import { Serif } from "@/components/ui/serif";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, Block } from "@/components/pages/shell";
@@ -15,7 +16,7 @@ export default async function Page() {
   try { items = await publicMentors(); } catch (e) { unavailable = true; console.error("[mentors] load failed:", e instanceof Error ? e.message : e); }
   return (
     <>
-      <PageHero eyebrow="Mentor Network" title="Learn from people who've done it." lead="Book office hours, get portfolio reviews and earn endorsements that are backed by real work." />
+      <PageHero eyebrow="Mentor Network" title={<>Learn from people who&apos;ve <Serif>done it</Serif>.</>} lead="Book office hours, get portfolio reviews and earn endorsements that are backed by real work." />
       <Block>
         {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">The mentor directory is temporarily unavailable. Please check back in a few minutes.</p>}
         <MentorDirectory items={items} />

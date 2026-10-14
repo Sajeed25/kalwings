@@ -404,7 +404,7 @@ const rep = await college.request.get(`${B}/api/college/report?type=roster`); co
 ok(rep.status() === 200 && (rep.headers()['content-type'] || '').includes('text/csv') && repTxt.includes(`Test Student ${tag}`) && repTxt.includes(dept) && !repTxt.includes('@example.com'), 'roster CSV includes opted-in students, no emails');
 const rep2 = await college.request.get(`${B}/api/college/report?type=drives`); ok((await rep2.text()).includes(dTitle), 'drives CSV lists the drive');
 ok((await student.request.get(`${B}/api/college/report?type=roster`)).status() === 403 && (await anon.request.get(`${B}/api/college/report?type=roster`)).status() === 403, 'reports are blocked for students and anonymous users');
-await student.goto(`${B}/dashboard/profile`); await student.uncheck('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1200);
+await student.goto(`${B}/dashboard/profile`, { waitUntil: 'networkidle' }); await student.uncheck('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForSelector('p[role=status]'); await student.waitForTimeout(500);
 const rep3 = await college.request.get(`${B}/api/college/report?type=roster`); ok(!(await rep3.text()).includes(`Test Student ${tag}`), 'withdrawing consent removes the student from reports');
 
 // --- copilot: explainable recommendations, profile review, NL search, talent match notes, JD check, privacy in talent search
@@ -481,7 +481,7 @@ await trySet(pwl, { current: PW1, password: PW2, confirmPassword: PW2 }); await 
 await pwu.goto(`${B}/dashboard/account`); await trySet(pwu, { password: PW1, confirmPassword: PW1 }); await pwu.waitForSelector('text=Password changed'); ok(true, 'a fresh email-code session can reset a forgotten password');
 const exp = await (await pwu.request.get(`${B}/api/account/export`)).text(); ok(!exp.includes('scrypt') && !exp.includes('passwordHash'), 'data export never includes the password hash');
 const pwb = await user(); await pwb.goto(`${B}/login`, { waitUntil: 'networkidle' }); await openPasswordForm(pwb);
-for (let i = 0; i < 9; i++) { try { await openPasswordForm(pwb); await pwb.fill('input[name=identifier]', pwEmail, { timeout: 8000 }); await pwb.fill('input[name=password]', `bad guess number ${i}`, { timeout: 8000 }); await pwb.click('button:has-text("Log in")'); } catch (e) { console.log('LOCKOUT LOOP failed at', i, '| url', pwb.url(), '| inputs', await pwb.locator('input').evaluateAll((l) => l.map((x) => x.name)), '| text', (await pwb.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' / ')); throw e; } await pwb.waitForTimeout(350); }
+for (let i = 0; i < 9; i++) { try { await openPasswordForm(pwb); await pwb.fill('input[name=identifier]', pwEmail, { timeout: 8000 }); await pwb.fill('input[name=password]', `bad guess number ${i}`, { timeout: 8000 }); await pwb.click('button:has-text("Log in")'); await pwb.waitForFunction(() => !!document.querySelector('p[role=alert]') && !document.querySelector('form button[disabled]'), null, { timeout: 15000 }); } catch (e) { console.log('LOCKOUT LOOP failed at', i, '| url', pwb.url(), '| inputs', await pwb.locator('input').evaluateAll((l) => l.map((x) => x.name)), '| text', (await pwb.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' / ')); throw e; } await pwb.waitForTimeout(350); }
 await pwb.waitForSelector('text=Too many attempts'); await pwLogin(pwb, pwEmail, PW1); await pwb.waitForTimeout(1500); ok((await pwb.locator('p[role=alert]').first().innerText()).includes('Too many attempts'), 'repeated wrong guesses lock password login (email codes still work)');
 await pwu.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' }); await pwu.locator('summary:has-text("Turn off password login")').click(); await pwu.fill('details input[name=current]', PW1); await pwu.click('button:has-text("Remove password")'); await pwu.waitForSelector('text=Password removed');
 await pwu.reload(); ok(await pwu.locator('button:has-text("Turn on password login")').count() > 0, 'password login can be turned off again');
@@ -684,6 +684,19 @@ await student.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' }); awai
 ok(await student.locator('html[data-theme=light]').count() === 1, 'Settings > Appearance switches to light');
 await student.reload(); ok(await student.locator('html[data-theme=light]').count() === 1, 'the theme choice is remembered');
 await student.locator('label:has-text("Dark") input').check(); ok(await student.locator('html[data-theme=dark]').count() === 1, 'and back to dark');
+
+// --- premium look: original logo, two fonts, company logos
+const home = await user(); await home.goto(`${B}/login`, { waitUntil: 'networkidle' });
+ok(await home.locator('header svg linearGradient').count() > 0 && (await home.locator('header').innerText()).toUpperCase().includes('ALWINGS'), 'header shows the Kalwings logo lockup (gradient K mark + ALWINGS)');
+const fams = await home.evaluate(() => ({ body: getComputedStyle(document.body).fontFamily, accent: getComputedStyle(document.querySelector('.serif-accent')).fontFamily }));
+ok(/Plus Jakarta/.test(fams.body) && /Instrument Serif/.test(fams.accent), 'two font styles: Plus Jakarta Sans body, Instrument Serif italic accent');
+ok(!/Inter|Montserrat/.test(fams.body), 'no third body font');
+const lg = await employer.request.post(`${B}/api/upload`, { multipart: { kind: 'COMPANY_LOGO', file: { name: 'logo.png', mimeType: 'image/png', buffer: PNG } } });
+ok(lg.status() === 200, 'an employer can upload their company logo');
+ok((await student.request.post(`${B}/api/upload`, { multipart: { kind: 'COMPANY_LOGO', file: { name: 'logo.png', mimeType: 'image/png', buffer: PNG } } })).status() === 403, 'students cannot upload a company logo');
+await anon.goto(`${B}/opportunities?q=${encodeURIComponent('Embedded Intern ' + tag)}`, { waitUntil: 'networkidle' });
+ok(await anon.locator(`article:has-text("Embedded Intern ${tag}") img[alt$="logo"]`).count() > 0, 'listing cards show the company logo');
+await anon.goto(`${B}/careers/acme-${tag}`, { waitUntil: 'networkidle' }); ok(await anon.locator('main img[alt$="logo"]').count() > 0, 'career page shows the company logo');
 
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
