@@ -802,6 +802,33 @@ await sf.locator('input[name=announcement]').fill(''); await sf.locator('input[n
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=plan.updated').count() > 0 && await admin.locator('text=mentor.created').count() > 0, 'console changes are in the audit log');
 await employer.goto(`${B}/dashboard/companies`); ok(!/\/dashboard\/companies/.test(employer.url()), 'only platform admins can open the companies console');
 
+// --- bulk upload: xlsx and csv, preview first, then import; bad rows never block good ones
+const { default: writeXlsx } = await import('write-excel-file/node');
+const bulkPanel = (name) => admin.locator(`section[aria-label="Bulk upload ${name}"]`);
+const stuA = `bulk.a${tag}@example.com`, stuB = `bulk.b${tag}@example.com`;
+const xl = await writeXlsx([[{ value: 'name' }, { value: 'email' }, { value: 'college' }, { value: 'graduation_year' }, { value: 'city' }], [{ value: `Bulk Student A ${tag}` }, { value: stuA }, { value: colName }, { value: 2026 }, { value: 'Chennai' }], [{ value: `Bulk Student B ${tag}` }, { value: stuB }, { value: '' }, { value: '' }, { value: '' }], [{ value: 'Bad Row' }, { value: 'not-an-email' }, { value: '' }, { value: '' }, { value: '' }], [{ value: `Bulk Student A ${tag}` }, { value: stuA }, { value: '' }, { value: '' }, { value: '' }]]).toBuffer();
+await admin.goto(`${B}/dashboard/bulk`, { waitUntil: 'networkidle' });
+const sp = bulkPanel('Students'); await sp.locator('input[type=file]').setInputFiles({ name: 'students.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xl });
+await sp.locator('button:text-is("Preview")').click(); await sp.locator('[data-testid=bulk-summary]').waitFor();
+ok((await sp.locator('[data-testid=bulk-summary]').innerText()).includes('2 ready to add, 1 skipped, 1 with errors'), 'an Excel file previews good, duplicate and invalid rows separately');
+await admin.goto(`${B}/dashboard/users?q=${encodeURIComponent(stuA)}`); ok(await admin.locator(`text=${stuA}`).count() === 0, 'a preview saves nothing');
+await admin.goto(`${B}/dashboard/bulk`, { waitUntil: 'networkidle' }); const sp2 = bulkPanel('Students'); await sp2.locator('input[type=file]').setInputFiles({ name: 'students.xlsx', mimeType: 'application/octet-stream', buffer: xl });
+await sp2.locator('button:text-is("Preview")').click(); await sp2.locator('[data-testid=bulk-summary]').waitFor(); await sp2.locator('button:text-is("Import")').click(); await sp2.locator('[data-testid=bulk-summary]:has-text("Imported")').waitFor();
+ok((await sp2.locator('[data-testid=bulk-summary]').innerText()).includes('2 added'), 'importing adds the good rows');
+await admin.goto(`${B}/dashboard/users?q=${encodeURIComponent(stuA)}`); ok(await admin.locator(`text=${stuA}`).count() > 0, 'the imported student has an account');
+await admin.goto(`${B}/dashboard/bulk`, { waitUntil: 'networkidle' }); const sp3 = bulkPanel('Students'); await sp3.locator('input[type=file]').setInputFiles({ name: 'students.xlsx', mimeType: 'application/octet-stream', buffer: xl }); await sp3.locator('button:text-is("Preview")').click(); await sp3.locator('[data-testid=bulk-summary]').waitFor();
+ok((await sp3.locator('[data-testid=bulk-summary]').innerText()).includes('0 ready to add, 3 skipped'), 're-uploading the same file adds nobody twice');
+const coCsv = `company,website,about,plan,hr_name,hr_email\r\n"Bulk Co, Ltd ${tag}",https://bulkco.example,Makes things,,Rita HR,rita${tag}@example.com\r\nBadPlan ${tag},,,NOPE,,\r\n`;
+const bcp = bulkPanel('Companies'); await bcp.locator('input[type=file]').setInputFiles({ name: 'companies.csv', mimeType: 'text/csv', buffer: Buffer.from(coCsv) }); await bcp.locator('button:text-is("Preview")').click(); await bcp.locator('[data-testid=bulk-summary]').waitFor();
+ok((await bcp.locator('[data-testid=bulk-summary]').innerText()).includes('1 ready to add, 0 skipped, 1 with errors'), 'a CSV with quoted commas and an unknown plan previews correctly');
+await bcp.locator('button:text-is("Import")').click(); await bcp.locator('[data-testid=bulk-summary]:has-text("Imported")').waitFor();
+await admin.goto(`${B}/dashboard/companies?q=${encodeURIComponent('Bulk Co, Ltd ' + tag)}`); ok(await admin.locator(`a:has-text("Bulk Co, Ltd ${tag}")`).count() === 1, 'the imported company exists and is verified');
+const mCsv = `name,email,role,company,country,domain,topics,bio\r\nBulk Mentor ${tag},bm${tag}@example.com,Engineer,Globex,India,Backend,"APIs, SQL",Helps freshers\r\n`;
+await admin.goto(`${B}/dashboard/bulk`, { waitUntil: 'networkidle' }); const mpn = bulkPanel('Mentors'); await mpn.locator('input[type=file]').setInputFiles({ name: 'mentors.csv', mimeType: 'text/csv', buffer: Buffer.from(mCsv) }); await mpn.locator('button:text-is("Preview")').click(); await mpn.locator('button:text-is("Import")').click(); await mpn.locator('[data-testid=bulk-summary]:has-text("Imported")').waitFor();
+await admin.goto(`${B}/dashboard/mentors?q=${encodeURIComponent('Bulk Mentor ' + tag)}`); ok(await admin.locator(`text=Bulk Mentor ${tag}`).count() > 0, 'bulk-imported mentors appear with full details');
+const badFile = await admin.request.post(`${B}/api/admin/bulk`, { multipart: { kind: 'students', mode: 'preview', file: { name: 'x.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') } } }); ok(badFile.status() === 400, 'a non-Excel/CSV file is refused');
+const bulkNonAdmin = await student.request.post(`${B}/api/admin/bulk`, { multipart: { kind: 'students', mode: 'preview', file: { name: 'x.csv', mimeType: 'text/csv', buffer: Buffer.from('name,email\r\nA,a@b.co') } } }); ok(bulkNonAdmin.status() === 403, 'only platform admins can bulk upload');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 
