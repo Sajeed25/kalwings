@@ -414,6 +414,7 @@ model Application {
   messages      Message[]
   interviews    Interview[]
   events        ApplicationEvent[]
+  tags          CandidateTag[]
   answers       ApplicationAnswer[]
   offer         Offer?
   createdAt     DateTime            @default(now())
@@ -647,6 +648,17 @@ model ApplicationEvent {
 }
 
 // Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone.
+// Private labels the hiring team puts on a candidate (e.g. "strong portfolio", "call back"). Never shown to candidates and never used to score or filter automatically.
+model CandidateTag {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  label         String      @db.VarChar(30)
+  createdAt     DateTime    @default(now())
+
+  @@unique([applicationId, label])
+}
+
 model JobQuestion {
   id            String              @id @default(cuid())
   opportunityId String

@@ -7,6 +7,7 @@ import { profileFeedback } from "../src/lib/feedback";
 import { publicOrigin } from "../src/lib/origin";
 import { MIGRATIONS } from "../src/lib/migrations.generated";
 import { cdata, cleanSource, shareLinks, slugProblem, xmlEscape } from "../src/lib/distribution-utils";
+import { cleanTag } from "../src/lib/tags";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -87,5 +88,9 @@ t("share links carry the source tag and encode the title", () => {
   const l = shareLinks("https://x.test/opportunities/1", "Dev & Co");
   assert.ok(l.linkedin.includes(encodeURIComponent("https://x.test/opportunities/1?src=linkedin")));
   assert.ok(l.whatsapp.includes("Dev%20%26%20Co")); assert.ok(l.email.startsWith("mailto:"));
+});
+t("tags are normalised, capped and stripped of markup characters", () => {
+  assert.equal(cleanTag("  Strong   Portfolio "), "strong portfolio"); assert.equal(cleanTag("a,b<c>"), "a b c");
+  for (const bad of ["", "x", "y".repeat(31), undefined, 4]) assert.equal(cleanTag(bad as unknown), null);
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

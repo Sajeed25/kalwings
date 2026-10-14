@@ -5,29 +5,35 @@ import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-
 import { Empty, PageTitle, Panel, fmtTime } from "@/components/dash/ui";
 import { extendOffer, markHired, saveInterviewFeedback, saveNotes, scheduleInterview, setStage } from "@/app/actions/employer";
 import { daysBetween } from "@/lib/stage-history";
+import { BulkBar } from "@/components/dash/bulk-bar";
+import { removeTag } from "@/app/actions/employer";
 import Link from "next/link";
 import { Thread } from "@/components/dash/thread";
 import { PIPELINE, stageLabels } from "@/lib/stages";
 
 const sel = "mt-1.5 h-11 w-full rounded-lg border border-line bg-surface px-3 text-[15px]";
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ tag?: string }> }) {
+  const { tag: tagFilter } = await searchParams;
   const u = await requirePageRole("EMPLOYER");
   const mem = await db.employerMember.findUnique({ where: { userId: u.id }, include: { company: true } });
   if (!mem || mem.company.status !== "VERIFIED") return (<><PageTitle title="Pipeline" /><Panel><Empty>Your company must be verified to use the pipeline.</Empty></Panel></>);
   const labels = stageLabels(mem.company.stageLabels);
   const apps = await db.application.findMany({
-    where: { opportunity: { companyId: mem.company.id }, stage: { in: [...PIPELINE, "REJECTED"] } }, orderBy: { createdAt: "desc" },
+    where: { opportunity: { companyId: mem.company.id }, stage: { in: [...PIPELINE, "REJECTED"] }, ...(tagFilter ? { tags: { some: { label: tagFilter } } } : {}) }, orderBy: { createdAt: "desc" },
     include: {
-      opportunity: true, offer: true, interviews: { orderBy: { scheduledAt: "asc" }, include: { feedback: { include: { author: { select: { name: true } } } } } },
+      opportunity: true, offer: true, tags: { orderBy: { label: "asc" } }, interviews: { orderBy: { scheduledAt: "asc" }, include: { feedback: { include: { author: { select: { name: true } } } } } },
       answers: { include: { question: true }, orderBy: { question: { position: "asc" } } }, events: { orderBy: { createdAt: "asc" } },
       messages: { orderBy: { createdAt: "asc" }, include: { sender: true } }, student: { include: { user: { select: { name: true, email: true, phone: true } } } }, referrer: { include: { user: { select: { name: true } } } },
     },
   });
+  const allTags = await db.candidateTag.groupBy({ by: ["label"], where: { application: { opportunity: { companyId: mem.company.id } } }, orderBy: { label: "asc" } });
   const templates = await db.messageTemplate.findMany({ where: { companyId: mem.company.id }, orderBy: { name: "asc" }, select: { id: true, name: true, body: true } });
   return (
     <>
       <PageTitle title="Pipeline" sub="Move candidates forward, schedule interviews, extend offers and keep private notes. Candidates are never rejected automatically." />
+      <BulkBar stageNames={{ UNDER_REVIEW: labels.UNDER_REVIEW, SHORTLISTED: labels.SHORTLISTED, REJECTED: labels.REJECTED }} />
+      {(allTags.length > 0 || tagFilter) && <p className="mb-4 text-sm"><span className="font-semibold">Filter by tag: </span>{tagFilter && <Link href="/dashboard/pipeline" className="mr-2 font-semibold underline">All candidates</Link>}{allTags.map((t) => <Link key={t.label} href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className={`mr-2 inline-block rounded-full border border-line px-2.5 py-0.5 ${t.label === tagFilter ? "bg-black text-white" : "hover:bg-muted"}`}>{t.label}</Link>)}</p>}
       <div className="overflow-x-auto pb-4" role="region" aria-label="Pipeline board, scroll sideways for more stages" tabIndex={0}>
         <div className="grid min-w-[1320px] grid-cols-6 gap-4">
           {PIPELINE.map((stage, ci) => {
@@ -40,7 +46,9 @@ export default async function Page() {
                   const direct = next && next !== "OFFER" && next !== "HIRED" ? next : null;
                   return (
                     <article key={a.id} className="card p-4 text-sm">
-                      <p className="font-display font-bold">{a.student.user.name}</p><p className="text-ink-soft">{a.opportunity.title}</p>
+                      <div className="flex items-start justify-between gap-2"><p className="font-display font-bold">{a.student.user.name}</p>
+                        <input type="checkbox" name="ids" value={a.id} form="bulk-form" aria-label={`Select ${a.student.user.name}, ${a.opportunity.title}`} className="mt-1 h-4 w-4 accent-neon" /></div>
+                      {a.tags.length > 0 && <ul className="mt-1 flex flex-wrap gap-1">{a.tags.map((t) => <li key={t.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"><Link href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className="underline-offset-2 hover:underline">{t.label}</Link><ActionButton variant="ghost" action={removeTag.bind(null, a.id, t.label)}>×<span className="sr-only"> remove tag {t.label}</span></ActionButton></li>)}</ul>}<p className="text-ink-soft">{a.opportunity.title}</p>
                       {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email ?? a.student.user.phone}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
                       <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Passport</a>
                       <p className="mt-1 text-xs text-ink-soft">Source: {sourceLabel(a.source)}{a.referrer && <> · Referred by {a.referrer.user.name}</>}</p>

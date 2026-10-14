@@ -11,6 +11,7 @@ import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
 import { slugProblem } from "@/lib/distribution";
 import { stageEvent } from "@/lib/stage-history";
+import { MAX_BULK, MAX_TAGS_PER_CANDIDATE, cleanTag } from "@/lib/tags";
 import { fail, obj, type Result } from "./_shared";
 
 async function myCompany() {
@@ -333,5 +334,63 @@ export async function saveTemplate(_: Result, fd: FormData): Promise<Result> {
 export async function deleteTemplate(id: string) {
   const { company } = await verifiedCompany();
   await db.messageTemplate.deleteMany({ where: { id, companyId: company.id } });
+  revalidatePath("/dashboard", "layout");
+}
+
+export type BulkResult = Result & { note?: string };
+
+/**
+ * Bulk actions on selected candidates. Always started by a person; nothing here runs automatically.
+ * Stage moves are limited to Under review, Shortlisted and Rejected. Candidates in Offer or Hired, and withdrawn ones, are skipped
+ * because those steps carry terms and consequences that should be handled one at a time.
+ */
+export async function bulkUpdate(_: BulkResult, fd: FormData): Promise<BulkResult> {
+  const { u, company } = await verifiedCompany();
+  const ids = [...new Set(fd.getAll("ids").filter((x): x is string => typeof x === "string"))];
+  if (!ids.length) return { error: "Select at least one candidate." };
+  if (ids.length > MAX_BULK) return { error: `Select up to ${MAX_BULK} candidates at a time.` };
+  const action = String(fd.get("action") ?? "");
+  const apps = await db.application.findMany({ where: { id: { in: ids }, opportunity: { companyId: company.id } }, include: { student: true, opportunity: true, offer: true, tags: true } });
+  if (!apps.length) return { error: "Those candidates were not found." };
+
+  if (action === "ADD_TAG") {
+    const label = cleanTag(fd.get("tag"));
+    if (!label) return { error: "Enter a tag of 2 to 30 characters." };
+    let added = 0, full = 0;
+    for (const a of apps) {
+      if (a.tags.some((t) => t.label === label)) continue;
+      if (a.tags.length >= MAX_TAGS_PER_CANDIDATE) { full++; continue; }
+      await db.candidateTag.create({ data: { applicationId: a.id, label } }); added++;
+    }
+    revalidatePath("/dashboard", "layout");
+    return { ok: true, note: `Tagged ${added} candidate${added === 1 ? "" : "s"} "${label}".${full ? ` ${full} already had ${MAX_TAGS_PER_CANDIDATE} tags.` : ""}` };
+  }
+  if (action === "REMOVE_TAG") {
+    const label = cleanTag(fd.get("tag"));
+    if (!label) return { error: "Enter the tag to remove." };
+    const r = await db.candidateTag.deleteMany({ where: { label, applicationId: { in: apps.map((a) => a.id) } } });
+    revalidatePath("/dashboard", "layout");
+    return { ok: true, note: `Removed "${label}" from ${r.count} candidate${r.count === 1 ? "" : "s"}.` };
+  }
+  if (action === "UNDER_REVIEW" || action === "SHORTLISTED" || action === "REJECTED") {
+    const to = action as ApplicationStage;
+    let moved = 0, skipped = 0;
+    for (const a of apps) {
+      if (["OFFER", "HIRED", "WITHDRAWN"].includes(a.stage)) { skipped++; continue; }
+      if (a.stage === to) continue;
+      await db.$transaction([db.application.update({ where: { id: a.id }, data: { stage: to } }), stageEvent(a.id, a.stage, to, u.id)]);
+      await notify(a.student.userId, "Application update", `${a.opportunity.title} is now: ${DEFAULT_LABEL[to].toLowerCase()}`);
+      moved++;
+    }
+    await audit(u.id, "application.bulk", `${to}: ${moved} moved, ${skipped} skipped (${company.name})`);
+    revalidatePath("/dashboard", "layout");
+    return { ok: true, note: `Moved ${moved} candidate${moved === 1 ? "" : "s"} to ${DEFAULT_LABEL[to].toLowerCase()}.${skipped ? ` Skipped ${skipped} in Offer, Hired or withdrawn: handle those one at a time.` : ""}` };
+  }
+  return { error: "Choose an action." };
+}
+
+export async function removeTag(applicationId: string, label: string) {
+  const { company } = await verifiedCompany();
+  await db.candidateTag.deleteMany({ where: { applicationId, label, application: { opportunity: { companyId: company.id } } } });
   revalidatePath("/dashboard", "layout");
 }
