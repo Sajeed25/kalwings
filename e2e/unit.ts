@@ -44,8 +44,8 @@ t("profile feedback only asks for things, never invents them", () => {
 t("OAuth origin prefers the configured https site URL over an internal proxy address", () => {
   const req = (h: Record<string, string>, origin: string) => ({ headers: { get: (k: string) => h[k.toLowerCase()] ?? null }, nextUrl: { origin } });
   assert.equal(publicOrigin(req({}, "http://localhost:3000"), "https://app.kalwings.com/"), "https://app.kalwings.com");
-  assert.equal(publicOrigin(req({ "x-forwarded-host": "app.kalwings.com", "x-forwarded-proto": "https" }, "http://localhost:3000"), undefined), "https://app.kalwings.com");
-  assert.equal(publicOrigin(req({ "x-forwarded-host": "evil.com/x", "x-forwarded-proto": "https" }, "http://localhost:3000"), undefined), "http://localhost:3000");
+  assert.equal(publicOrigin(req({ "x-forwarded-host": "app.kalwings.com", "x-forwarded-proto": "https" }, "http://localhost:3000"), ""), "https://app.kalwings.com");
+  assert.equal(publicOrigin(req({ "x-forwarded-host": "evil.com/x", "x-forwarded-proto": "https" }, "http://localhost:3000"), ""), "http://localhost:3000");
   assert.equal(publicOrigin(req({}, "http://localhost:3000"), "http://example.com"), "http://localhost:3000");
 });
 console.log(`\n${n} unit tests passed`);
