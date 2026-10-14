@@ -34,7 +34,8 @@ export async function issueOtp(identifier: string, ip: string): Promise<{ ok: bo
   if (!emailConfigured()) return fail("Sign-in email isn't configured. Please contact support.");
   try {
     await sendEmail({ to: identifier, subject: "Your Kalwings sign-in code", text: `Your Kalwings code is ${code}. It expires in 10 minutes. If you didn't request it, ignore this email.` });
-  } catch {
+  } catch (e) {
+    console.error(`[email] sign-in code was not sent: ${e instanceof Error ? e.message : e}`);
     return fail("We couldn't send the email. Please try again shortly.");
   }
   return { ok: true };

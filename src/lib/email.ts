@@ -15,5 +15,9 @@ export async function sendEmail({ to, subject, text }: { to: string; subject: st
     body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [to], subject, text }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!res.ok) throw new Error(`Email provider error ${res.status}`);
+  if (!res.ok) {
+    // Resend explains itself, e.g. "The kalwings.com domain is not verified" or "API key is invalid". These messages carry no secrets.
+    const b = (await res.json().catch(() => ({}))) as { name?: string; message?: string };
+    throw new Error(`Email provider error ${res.status}${b.name ? ` ${b.name}` : ""}${b.message ? `: ${String(b.message).slice(0, 200)}` : ""}`);
+  }
 }
