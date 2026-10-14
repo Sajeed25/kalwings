@@ -4,11 +4,11 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (41)
+## Models (46)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
-| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, reports, groupMemberships, posts, comments, blocksMade, blocksReceived |
+| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived |
 | [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, referrals, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
 | [PassportEntry](#passportentry) | Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL. | student |
 | [Project](#project) |  | student |
@@ -17,10 +17,10 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [OfficeHourSlot](#officehourslot) |  | session, mentor |
 | [MentorSession](#mentorsession) |  | slot, mentor, student |
 | [Endorsement](#endorsement) |  | mentor, student |
-| [Company](#company) |  | assessments, shortlists, invites, members, drives, opportunities |
+| [Company](#company) |  | assessments, shortlists, invites, members, drives, opportunities, templates |
 | [EmployerMember](#employermember) |  | user, company |
-| [Opportunity](#opportunity) |  | company, challenge, applications, saved |
-| [Application](#application) |  | opportunity, student, referrer, messages, interviews, offer |
+| [Opportunity](#opportunity) |  | company, questions, challenge, applications, saved |
+| [Application](#application) |  | opportunity, student, referrer, messages, interviews, events, answers, offer |
 | [Challenge](#challenge) | Details of an Opportunity whose type is CHALLENGE. Rubric: [{criterion, max, description}]. Scoring is by a human reviewer. | opportunity, submissions |
 | [Submission](#submission) |  | challenge, student |
 | [Assessment](#assessment) | CODING: items = [{input, expected, hidden}] run in an isolated sandbox. WRITTEN: items = [{prompt, max}] scored by a human. | company, attempts |
@@ -33,7 +33,12 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [Department](#department) |  | college, students |
 | [Drive](#drive) | A campus placement drive: a college proposes it to a verified company, the company confirms, eligible students who opted in are invited. | college, company, invites |
 | [DriveInvite](#driveinvite) |  | drive, student |
-| [Interview](#interview) |  | application |
+| [Interview](#interview) |  | application, feedback |
+| [ApplicationEvent](#applicationevent) | Stage history: one row per move, so a candidate timeline and time-in-stage / time-to-hire can be shown. | application |
+| [JobQuestion](#jobquestion) | Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone. | opportunity, answers |
+| [ApplicationAnswer](#applicationanswer) |  | application, question |
+| [InterviewFeedback](#interviewfeedback) | Interviewer scorecard. Private to the hiring team: candidates never see it, and it never moves anyone between stages by itself. | interview, author |
+| [MessageTemplate](#messagetemplate) |  | company |
 | [Offer](#offer) |  | application |
 | [CompanyInvite](#companyinvite) | A colleague is invited by email; they join after signing in (OTP-verified) with that email. | company |
 | [SavedOpportunity](#savedopportunity) |  | student, opportunity |
@@ -73,6 +78,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | notifications | Notification[] |  |  |
 | auditLogs | AuditLog[] |  |  |
 | messages | Message[] |  |  |
+| interviewFeedback | InterviewFeedback[] |  |  |
 | reports | Report[] |  |  |
 | groupMemberships | GroupMember[] |  |  |
 | posts | Post[] |  |  |
@@ -255,6 +261,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | members | EmployerMember[] |  |  |
 | drives | Drive[] |  |  |
 | opportunities | Opportunity[] |  |  |
+| templates | MessageTemplate[] |  |  |
 
 ### EmployerMember
 
@@ -274,6 +281,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | id | String | @id @default(cuid()) |  |
 | companyId | String |  |  |
 | company | Company | @relation(fields: [companyId], references: [id]) |  |
+| questions | JobQuestion[] |  |  |
 | title | String |  |  |
 | type | OpportunityType |  |  |
 | description | String | @db.Text |  |
@@ -311,6 +319,8 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | employerNotes | String? | @db.Text |  |
 | messages | Message[] |  |  |
 | interviews | Interview[] |  |  |
+| events | ApplicationEvent[] |  |  |
+| answers | ApplicationAnswer[] |  |  |
 | offer | Offer? |  |  |
 | createdAt | DateTime | @default(now()) |  |
 
@@ -546,10 +556,87 @@ Indexes and constraints: `@@unique([driveId, studentId])`, `@@index([studentId, 
 | detail | String | @db.VarChar(300) | meeting link or address |
 | notes | String? | @db.Text |  |
 | status | InterviewStatus | @default(SCHEDULED) |  |
+| feedback | InterviewFeedback[] |  |  |
 | createdById | String |  |  |
 | createdAt | DateTime | @default(now()) |  |
 
 Indexes and constraints: `@@index([applicationId])`, `@@index([scheduledAt])`
+
+### ApplicationEvent
+
+Stage history: one row per move, so a candidate timeline and time-in-stage / time-to-hire can be shown.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| applicationId | String |  |  |
+| application | Application | @relation(fields: [applicationId], references: [id], onDelete: Cascade) |  |
+| fromStage | ApplicationStage? |  |  |
+| toStage | ApplicationStage |  |  |
+| actorId | String? |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([applicationId, createdAt])`
+
+### JobQuestion
+
+Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| opportunityId | String |  |  |
+| opportunity | Opportunity | @relation(fields: [opportunityId], references: [id], onDelete: Cascade) |  |
+| text | String | @db.VarChar(300) |  |
+| position | Int | @default(0) |  |
+| answers | ApplicationAnswer[] |  |  |
+
+Indexes and constraints: `@@index([opportunityId])`
+
+### ApplicationAnswer
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| applicationId | String |  |  |
+| application | Application | @relation(fields: [applicationId], references: [id], onDelete: Cascade) |  |
+| questionId | String |  |  |
+| question | JobQuestion | @relation(fields: [questionId], references: [id], onDelete: Cascade) |  |
+| answer | String | @db.Text |  |
+
+Indexes and constraints: `@@unique([applicationId, questionId])`
+
+### InterviewFeedback
+
+Interviewer scorecard. Private to the hiring team: candidates never see it, and it never moves anyone between stages by itself.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| interviewId | String |  |  |
+| interview | Interview | @relation(fields: [interviewId], references: [id], onDelete: Cascade) |  |
+| authorId | String |  |  |
+| author | User | @relation(fields: [authorId], references: [id], onDelete: Cascade) |  |
+| rating | Int |  |  |
+| recommendation | FeedbackRecommendation |  |  |
+| strengths | String? | @db.Text |  |
+| concerns | String? | @db.Text |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@unique([interviewId, authorId])`
+
+### MessageTemplate
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| companyId | String |  |  |
+| company | Company | @relation(fields: [companyId], references: [id], onDelete: Cascade) |  |
+| name | String | @db.VarChar(60) |  |
+| body | String | @db.VarChar(1000) |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([companyId])`
 
 ### Offer
 
@@ -773,3 +860,4 @@ Indexes and constraints: `@@index([ownerId])`
 - **SessionStatus**: REQUESTED, ACCEPTED, DECLINED, COMPLETED, CANCELLED
 - **Visibility**: PUBLIC, RECRUITERS, PRIVATE
 - **EntryKind**: EXPERIENCE, ACHIEVEMENT, HACKATHON, CERTIFICATE
+- **FeedbackRecommendation**: STRONG_YES, YES, NO, STRONG_NO
