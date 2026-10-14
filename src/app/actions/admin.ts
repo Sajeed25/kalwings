@@ -3,7 +3,11 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
 import { audit, notify } from "@/lib/audit";
-import type { Result } from "./_shared";
+import { fail, obj, type Result } from "./_shared";
+import { adminUserSchema } from "@/lib/validation";
+import { emailConfigured, sendEmail } from "@/lib/email";
+import { site } from "@/lib/site";
+import { uniqueSlug } from "@/lib/slug";
 
 type Decision = "VERIFIED" | "REJECTED";
 const ok = (d: string): d is Decision => d === "VERIFIED" || d === "REJECTED";
@@ -102,4 +106,75 @@ export async function setPlan(companyId: string, plan: string) {
   await audit(a.id, `company.plan_${plan.toLowerCase()}`, `${c.name} (${companyId})`);
   await Promise.all(c.members.map((m) => notify(m.userId, "Your plan changed", `${c.name} is now on the ${plan.toLowerCase()} plan.`)));
   revalidatePath("/dashboard", "layout");
+}
+
+export type CreateUserResult = Result & { note?: string };
+
+/**
+ * Platform admin adds an account directly: students, mentors, college admins, platform admins, and HR / recruiters who work at other companies.
+ * The admin is vouching for the person, so an employer's company is created (or confirmed) as VERIFIED at once. The person then signs in with
+ * a one-time code sent to the email address; no password is set. Everything is audit-logged.
+ */
+export async function createUser(_: CreateUserResult, fd: FormData): Promise<CreateUserResult> {
+  const a = await requireActionRole("PLATFORM_ADMIN");
+  const r = adminUserSchema.safeParse(obj(fd));
+  if (!r.success) return fail(r.error);
+  const d = r.data;
+  if (await db.user.findUnique({ where: { email: d.email }, select: { id: true } })) return { error: "An account with this email already exists." };
+
+  let website: string | null = null;
+  if (d.companyWebsite) {
+    try { const u = new URL(d.companyWebsite); if (!/^https?:$/.test(u.protocol)) throw new Error(); website = u.toString().slice(0, 400); } catch { return { error: "The company website must start with http:// or https://" }; }
+  }
+  if (d.role === "EMPLOYER" && d.companyName.length < 2) return { error: "Enter the company this person works for." };
+  if (d.role === "COLLEGE_ADMIN" && d.collegeName.length < 2) return { error: "Enter the college this person administers." };
+
+  let detail = "";
+  try {
+    await db.$transaction(async (tx) => {
+      let companyId: string | undefined, collegeId: string | undefined;
+      if (d.role === "EMPLOYER") {
+        const existing = await tx.company.findFirst({ where: { name: d.companyName } }); // case-insensitive collation
+        if (existing?.status === "REJECTED") throw new Error("That company was rejected earlier. Change its status before adding people to it.");
+        const company = existing
+          ? (existing.status === "VERIFIED" ? existing : await tx.company.update({ where: { id: existing.id }, data: { status: "VERIFIED", verifiedAt: new Date() } }))
+          : await tx.company.create({ data: { name: d.companyName, website, status: "VERIFIED", verifiedAt: new Date() } });
+        companyId = company.id; detail = ` at ${company.name}${existing ? "" : " (new, verified)"}`;
+      }
+      if (d.role === "COLLEGE_ADMIN") {
+        const existing = await tx.college.findFirst({ where: { name: d.collegeName } });
+        if (existing?.status === "REJECTED") throw new Error("That college was rejected earlier. Change its status before adding people to it.");
+        const college = existing
+          ? (existing.status === "VERIFIED" ? existing : await tx.college.update({ where: { id: existing.id }, data: { status: "VERIFIED" } }))
+          : await tx.college.create({ data: { name: d.collegeName, city: d.city || null, status: "VERIFIED" } });
+        collegeId = college.id; detail = ` at ${college.name}${existing ? "" : " (new, verified)"}`;
+      }
+      await tx.user.create({
+        data: {
+          name: d.name, email: d.email, role: d.role,
+          ...(d.role === "STUDENT" ? { student: { create: { slug: uniqueSlug(d.name) } } } : {}),
+          ...(companyId ? { employer: { create: { companyId } } } : {}),
+          ...(collegeId ? { college: { create: { collegeId } } } : {}),
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && /rejected earlier/.test(e.message)) return { error: e.message };
+    console.error("[admin] createUser failed:", e instanceof Error ? e.message : e);
+    return { error: "Could not create the account. Check the details and try again." };
+  }
+  await audit(a.id, "user.created", `${d.email} as ${d.role.toLowerCase().replace("_", " ")}${detail}`.slice(0, 190));
+
+  let note = `Added ${d.name} (${d.email}) as ${d.role.toLowerCase().replace("_", " ")}${detail}.`;
+  if (emailConfigured()) {
+    try {
+      await sendEmail({ to: d.email, subject: "Your Kalwings account is ready", text: `Hi ${d.name},\n\nAn administrator has set up a Kalwings account for you.\n\nSign in at ${site.url}/login with this email address (${d.email}). We will email you a one-time code; there is no password to remember.\n\nIf you were not expecting this, you can ignore this email.` });
+      note += " We emailed them how to sign in.";
+    } catch (e) {
+      console.error(`[email] account-ready email was not sent: ${e instanceof Error ? e.message : e}`);
+      note += ` The notification email could not be sent, so tell them to sign in at ${site.url}/login with this email.`;
+    }
+  } else note += ` Email is not configured, so tell them to sign in at ${site.url}/login with this email.`;
+  revalidatePath("/dashboard", "layout");
+  return { ok: true, note };
 }
