@@ -74,5 +74,10 @@ export const MIGRATIONS: { name: string; checksum: string; sql: string }[] = [
     "name": "20261014100000_password_login",
     "checksum": "f2c229d864e67e24926b674addae2fff9afe2d8a08fefe5bde28fb5da8bd9611",
     "sql": "-- AlterTable\nALTER TABLE `User` ADD COLUMN `passwordHash` VARCHAR(255) NULL,\n    ADD COLUMN `passwordSetAt` DATETIME(3) NULL;\n"
+  },
+  {
+    "name": "20261015100000_job_distribution",
+    "checksum": "098775911850e23bf626c90b011711ef72b9bf1588cded2e1937bc9adcb3ec79",
+    "sql": "-- AlterTable\nALTER TABLE `Application` ADD COLUMN `referrerId` VARCHAR(191) NULL,\n    ADD COLUMN `source` VARCHAR(30) NULL;\n\n-- AlterTable\nALTER TABLE `Company` ADD COLUMN `slug` VARCHAR(40) NULL;\n\n-- CreateIndex\nCREATE UNIQUE INDEX `Company_slug_key` ON `Company`(`slug`);\n\n-- AddForeignKey\nALTER TABLE `Application` ADD CONSTRAINT `Application_referrerId_fkey` FOREIGN KEY (`referrerId`) REFERENCES `StudentProfile`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;\n"
   }
 ];

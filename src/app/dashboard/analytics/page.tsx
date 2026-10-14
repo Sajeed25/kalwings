@@ -1,3 +1,4 @@
+import { sourceLabel } from "@/lib/distribution";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { Empty, PageTitle, Panel, Stat } from "@/components/dash/ui";
@@ -8,7 +9,7 @@ export default async function Page() {
   const mem = await db.employerMember.findUnique({ where: { userId: u.id }, include: { company: true } });
   if (!mem || mem.company.status !== "VERIFIED") return (<><PageTitle title="Hiring analytics" /><Panel><Empty>Your company must be verified first.</Empty></Panel></>);
   const labels = stageLabels(mem.company.stageLabels);
-  const opps = await db.opportunity.findMany({ where: { companyId: mem.companyId }, orderBy: { createdAt: "desc" }, include: { applications: { select: { stage: true, offer: { select: { status: true } }, interviews: { select: { id: true } } } } } });
+  const opps = await db.opportunity.findMany({ where: { companyId: mem.companyId }, orderBy: { createdAt: "desc" }, include: { applications: { select: { source: true, stage: true, offer: { select: { status: true } }, interviews: { select: { id: true } } } } } });
   const apps = opps.flatMap((o) => o.applications);
   const by = (s: string) => apps.filter((a) => a.stage === s).length;
   const offers = apps.filter((a) => a.offer).length;
@@ -35,6 +36,10 @@ export default async function Page() {
           </Panel>
           <Panel title="Applications per week">
             <ul className="space-y-2 text-sm">{weekly.map((n, i) => <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n} applications`}><span className="block h-3 rounded bg-neon" style={{ width: `${(n / wmax) * 100}%` }} /></span><b className="text-right">{n}</b></li>)}</ul>
+          </Panel>
+          <Panel title="Where candidates came from">
+            <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{Object.entries(apps.reduce<Record<string, number>>((m, a) => { const k = sourceLabel(a.source); m[k] = (m[k] ?? 0) + 1; return m; }, {})).sort((x, y) => y[1] - x[1]).map(([k, n]) => <li key={k} className="rounded-lg border border-line p-3"><p className="text-ink-soft">{k}</p><p className="font-display text-xl font-bold">{n}</p></li>)}</ul>
+            <p className="mt-3 text-xs text-ink-soft">Sources come from the share links you use (LinkedIn, WhatsApp, your career page, referrals). Candidates who open a plain link show as Kalwings marketplace.</p>
           </Panel>
           <Panel title="By listing">
             <div className="overflow-x-auto" role="region" aria-label="Applications by listing" tabIndex={0}><table className="w-full text-left text-sm"><thead><tr className="text-ink-soft"><th className="py-2 pr-4 font-semibold">Listing</th><th className="pr-4 font-semibold">Applications</th><th className="pr-4 font-semibold">Shortlisted+</th><th className="pr-4 font-semibold">Offers</th><th className="font-semibold">Hired</th></tr></thead>

@@ -232,6 +232,7 @@ model StudentProfile {
   projects               Project[]
   skills                 SkillEvidence[]
   applications           Application[]
+  referrals              Application[]       @relation("Referrals")
   savedRoles             SavedOpportunity[]
   sessions               MentorSession[]
   endorsements           Endorsement[]
@@ -351,6 +352,7 @@ model Company {
   about         String?            @db.Text
   assessments   Assessment[]
   shortlists    Shortlist[]
+  slug          String?            @unique @db.VarChar(40) // public career page: /careers/<slug>
   plan          Plan               @default(STARTER) // set by a platform admin; no online payments yet
   stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
   invites       CompanyInvite[]
@@ -402,6 +404,9 @@ model Application {
   studentId     String
   student       StudentProfile   @relation(fields: [studentId], references: [id])
   stage         ApplicationStage @default(APPLIED)
+  source        String?          @db.VarChar(30) // e.g. linkedin, whatsapp, careers-page
+  referrerId    String?
+  referrer      StudentProfile?  @relation("Referrals", fields: [referrerId], references: [id], onDelete: SetNull)
   employerNotes String?          @db.Text
   messages      Message[]
   interviews    Interview[]

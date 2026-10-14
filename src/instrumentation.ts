@@ -8,9 +8,10 @@ export async function register() {
     const site = describeSiteUrl();
     console.log(`[startup] ${site.line}`);
     if (site.problem) console.error(`[startup] NEXT_PUBLIC_SITE_URL problem: ${site.problem}`);
-    const key = process.env.EMAIL_API_KEY ?? "", from = process.env.EMAIL_FROM ?? "";
-    console.log(`[startup] email: from=${from || "MISSING"} apiKey=${key ? `set (${key.length} chars, starts "${key.slice(0, 3)}")` : "MISSING"}`);
-    if (key && !key.startsWith("re_")) console.error('[startup] EMAIL_API_KEY does not start with "re_": Resend keys do. Check you pasted the key, not something else.');
+    const from = process.env.EMAIL_FROM ?? "", host = process.env.SMTP_HOST ?? "", user = process.env.SMTP_USER ?? "";
+    console.log(`[startup] email: from=${from || "MISSING"} smtpHost=${host || "MISSING"} smtpPort=${process.env.SMTP_PORT || "465 (default)"} smtpUser=${user || "MISSING"} smtpPassword=${process.env.SMTP_PASSWORD ? "set" : "MISSING"}`);
+    if (user && !user.includes("@")) console.error("[startup] SMTP_USER should be the full mailbox address, e.g. hello@kalwings.com.");
+    if (user && from && !from.toLowerCase().includes(user.toLowerCase())) console.error("[startup] EMAIL_FROM differs from SMTP_USER. Hostinger only allows the mailbox itself or its aliases as the sender.");
     if (from && !/^([^<]*<)?[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>?$/.test(from.trim())) console.error('[startup] EMAIL_FROM is not a valid address. Use e.g. hello@kalwings.com or Kalwings <hello@kalwings.com>.');
     if (!d.problem && process.env.AUTO_MIGRATE !== "false") {
       const { runMigrations } = await import("@/lib/migrate");

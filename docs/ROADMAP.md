@@ -49,3 +49,9 @@ Auth (email OTP, sessions, roles), onboarding wizard, profile completeness, port
 
 ## Addendum: optional password login
 Email + password login added next to email codes (scrypt, rate limited, reset via a fresh email-code session). Registration still verifies the email with a code. Not built: 2FA, breached-password check.
+
+## Addendum: free job distribution (inspired by PyjamaHR-style ATS tools)
+Public company career page (`/careers/<slug>`), an embeddable widget (`/embed/careers/<slug>`, the only route that may be framed), open job feeds (`/feeds/jobs.xml`, `/feeds/jobs.json`), richer `JobPosting` structured data (Google for Jobs), sitemap entries, a per-listing share kit (copy link/post text, LinkedIn, WhatsApp, X, email, QR) and source plus referral tracking shown in the pipeline and analytics. Not built: automatic posting to LinkedIn, Indeed or other boards (each needs a partner agreement or approved feed). Next: screening questions, interview scorecards, message templates, stage history reports.
+
+## Addendum: email via Hostinger SMTP
+Transactional email now goes over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`) using a Hostinger mailbox. The Resend integration was removed.

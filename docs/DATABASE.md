@@ -9,7 +9,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
 | [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, reports, groupMemberships, posts, comments, blocksMade, blocksReceived |
-| [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
+| [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, referrals, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
 | [PassportEntry](#passportentry) | Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL. | student |
 | [Project](#project) |  | student |
 | [SkillEvidence](#skillevidence) | A badge/skill is only displayable when backed by evidence or a defined assessment. | student |
@@ -20,7 +20,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [Company](#company) |  | assessments, shortlists, invites, members, drives, opportunities |
 | [EmployerMember](#employermember) |  | user, company |
 | [Opportunity](#opportunity) |  | company, challenge, applications, saved |
-| [Application](#application) |  | opportunity, student, messages, interviews, offer |
+| [Application](#application) |  | opportunity, student, referrer, messages, interviews, offer |
 | [Challenge](#challenge) | Details of an Opportunity whose type is CHALLENGE. Rubric: [{criterion, max, description}]. Scoring is by a human reviewer. | opportunity, submissions |
 | [Submission](#submission) |  | challenge, student |
 | [Assessment](#assessment) | CODING: items = [{input, expected, hidden}] run in an isolated sandbox. WRITTEN: items = [{prompt, max}] scored by a human. | company, attempts |
@@ -111,6 +111,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | projects | Project[] |  |  |
 | skills | SkillEvidence[] |  |  |
 | applications | Application[] |  |  |
+| referrals | Application[] | @relation("Referrals") |  |
 | savedRoles | SavedOpportunity[] |  |  |
 | sessions | MentorSession[] |  |  |
 | endorsements | Endorsement[] |  |  |
@@ -247,6 +248,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | about | String? | @db.Text |  |
 | assessments | Assessment[] |  |  |
 | shortlists | Shortlist[] |  |  |
+| slug | String? | @unique @db.VarChar(40) | public career page: /careers/<slug> |
 | plan | Plan | @default(STARTER) | set by a platform admin; no online payments yet |
 | stageLabels | Json? |  | optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"} |
 | invites | CompanyInvite[] |  |  |
@@ -303,6 +305,9 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | studentId | String |  |  |
 | student | StudentProfile | @relation(fields: [studentId], references: [id]) |  |
 | stage | ApplicationStage | @default(APPLIED) |  |
+| source | String? | @db.VarChar(30) | e.g. linkedin, whatsapp, careers-page |
+| referrerId | String? |  |  |
+| referrer | StudentProfile? | @relation("Referrals", fields: [referrerId], references: [id], onDelete: SetNull) |  |
 | employerNotes | String? | @db.Text |  |
 | messages | Message[] |  |  |
 | interviews | Interview[] |  |  |

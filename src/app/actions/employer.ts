@@ -9,6 +9,7 @@ import { completeness } from "@/lib/completeness";
 import { DEFAULT_LABEL } from "@/lib/stages";
 import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
+import { slugProblem } from "@/lib/distribution";
 import { fail, obj, type Result } from "./_shared";
 
 async function myCompany() {
@@ -279,5 +280,24 @@ export async function reviewSubmission(_: Result, fd: FormData): Promise<Result>
   }
   await notify(sub.student.userId, "Your challenge submission was reviewed", `${sub.challenge.opportunity.title}: ${total}/${max}. Open Submissions to read the feedback.`);
   revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+export async function saveCareerSlug(_: Result, fd: FormData): Promise<Result> {
+  const { u, company } = await verifiedCompany();
+  const slug = String(fd.get("slug") ?? "").trim().toLowerCase();
+  if (!slug) {
+    await db.company.update({ where: { id: company.id }, data: { slug: null } });
+    revalidatePath("/dashboard", "layout");
+    return { ok: true };
+  }
+  const bad = slugProblem(slug);
+  if (bad) return { error: bad };
+  const taken = await db.company.findFirst({ where: { slug, NOT: { id: company.id } }, select: { id: true } });
+  if (taken) return { error: "That address is already taken." };
+  await db.company.update({ where: { id: company.id }, data: { slug } });
+  await audit(u.id, "company.career_slug", `${slug} → ${company.name}`);
+  revalidatePath("/dashboard", "layout");
+  revalidatePath(`/careers/${slug}`);
   return { ok: true };
 }

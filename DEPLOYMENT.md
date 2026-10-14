@@ -2,7 +2,7 @@
 
 **Flow:** you merge a pull request into the main branch → GitHub runs CI → Hostinger pulls the new code, builds it and restarts the app.
 
-> What I verified vs. what I couldn't: the build, migrations, health check, production start, email sign-in and admin bootstrap were all run locally against a real **MariaDB** (the engine behind Hostinger's MySQL; email via a mock server). I could **not** log in to Hostinger, GitHub Actions or Resend from here, so the Hostinger menu names and the Actions run itself are unverified. Hostinger moves its menus around; follow the intent, not the exact labels.
+> What I verified vs. what I couldn't: the build, migrations, health check, production start, email sign-in and admin bootstrap were all run locally against a real **MariaDB** (the engine behind Hostinger's MySQL; email via a mock server). I could **not** log in to Hostinger or GitHub Actions from here, so the Hostinger menu names and the Actions run itself are unverified. Hostinger moves its menus around; follow the intent, not the exact labels.
 
 ## 0. Pick your Hostinger product
 
@@ -21,7 +21,7 @@ This guide is **Option A: Node.js Web Apps + Hostinger MySQL**. Option B (VPS) i
    - `HOST` is `localhost` when the database and the Node app are on the same Hostinger account; otherwise use the remote host shown in hPanel and allow the app's IP under *Remote MySQL*. (Unverified for your plan — hPanel shows the exact host.)
    - URL-encode special characters in the password (`@`→`%40`, `#`→`%23`, `/`→`%2F`).
    - Hostinger database users usually **can't create databases**. That's fine: production only runs `prisma migrate deploy`, which needs no extra privileges. (Local development uses `migrate dev`, which does — use a local MariaDB/MySQL for that.)
-2. **Email for sign-in codes** — [Resend](https://resend.com). Verify your sending domain, create an API key. Without this nobody can log in on production.
+2. **Email for sign-in codes** — a Hostinger mailbox (hPanel → Emails → Create email account, e.g. `hello@kalwings.com`). The app sends over SMTP (`smtp.hostinger.com`). Without this nobody can log in on production.
 3. A **32+ character secret**: `openssl rand -base64 48`
 
 ## 2. Get the code into GitHub the way Hostinger likes
@@ -70,7 +70,7 @@ hPanel → **Websites → Add website → Node.js Apps** → **Import Git reposi
 | `DATABASE_URL` | the MySQL string from step 1 |
 | `AUTH_SECRET` | the 32+ char secret |
 | `NEXT_PUBLIC_SITE_URL` | `https://yourdomain.com` (set **before** the build — it's baked in) |
-| `EMAIL_API_KEY`, `EMAIL_FROM` | Resend key; a sender on your verified domain |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM` | Hostinger mailbox: `smtp.hostinger.com`, `465`, the full mailbox address, its password; `EMAIL_FROM` is that address (or an alias) |
 | `ADMIN_EMAILS` | your email — you become platform admin when you first sign in |
 | `CONTACT_TO` | (optional) inbox for contact-form emails; defaults to `EMAIL_FROM` |
 | `SANDBOX_URL`, `SANDBOX_TOKEN` | (optional) isolated Judge0-compatible code runner for coding assessments. Leave empty to keep them off. Never point it at the app server. |
@@ -109,7 +109,7 @@ Requires Node 20+ and MySQL 8 / MariaDB 10.6+. Quick local database: `docker run
 
 ## 6. Option B — Hostinger VPS (Docker, auto-deploy via GitHub Actions)
 
-1. On the VPS: install Docker, `git clone` the repo to e.g. `/srv/kalwings`, create `/srv/kalwings/.env` with `DB_PASSWORD`, `AUTH_SECRET`, `NEXT_PUBLIC_SITE_URL`, `EMAIL_API_KEY`, `EMAIL_FROM`, `ADMIN_EMAILS`, and run `docker compose up -d --build`. Put Caddy or nginx in front for HTTPS → `localhost:3000`.
+1. On the VPS: install Docker, `git clone` the repo to e.g. `/srv/kalwings`, create `/srv/kalwings/.env` with `DB_PASSWORD`, `AUTH_SECRET`, `NEXT_PUBLIC_SITE_URL`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, `ADMIN_EMAILS`, and run `docker compose up -d --build`. Put Caddy or nginx in front for HTTPS → `localhost:3000`.
 2. GitHub → Settings → Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (a deploy key), `VPS_APP_DIR`; Variables: `DEPLOY_VPS=true`. Then every merge to the main branch runs `.github/workflows/deploy-vps.yml`.
 3. Back up the `dbdata` volume (`docker compose exec db mariadb-dump -uroot -p"$DB_PASSWORD" kalwings > backup.sql`).
 

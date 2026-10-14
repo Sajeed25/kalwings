@@ -6,6 +6,7 @@ import { checkJobDescription } from "../src/lib/jdcheck";
 import { profileFeedback } from "../src/lib/feedback";
 import { publicOrigin } from "../src/lib/origin";
 import { MIGRATIONS } from "../src/lib/migrations.generated";
+import { cdata, cleanSource, shareLinks, slugProblem, xmlEscape } from "../src/lib/distribution-utils";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -68,5 +69,23 @@ t("password rules: length, common passwords, own email name", () => {
   const c = { email: "sajeed.khan@example.com", name: "Sajeed Khan" };
   assert.ok(passwordProblem("short", c)); assert.ok(passwordProblem("password123", c)); assert.ok(passwordProblem("aaaaaaaaaaaa", c)); assert.ok(passwordProblem("my-sajeed.khan-pass", c));
   assert.ok(passwordProblem("x".repeat(129), c)); assert.equal(passwordProblem("blue river walks home", c), null);
+});
+t("career-page addresses are validated and reserved words refused", () => {
+  assert.equal(slugProblem("acme-labs"), null);
+  for (const bad of ["ab", "-acme", "Acme", "acme_labs", "a--b", "acme-", "admin", "api", "x".repeat(41)]) assert.ok(slugProblem(bad), bad);
+});
+t("source tags accept only a safe allow-list", () => {
+  assert.equal(cleanSource("LinkedIn"), "linkedin"); assert.equal(cleanSource("wa-1_x"), "wa-1_x");
+  for (const bad of ["", "<script>", "a b", "x".repeat(31), undefined, 5]) assert.equal(cleanSource(bad as unknown), null);
+});
+t("feed text is escaped and CDATA cannot be broken out of", () => {
+  assert.equal(xmlEscape(`<a href="x">&'`), "&lt;a href=&quot;x&quot;&gt;&amp;&apos;");
+  assert.ok(!cdata("a]]><evil/>").slice(9, -3).includes("]]><evil"));
+  assert.ok(cdata("a]]>b").includes("]]]]><![CDATA[>"));
+});
+t("share links carry the source tag and encode the title", () => {
+  const l = shareLinks("https://x.test/opportunities/1", "Dev & Co");
+  assert.ok(l.linkedin.includes(encodeURIComponent("https://x.test/opportunities/1?src=linkedin")));
+  assert.ok(l.whatsapp.includes("Dev%20%26%20Co")); assert.ok(l.email.startsWith("mailto:"));
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

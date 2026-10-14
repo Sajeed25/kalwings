@@ -1,6 +1,6 @@
 import { chromium } from 'playwright-core';
 import fs from 'fs';
-// Optional: set MAIL_CAPTURE (and start the app with EMAIL_API_URL=<mock>, EMAIL_API_KEY, EMAIL_FROM) to also test notification emails.
+// Optional: set MAIL_CAPTURE (and start the app with EMAIL_API_URL=<mock>, EMAIL_FROM) to also test notification emails.
 const MAIL = process.env.MAIL_CAPTURE;
 const lastMail = () => (MAIL && fs.existsSync(MAIL) ? JSON.parse(fs.readFileSync(MAIL, 'utf8')) : null);
 // Run against `npm run dev` (OTP codes are only shown in dev). Needs the sample seed (admin@sample.kalwings.test).
@@ -569,6 +569,38 @@ ok((await (await anon.goto(B + leaverCard)).status()) === 404, 'deleted user\'s 
 ok((await anon.request.get(B + leaverPhoto)).status() === 404, 'deleted user\'s uploaded photo is gone');
 await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator(`text=Leaver ${tag}`).count() === 0, "deleted student's application disappears from the employer pipeline");
 await admin.goto(`${B}/dashboard/account`); ok(await admin.locator('text=can\'t be deleted from here').count() > 0 && await admin.locator('input[name=confirm]').count() === 0, 'platform admins cannot self-delete');
+
+// --- free job distribution: career page, embed, feeds, share kit, source + referral tracking
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=slug]', 'admin'); await employer.click('button:has-text("Save address")'); await employer.waitForSelector('p[role=alert]');
+ok((await employer.locator('p[role=alert]').first().innerText()).includes('reserved'), 'reserved career-page address is refused');
+await employer.fill('input[name=slug]', `acme-${tag}`); await employer.click('button:has-text("Save address")'); await employer.waitForSelector('text=Saved');
+const careerRes = await anon.goto(`${B}/careers/acme-${tag}`); ok(careerRes.status() === 200 && await anon.locator(`text=Embedded Intern ${tag}`).count() > 0, 'public career page lists the approved listing without login');
+ok(await anon.locator('script[type="application/ld+json"]').first().innerText().then((t) => t.includes('"Organization"')), 'career page has Organization structured data');
+ok((await (await anon.goto(`${B}/careers/nope-${tag}`)).status()) === 404, 'unknown career page is 404');
+const embedRes = await anon.request.get(`${B}/embed/careers/acme-${tag}`); const embedHdr = embedRes.headers();
+ok(embedRes.status() === 200 && (await embedRes.text()).includes(`Embedded Intern ${tag}`) && !embedHdr['x-frame-options'] && (process.env.E2E_PROD ? embedHdr['content-security-policy'].includes('frame-ancestors *') : true), 'embed widget lists roles and may be framed by other sites');
+ok((await anon.request.get(`${B}/opportunities`)).headers()['x-frame-options'] === 'SAMEORIGIN', 'normal pages still refuse to be framed');
+const feedXml = await (await anon.request.get(`${B}/feeds/jobs.xml`)).text();
+ok(feedXml.includes('<source>') && feedXml.includes(`Embedded Intern ${tag}`) && feedXml.includes('?src=feed'), 'XML job feed contains the approved listing with a source tag');
+const feedJson = await (await anon.request.get(`${B}/feeds/jobs.json`)).json(); ok(feedJson.jobs.some((j) => j.title === `Embedded Intern ${tag}`) && !feedJson.jobs.some((j) => /Sample/.test(j.company) && false), 'JSON job feed contains the approved listing');
+ok((await (await anon.request.get(`${B}/sitemap.xml`)).text()).includes(`/careers/acme-${tag}`), 'sitemap lists the career page');
+await employer.goto(`${B}/dashboard/roles`); await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('summary:has-text("Share")').click();
+ok(await employer.locator(`li:has-text("Embedded Intern ${tag}") a:has-text("LinkedIn")`).getAttribute('href').then((h) => h.includes('linkedin.com') && decodeURIComponent(h).includes('src=linkedin')) && await employer.locator(`li:has-text("Embedded Intern ${tag}") svg`).count() > 0, 'share kit has a tagged LinkedIn link and a QR code');
+await student.goto(B + oppHref); const myRef = (await student.locator('code').first().innerText()).split('ref=')[1];
+ok(!!myRef, 'student sees a personal referral link');
+const jobLd = JSON.parse((await anon.goto(B + oppHref).then(() => anon.locator('script[type="application/ld+json"]').evaluateAll((els) => els.map((e) => e.textContent)))).find((t) => t.includes('JobPosting')));
+ok(jobLd.directApply === true && jobLd.identifier?.value, 'listing structured data has directApply and identifier');
+async function applicant(name, qs) {
+  const a = await user(); await auth(a, 'join', `${name.toLowerCase().replace(/ /g, '')}${tag}@example.com`, { name: `${name} ${tag}`, role: 'STUDENT' });
+  await a.goto(`${B}/dashboard/profile`); await a.fill('input[name=headline]', 'Distribution test profile'); await a.fill('input[name=graduationYear]', '2026'); await a.click('button:has-text("Save"):not(:has-text("college"))'); await a.waitForSelector('text=Saved');
+  await a.goto(B + oppHref + qs); await a.click('button:has-text("Apply with my Talent Card")'); await a.waitForSelector("text=You've applied");
+}
+await applicant('Linkedin Lead', '?src=linkedin'); await applicant('Referred Friend', `?src=whatsapp&ref=${myRef}`); await applicant('Weird Source', '?src=%3Cscript%3E');
+await employer.goto(`${B}/dashboard/pipeline`);
+ok(await employer.locator(`article:has-text("Linkedin Lead ${tag}")`).locator('text=Source: LinkedIn').count() > 0, 'pipeline shows the LinkedIn source');
+ok(await employer.locator(`article:has-text("Referred Friend ${tag}")`).locator(`text=Referred by Test Student ${tag}`).count() > 0, 'pipeline shows who referred the candidate');
+ok(await employer.locator(`article:has-text("Weird Source ${tag}")`).locator('text=Kalwings marketplace').count() > 0, 'an unsafe source tag is dropped');
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Where candidates came from').count() > 0 && await employer.locator('li:has-text("Referral")').count() > 0, 'analytics breaks applications down by source');
 
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
