@@ -26,6 +26,10 @@ enum VerificationStatus {
 enum OpportunityType {
   INTERNSHIP
   JOB
+  GRADUATE_TRAINEE
+  APPRENTICESHIP
+  CAMPUS
+  FREELANCE
   CHALLENGE
 }
 

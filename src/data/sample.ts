@@ -56,7 +56,7 @@ export type Opportunity = {
   id: string;
   company: string;
   role: string;
-  type: "Internship" | "Job" | "Challenge";
+  type: string;
   pay: string; // always shown
   unpaid: boolean;
   location: string;
