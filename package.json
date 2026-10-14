@@ -14,6 +14,7 @@
     "db:unseed": "tsx prisma/seed.ts unseed",
     "make-admin": "tsx scripts/make-admin.ts",
     "postinstall": "prisma generate",
+    "test:unit": "tsx e2e/unit.ts",
     "test:e2e": "node e2e/platform.mjs",
     "test:e2e:prod": "node e2e/production.mjs"
   },

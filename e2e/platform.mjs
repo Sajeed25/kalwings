@@ -406,6 +406,37 @@ ok((await student.request.get(`${B}/api/college/report?type=roster`)).status() =
 await student.goto(`${B}/dashboard/profile`); await student.uncheck('input[name=share]'); await student.click('button:has-text("Save college")'); await student.waitForTimeout(1200);
 const rep3 = await college.request.get(`${B}/api/college/report?type=roster`); ok(!(await rep3.text()).includes(`Test Student ${tag}`), 'withdrawing consent removes the student from reports');
 
+// --- copilot: explainable recommendations, profile review, NL search, talent match notes, JD check, privacy in talent search
+const post = async (title, skills, years) => {
+  await employer.goto(`${B}/dashboard/roles`);
+  await employer.fill('input[name=title]', title); await employer.fill('textarea[name=description]', 'You will work on firmware for our sensor line with a small team. We use an assignment and two interview rounds.');
+  await employer.fill('input[name=payText]', '₹10,000 / month'); await employer.fill('input[name=monthlyINR]', '10000'); await employer.fill('input[name=location]', 'Hyderabad');
+  await employer.fill('input[name=deadline]', '2027-03-01'); await employer.fill('input[name=eligibility]', 'Graduates'); await employer.fill('input[name=gradYears]', years); await employer.fill('input[name=skills]', skills);
+  await employer.click('button:has-text("Submit for review")'); await employer.waitForSelector('text=Submitted for review');
+  await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: title }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1200);
+};
+const fwTitle = `Firmware Intern ${tag}`, futTitle = `Future Intern ${tag}`;
+await post(fwTitle, 'Embedded C, RTOS', '2026'); await post(futTitle, 'Embedded C', '2031');
+await employer.goto(`${B}/dashboard/talent`); const fwIdPub = await employer.locator(`select[name=opp] option:has-text("${fwTitle}")`).getAttribute('value');
+await student.goto(`${B}/dashboard/copilot?listing=${fwIdPub}`);
+const cp = await student.locator('main, body').first().innerText();
+ok(cp.includes(fwTitle) && cp.includes('Evidence-backed: Embedded C') && cp.includes('Not found on the profile: RTOS'), 'recommendation explains matched (evidence-backed) and missing skills');
+await student.goto(`${B}/dashboard/copilot`); ok(!(await student.locator('main, body').first().innerText()).includes(futTitle), 'listings for a different graduation year are not recommended');
+await student.goto(`${B}/dashboard/copilot?listing=${fwIdPub}`);
+ok(await student.locator('summary:has-text("How to close the gap")').count() > 0 && await student.locator('summary:has-text("Practice questions")').count() > 0, 'gap tips and practice questions are offered');
+ok(await student.locator('text=Profile review').count() > 0, 'profile review is shown');
+await anon.goto(`${B}/opportunities?nl=${encodeURIComponent('remote internship paid')}`); ok(/type=INTERNSHIP/.test(anon.url()) && /mode=REMOTE/.test(anon.url()) && /pay=paid/.test(anon.url()) && await anon.locator('text=We read that as').count() > 0, 'natural-language search maps onto filters and says how it was read');
+await anon.goto(`${B}/opportunities?nl=${encodeURIComponent('<script>alert(1)</script> ;;; DROP')}`); ok(await anon.locator('h1').count() > 0, 'hostile natural-language input does not break the page');
+await employer.goto(`${B}/dashboard/talent?q=ECE`); const seen = await employer.locator(`text=Test Student ${tag}`).count() > 0;
+const fwId = await employer.locator(`select[name=opp] option:has-text("${fwTitle}")`).getAttribute('value');
+await employer.goto(`${B}/dashboard/talent?q=ECE&opp=${fwId}&sort=match`); ok(seen && (await employer.locator('[data-testid=match-note]').first().innerText()).includes('Evidence-backed: Embedded C'), 'talent search explains the match against a listing');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PRIVATE'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/talent?q=ECE`); ok(await employer.locator(`text=Test Student ${tag}`).count() === 0, 'private Passports never appear in recruiter search');
+await student.goto(`${B}/dashboard/passport`); await student.selectOption('select[name=passportVisibility]', 'PUBLIC'); await student.click('button:has-text("Save privacy")'); await student.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/jd-check`); await employer.fill('textarea#jd', 'Join our team! Pay a registration fee of 500 and we guarantee a job. Message us on WhatsApp.'); await employer.click('button:has-text("Check description")');
+ok(await employer.locator('text=Not allowed').count() >= 2, 'JD check flags fees and guaranteed-job promises');
+await student.goto(`${B}/dashboard/jd-check`); ok(!/jd-check/.test(student.url()), 'students cannot open the recruiter JD check');
+
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
 await student.goto(`${B}/dashboard/passport`);
