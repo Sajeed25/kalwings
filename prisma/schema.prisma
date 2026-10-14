@@ -107,6 +107,27 @@ enum PostKind {
   EVENT
 }
 
+enum DriveStatus {
+  PROPOSED
+  CONFIRMED
+  DECLINED
+  CLOSED
+}
+
+enum InviteStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+}
+
+enum DriveOutcome {
+  NONE
+  SHORTLISTED
+  OFFERED
+  HIRED
+  NOT_SELECTED
+}
+
 enum InterviewMode {
   VIDEO
   PHONE
@@ -209,6 +230,9 @@ model StudentProfile {
   shortlistedBy          Shortlist[]
   submissions            Submission[]
   assessmentAttempts     AssessmentAttempt[]
+  department             Department?         @relation(fields: [departmentId], references: [id])
+  departmentId           String?
+  driveInvites           DriveInvite[]
 }
 
 // Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL.
@@ -322,6 +346,7 @@ model Company {
   stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
   invites       CompanyInvite[]
   members       EmployerMember[]
+  drives        Drive[]
   opportunities Opportunity[]
 }
 
@@ -524,6 +549,53 @@ model Block {
   @@id([blockerId, blockedId])
 }
 
+model Department {
+  id        String           @id @default(cuid())
+  collegeId String
+  college   College          @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name      String           @db.VarChar(80)
+  students  StudentProfile[]
+
+  @@unique([collegeId, name])
+}
+
+// A campus placement drive: a college proposes it to a verified company, the company confirms, eligible students who opted in are invited.
+model Drive {
+  id              String        @id @default(cuid())
+  collegeId       String
+  college         College       @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title           String        @db.VarChar(120)
+  description     String        @db.Text
+  driveDate       DateTime
+  gradYears       Json?
+  departmentIds   Json?
+  minCompleteness Int           @default(0)
+  status          DriveStatus   @default(PROPOSED)
+  createdById     String
+  createdAt       DateTime      @default(now())
+  invites         DriveInvite[]
+
+  @@index([collegeId, createdAt])
+  @@index([companyId, status])
+}
+
+model DriveInvite {
+  id          String         @id @default(cuid())
+  driveId     String
+  drive       Drive          @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      InviteStatus   @default(INVITED)
+  outcome     DriveOutcome   @default(NONE)
+  invitedAt   DateTime       @default(now())
+  respondedAt DateTime?
+
+  @@unique([driveId, studentId])
+  @@index([studentId, status])
+}
+
 model Interview {
   id            String          @id @default(cuid())
   applicationId String
@@ -575,13 +647,15 @@ model SavedOpportunity {
 }
 
 model College {
-  status    VerificationStatus @default(PENDING) // students can pick it only once VERIFIED
-  createdAt DateTime           @default(now())
-  id        String             @id @default(cuid())
-  name      String
-  city      String?
-  students  StudentProfile[]
-  admins    CollegeAdmin[]
+  status      VerificationStatus @default(PENDING) // students can pick it only once VERIFIED
+  createdAt   DateTime           @default(now())
+  id          String             @id @default(cuid())
+  name        String
+  city        String?
+  students    StudentProfile[]
+  admins      CollegeAdmin[]
+  departments Department[]
+  drives      Drive[]
 }
 
 model CollegeAdmin {
