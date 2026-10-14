@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
 import { profileSchema, projectSchema, sessionRequestSchema, studentCollegeSchema, privacySchema, entrySchema, csv } from "@/lib/validation";
 import { usernameSchema } from "@/lib/passport";
+import { WITHDRAWABLE } from "@/lib/stages";
 import { completeness } from "@/lib/completeness";
 import { notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
@@ -89,7 +90,7 @@ export async function applyTo(opportunityId: string) {
 
 export async function withdrawApplication(id: string) {
   const { p } = await me();
-  await db.application.updateMany({ where: { id, studentId: p.id, stage: { in: ["APPLIED", "SHORTLISTED", "INTERVIEW"] } }, data: { stage: "WITHDRAWN" } });
+  await db.application.updateMany({ where: { id, studentId: p.id, stage: { in: WITHDRAWABLE } }, data: { stage: "WITHDRAWN" } });
   revalidatePath("/dashboard", "layout");
 }
 
@@ -192,5 +193,18 @@ export async function requestEntryVerification(id: string) {
   const e = await db.passportEntry.findFirst({ where: { id, studentId: p.id, status: "PENDING" } });
   if (!e || !e.url) return;
   await db.passportEntry.update({ where: { id: e.id }, data: { verifyRequested: true } });
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Candidate response to an offer. Declining withdraws the application. */
+export async function respondOffer(applicationId: string, accept: boolean) {
+  const { u, p } = await me();
+  const app = await db.application.findFirst({ where: { id: applicationId, studentId: p.id, stage: "OFFER", offer: { status: "EXTENDED" } }, include: { offer: true, opportunity: { include: { company: { include: { members: true } } } } } });
+  if (!app?.offer) return;
+  await db.$transaction([
+    db.offer.update({ where: { id: app.offer.id }, data: { status: accept ? "ACCEPTED" : "DECLINED", respondedAt: new Date() } }),
+    ...(accept ? [] : [db.application.update({ where: { id: app.id }, data: { stage: "WITHDRAWN" } })]),
+  ]);
+  await Promise.all(app.opportunity.company.members.map((m) => notify(m.userId, accept ? "Offer accepted" : "Offer declined", `${u.name} · ${app.opportunity.title}`)));
   revalidatePath("/dashboard", "layout");
 }

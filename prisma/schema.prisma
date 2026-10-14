@@ -41,10 +41,31 @@ enum WorkMode {
 
 enum ApplicationStage {
   APPLIED
+  UNDER_REVIEW
   SHORTLISTED
   INTERVIEW
   OFFER
+  HIRED
   REJECTED
+  WITHDRAWN
+}
+
+enum InterviewMode {
+  VIDEO
+  PHONE
+  ONSITE
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  EXTENDED
+  ACCEPTED
+  DECLINED
   WITHDRAWN
 }
 
@@ -233,6 +254,8 @@ model Company {
   verifiedAt    DateTime?
   about         String?            @db.Text
   shortlists    Shortlist[]
+  stageLabels   Json? // optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"}
+  invites       CompanyInvite[]
   members       EmployerMember[]
   opportunities Opportunity[]
 }
@@ -281,9 +304,52 @@ model Application {
   stage         ApplicationStage @default(APPLIED)
   employerNotes String?          @db.Text
   messages      Message[]
+  interviews    Interview[]
+  offer         Offer?
   createdAt     DateTime         @default(now())
 
   @@unique([opportunityId, studentId])
+}
+
+model Interview {
+  id            String          @id @default(cuid())
+  applicationId String
+  application   Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  scheduledAt   DateTime
+  minutes       Int             @default(30)
+  mode          InterviewMode
+  detail        String          @db.VarChar(300) // meeting link or address
+  notes         String?         @db.Text
+  status        InterviewStatus @default(SCHEDULED)
+  createdById   String
+  createdAt     DateTime        @default(now())
+
+  @@index([applicationId])
+  @@index([scheduledAt])
+}
+
+model Offer {
+  id            String      @id @default(cuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  summary       String      @db.VarChar(400) // role, pay and terms as stated to the candidate
+  joiningDate   DateTime?
+  status        OfferStatus @default(EXTENDED)
+  createdAt     DateTime    @default(now())
+  respondedAt   DateTime?
+}
+
+// A colleague is invited by email; they join after signing in (OTP-verified) with that email.
+model CompanyInvite {
+  id          String    @id @default(cuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email       String    @db.VarChar(254)
+  invitedById String
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+
+  @@unique([companyId, email])
 }
 
 model SavedOpportunity {

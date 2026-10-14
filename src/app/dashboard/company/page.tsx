@@ -1,21 +1,53 @@
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
-import { ActionForm, Area, Field } from "@/components/dash/action-form";
-import { PageTitle, Panel, Status } from "@/components/dash/ui";
-import { createCompany } from "@/app/actions/employer";
+import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
+import { PageTitle, Panel, Status, fmt } from "@/components/dash/ui";
+import { acceptInvite, cancelInvite, createCompany, inviteMember, removeMember, saveStageLabels } from "@/app/actions/employer";
+import { DEFAULT_LABEL, stageLabels } from "@/lib/stages";
 
 export default async function Page() {
   const u = await requirePageRole("EMPLOYER");
   const mem = await db.employerMember.findUnique({ where: { userId: u.id }, include: { company: true } });
+  const pendingInvites = !mem && u.email ? await db.companyInvite.findMany({ where: { email: u.email.toLowerCase(), acceptedAt: null }, include: { company: true } }) : [];
+  const team = mem ? await db.employerMember.findMany({ where: { companyId: mem.companyId }, include: { user: { select: { name: true, email: true } } }, orderBy: { id: "asc" } }) : [];
+  const invites = mem ? await db.companyInvite.findMany({ where: { companyId: mem.companyId, acceptedAt: null }, orderBy: { createdAt: "desc" } }) : [];
+  const labels = mem ? stageLabels(mem.company.stageLabels) : DEFAULT_LABEL;
+  const verified = mem?.company.status === "VERIFIED";
   return (
     <>
       <PageTitle title="Company" sub="Every company is reviewed before it can post roles or search talent." />
       {mem ? (
-        <Panel><div className="flex items-center justify-between"><h2 className="text-xl">{mem.company.name}</h2><Status s={mem.company.status} /></div>
-          <p className="mt-2 text-sm text-ink-soft">{mem.company.website}</p>{mem.company.about && <p className="mt-2">{mem.company.about}</p>}
-          <p className="mt-4 text-sm text-ink-soft">{mem.company.status === "PENDING" ? "We'll notify you once the review is done." : mem.company.status === "VERIFIED" ? "You can post roles and search talent." : "This company was not approved. Contact support to appeal."}</p></Panel>
+        <div className="space-y-6">
+          <Panel><div className="flex items-center justify-between"><h2 className="text-xl">{mem.company.name}</h2><Status s={mem.company.status} /></div>
+            <p className="mt-2 text-sm text-ink-soft">{mem.company.website}</p>{mem.company.about && <p className="mt-2">{mem.company.about}</p>}
+            <p className="mt-4 text-sm text-ink-soft">{mem.company.status === "PENDING" ? "We'll notify you once the review is done." : verified ? "You can post roles and search talent." : "This company was not approved. Contact support to appeal."}</p></Panel>
+          {verified && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Panel title="Recruiting team">
+                <ul className="divide-y divide-line text-sm">{team.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-2 py-2"><span><b>{m.user.name}</b> <span className="text-ink-soft">{m.user.email}</span>{m.userId === u.id && " (you)"}</span>
+                    {m.userId !== u.id && <ActionButton variant="ghost" confirm={`Remove ${m.user.name} from the team?`} action={removeMember.bind(null, m.id)}>Remove</ActionButton>}</li>))}</ul>
+                {invites.length > 0 && <><h3 className="mt-4 text-sm font-semibold">Pending invitations</h3><ul className="mt-1 divide-y divide-line text-sm">{invites.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2 py-2"><span>{i.email} <span className="text-ink-soft">· {fmt(i.createdAt)}</span></span><ActionButton variant="ghost" action={cancelInvite.bind(null, i.id)}>Cancel</ActionButton></li>))}</ul></>}
+                <ActionForm action={inviteMember} reset submit="Send invitation" success="Invitation saved" className="mt-4 space-y-2">
+                  <Field label="Invite a colleague by email" name="email" type="email" required hint="They sign up as an Employer with this email, then accept under Company. Up to 10 members." />
+                </ActionForm>
+              </Panel>
+              <Panel title="Pipeline stage names">
+                <ActionForm action={saveStageLabels} submit="Save names" className="space-y-3">
+                  <p className="text-sm text-ink-soft">Rename stages to match your process. The stages themselves stay the same, so reports remain comparable.</p>
+                  {(["UNDER_REVIEW", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED"] as const).map((s) => <Field key={s} label={DEFAULT_LABEL[s]} name={s} defaultValue={labels[s] === DEFAULT_LABEL[s] ? "" : labels[s]} placeholder={DEFAULT_LABEL[s]} maxLength={24} />)}
+                </ActionForm>
+              </Panel>
+            </div>)}
+        </div>
       ) : (
-        <Panel><ActionForm action={createCompany} submit="Submit for verification" success="Submitted"><Field label="Company name" name="name" required /><Field label="Website" name="website" type="url" required hint="We use this to verify the company." /><Area label="About" name="about" /></ActionForm></Panel>
+        <div className="space-y-6">
+          {pendingInvites.length > 0 && <Panel title="You have been invited">{pendingInvites.map((i) => (
+            <div key={i.id} className="flex flex-wrap items-center justify-between gap-3"><p>{i.company.name} invited you to join their recruiting team.</p><ActionButton variant="primary" action={acceptInvite.bind(null, i.id)}>Join {i.company.name}</ActionButton></div>))}</Panel>}
+          <Panel><ActionForm action={createCompany} submit="Submit for verification" success="Submitted"><Field label="Company name" name="name" required /><Field label="Website" name="website" type="url" required hint="We use this to verify the company." /><Area label="About" name="about" /></ActionForm>
+            {!pendingInvites.length && <p className="mt-4 text-sm text-ink-soft">Joining a colleague&apos;s company? Ask them to invite your email, then come back to this page.</p>}</Panel>
+        </div>
       )}
     </>
   );

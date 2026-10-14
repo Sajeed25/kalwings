@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "Dashboard", robots: { index: false }
 export const dynamic = "force-dynamic";
 
 const links: Record<Role, [string, string][]> = {
-  STUDENT: [["Overview", "/dashboard"], ["Profile", "/dashboard/profile"], ["Portfolio", "/dashboard/portfolio"], ["Talent Passport", "/dashboard/passport"], ["Applications", "/dashboard/applications"], ["Saved roles", "/dashboard/saved"], ["Mentor sessions", "/dashboard/mentoring"]],
+  STUDENT: [["Overview", "/dashboard"], ["Profile", "/dashboard/profile"], ["Portfolio", "/dashboard/portfolio"], ["Talent Passport", "/dashboard/passport"], ["Applications", "/dashboard/applications"], ["Interviews", "/dashboard/interviews"], ["Saved roles", "/dashboard/saved"], ["Mentor sessions", "/dashboard/mentoring"]],
   MENTOR: [["Overview", "/dashboard"], ["Mentor profile", "/dashboard/mentoring"]],
-  EMPLOYER: [["Overview", "/dashboard"], ["Company", "/dashboard/company"], ["Roles & challenges", "/dashboard/roles"], ["Talent search", "/dashboard/talent"], ["Pipeline", "/dashboard/pipeline"]],
+  EMPLOYER: [["Overview", "/dashboard"], ["Company", "/dashboard/company"], ["Roles & challenges", "/dashboard/roles"], ["Talent search", "/dashboard/talent"], ["Pipeline", "/dashboard/pipeline"], ["Interviews", "/dashboard/interviews"], ["Analytics", "/dashboard/analytics"]],
   COLLEGE_ADMIN: [["Overview", "/dashboard"], ["College", "/dashboard/college"]],
   PLATFORM_ADMIN: [["Overview & queues", "/dashboard"], ["Listing moderation", "/dashboard/moderation"], ["Passport verification", "/dashboard/credentials"], ["Reports", "/dashboard/reports"], ["Users", "/dashboard/users"], ["Contact inbox", "/dashboard/inbox"], ["Server errors", "/dashboard/errors"], ["Audit log", "/dashboard/audit"]],
 };

@@ -102,12 +102,14 @@ ok(true, 'student applied');
 await employer.goto(`${B}/dashboard/pipeline`);
 ok(await employer.locator(`text=Test Student ${tag}`).count() > 0, 'employer sees applicant');
 ok(await employer.locator('text=Contact private').count() > 0, 'student contact private by default');
+await employer.click('button:has-text("Move to Under review")'); await employer.waitForTimeout(800);
+await employer.reload();
 await employer.click('button:has-text("Move to Shortlisted")'); await employer.waitForTimeout(800);
 await employer.reload();
 ok(await employer.locator(`section[aria-label=Shortlisted] >> text=Test Student ${tag}`).count() > 0, 'moved to Shortlisted');
 if (MAIL) fs.rmSync(MAIL, { force: true });
 await employer.locator('summary:has-text("Notes")').click();
-await employer.fill('input[name=body]', 'Hi! Could we schedule a call?'); await employer.click('button:has-text("Send")'); await employer.waitForSelector('text=Sent');
+await employer.fill('input[name=body]', 'Hi! Could we schedule a call?'); await employer.click('button:text-is("Send")'); await employer.waitForSelector('text=Sent');
 await student.goto(`${B}/dashboard/applications`);
 ok(await student.locator('text=Could we schedule a call').count() > 0, 'student sees employer message');
 if (MAIL) {
@@ -119,7 +121,7 @@ if (MAIL) {
   ok((await student.content()).includes("isn't valid") || (await student.content()).includes('isn&#x27;t valid'), 'forged unsubscribe token is rejected');
   await student.goto(link); await student.click('button:has-text("Turn off notification emails")'); await student.waitForTimeout(1000);
   fs.rmSync(MAIL, { force: true });
-  await employer.fill('input[name=body]', 'Following up on my message.'); await employer.click('button:has-text("Send")'); await employer.waitForTimeout(1200);
+  await employer.fill('input[name=body]', 'Following up on my message.'); await employer.click('button:text-is("Send")'); await employer.waitForTimeout(1200);
   ok(lastMail() === null, 'no email after unsubscribing (in-app notification still created)');
   await student.goto(`${B}/dashboard/applications`);
 }
@@ -224,6 +226,45 @@ await student.goto(B + oppHref); ok(await student.locator('text=Applications clo
 await employer.goto(`${B}/dashboard/roles`);
 await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('button:has-text("Reopen")').click(); await employer.waitForTimeout(1200);
 await student.goto(`${B}/opportunities`); ok(await student.locator(`text=Embedded Intern ${tag}`).count() > 0, 'reopened listing is searchable again');
+
+// --- hiring workspace: interviews, offers, hired, team, labels, analytics, aliases
+const hcard = () => employer.locator('article', { hasText: `Test Student ${tag}` }).first();
+await employer.goto(`${B}/dashboard/pipeline`);
+await hcard().locator('summary:text-is("Interview")').click();
+await hcard().locator('input[name=scheduledAt]').fill('2020-01-01T10:00'); await hcard().locator('input[name=detail]').fill('https://meet.example.com/x'); await hcard().locator('button:has-text("Schedule")').click();
+await hcard().locator('p[role=alert]').waitFor(); ok((await hcard().locator('p[role=alert]').innerText()).includes('future'), 'interview in the past is refused');
+await hcard().locator('input[name=scheduledAt]').fill('2030-01-15T10:00'); await hcard().locator('button:has-text("Schedule")').click(); await employer.waitForTimeout(1800);
+await employer.reload(); ok(await employer.locator(`section[aria-label=Interview] >> text=Test Student ${tag}`).count() > 0, 'scheduling an interview moves the candidate to Interview');
+await student.goto(`${B}/dashboard/interviews`); ok(await student.locator('text=https://meet.example.com/x').count() > 0, 'student sees the interview details');
+const icsHref = await student.locator('a:has-text("Add to calendar")').first().getAttribute('href');
+const icsRes = await student.request.get(B + icsHref); const icsTxt = await icsRes.text(); ok(icsRes.status() === 200 && icsTxt.includes('BEGIN:VCALENDAR') && icsTxt.includes('DTSTART:20300115T043000Z'), 'interview .ics is correct (10:00 IST = 04:30 UTC)');
+ok((await anon.request.get(B + icsHref)).status() === 401, 'anonymous cannot download interview .ics');
+ok((await mentor.request.get(B + icsHref)).status() === 404, 'unrelated user cannot download interview .ics');
+await employer.goto(`${B}/dashboard/pipeline`); await hcard().locator('summary:text-is("Extend offer")').click();
+await hcard().locator('textarea[name=summary]').fill('Embedded engineer, 6 LPA, Hyderabad, start Jan 2030'); await hcard().locator('button:has-text("Send offer")').click(); await employer.waitForTimeout(1800);
+await student.goto(`${B}/dashboard/applications`); ok(await student.locator('text=Embedded engineer, 6 LPA').count() > 0 && await student.locator('button:has-text("Accept")').count() > 0, 'student sees the offer with Accept / Decline');
+ok(await employer.locator('button:has-text("Mark hired")').count() === 0, 'cannot mark hired before the offer is accepted');
+student.once('dialog', (d) => d.accept()); await student.locator('button:has-text("Accept")').first().click(); await student.waitForTimeout(1500);
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator('button:has-text("Mark hired")').count() > 0, 'accepted offer enables Mark hired');
+employer.once('dialog', (d) => d.accept()); await employer.locator('button:has-text("Mark hired")').first().click(); await employer.waitForTimeout(1500);
+await employer.reload(); ok(await employer.locator(`section[aria-label=Hired] >> text=Test Student ${tag}`).count() > 0, 'candidate reaches Hired');
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Offers accepted').count() > 0 && await employer.locator('text=By listing').count() > 0, 'analytics shows real funnel numbers');
+// team
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=email]', `team${tag}@example.com`); await employer.click('button:has-text("Send invitation")'); await employer.waitForSelector('text=Invitation saved');
+const rec2 = await user(); await auth(rec2, 'join', `team${tag}@example.com`, { name: `Team Member ${tag}`, role: 'EMPLOYER' });
+await rec2.goto(`${B}/dashboard/company`); await rec2.click(`button:has-text("Join")`); await rec2.waitForSelector('text=Recruiting team');
+await rec2.goto(`${B}/dashboard/pipeline`); ok(await rec2.locator('section[aria-label=Hired]').count() > 0, 'invited recruiter joins the company and sees its pipeline');
+const rec3 = await user(); await auth(rec3, 'join', `nobody${tag}@example.com`, { name: 'Outside Recruiter', role: 'EMPLOYER' });
+await rec3.goto(`${B}/dashboard/pipeline`); ok(await rec3.locator(`text=Test Student ${tag}`).count() === 0, 'recruiter from another company cannot see this pipeline');
+await employer.goto(`${B}/dashboard/company`); employer.once('dialog', (d) => d.accept()); await employer.locator('li', { hasText: `Team Member ${tag}` }).locator('button:has-text("Remove")').click(); await employer.waitForTimeout(1500);
+await rec2.goto(`${B}/dashboard/pipeline`); ok(await rec2.locator(`text=Test Student ${tag}`).count() === 0, 'removed recruiter loses access');
+// custom stage names
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=UNDER_REVIEW]', 'Screening'); await employer.click('button:has-text("Save names")'); await employer.waitForSelector('text=Saved');
+await employer.goto(`${B}/dashboard/pipeline`); ok(await employer.locator('section[aria-label=Screening]').count() > 0, 'custom stage names show in the pipeline');
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=UNDER_REVIEW]', ''); await employer.click('button:has-text("Save names")'); await employer.waitForSelector('text=Saved');
+// route aliases
+await anon.goto(`${B}/recruiter/analytics`); ok(/\/login/.test(anon.url()), '/recruiter/analytics forwards to the protected dashboard (login first)');
+await anon.goto(`${B}/jobs`); ok(anon.url().includes('/opportunities?type=JOB'), '/jobs forwards to filtered opportunities');
 
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
