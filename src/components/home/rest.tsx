@@ -1,10 +1,16 @@
 import Link from "next/link";
-import { ArrowRight, Award, Building2, GraduationCap, Newspaper, Users } from "lucide-react";
+import { ArrowRight, Award, Building2, GraduationCap, MessagesSquare, Users, Video, ListChecks, BadgeCheck } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
-import { PhotoPlaceholder, SampleTag } from "@/components/ui/badge";
 import { LogoMark } from "@/components/ui/brand";
-import { communityGroups, stories } from "@/data/sample";
+import { SOURCE, alumniStories, recognitions } from "@/data/robokalam";
+
+const learning = [
+  { Icon: Video, t: "Live learning", d: "Learn live with educators, chat with teachers and other attendees, and get your doubts cleared." },
+  { Icon: MessagesSquare, t: "Community & networking", d: "Exclusive chat groups to discuss with peers and instructors, and to meet people from different backgrounds." },
+  { Icon: ListChecks, t: "Practice tests", d: "Quizzes and live tests to practise what you learned and track your performance." },
+  { Icon: BadgeCheck, t: "Certificates", d: "Course certificates you can add to your LinkedIn profile." },
+];
 
 export function Community() {
   return (
@@ -13,20 +19,16 @@ export function Community() {
         <Reveal className="max-w-2xl">
           <p className="eyebrow">Community</p>
           <h2 className="h-section mt-3">You don&apos;t have to figure it out alone.</h2>
-          <p className="mt-4 text-lg text-ink-soft">College chapters, events and project teams — learning in public, together.</p>
+          <p className="mt-4 text-lg text-ink-soft">Mentor-led, hands-on learning and chat groups, from the KodeZ programmes in Hyderabad.</p>
         </Reveal>
-        <div className="mt-12 grid gap-4 md:grid-cols-4 md:grid-rows-2">
-          <Reveal className="md:col-span-2 md:row-span-2"><PhotoPlaceholder label="community event" className="h-72 rounded-card md:h-full md:min-h-[420px]" /></Reveal>
-          <Reveal delay={0.05} className="md:col-span-2"><PhotoPlaceholder label="college chapter" className="h-48 rounded-card md:h-full" /></Reveal>
-          <Reveal delay={0.1}><PhotoPlaceholder label="student project" className="h-48 rounded-card md:h-full" /></Reveal>
-          <Reveal delay={0.15}>
-            <div className="card flex h-full min-h-48 flex-col justify-between p-6">
-              <p className="eyebrow">Active groups</p>
-              <ul className="space-y-1.5 text-[15px]">{communityGroups.map((g) => <li key={g.name} className="flex items-center gap-2"><Users className="h-4 w-4 text-ink-soft" aria-hidden />{g.name}</li>)}</ul>
-            </div>
-          </Reveal>
-        </div>
-        <div className="mt-10"><Button asChild size="lg"><Link href="/community">Join a chapter</Link></Button></div>
+        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {learning.map(({ Icon, t, d }, i) => (
+            <Reveal as="li" key={t} delay={i * 0.06}>
+              <div className="card h-full p-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-spot/10 text-spot"><Icon className="h-5 w-5" aria-hidden /></span><h3 className="mt-4 text-lg">{t}</h3><p className="mt-2 text-[15px] text-ink-soft">{d}</p></div>
+            </Reveal>
+          ))}
+        </ul>
+        <div className="mt-10"><Button asChild size="lg"><Link href="/community">Join the community</Link></Button></div>
       </div>
     </section>
   );
@@ -37,49 +39,43 @@ export function Stories() {
     <section className="section bg-muted">
       <div className="container">
         <Reveal className="max-w-2xl">
-          <p className="eyebrow">Success stories</p>
+          <p className="eyebrow">Alumni voices</p>
           <h2 className="h-section mt-3">From proof to offer.</h2>
+          <p className="mt-4 text-lg text-ink-soft">What KodeZ learners say about the work that got them hired.</p>
         </Reveal>
         <ul className="mt-12 grid gap-6 md:grid-cols-3">
-          {stories.map((s, i) => (
-            <Reveal as="li" key={i} delay={i * 0.08}>
-              <article className="card card-hover h-full overflow-hidden">
-                <PhotoPlaceholder label="student photo" className="h-48" />
-                <div className="p-6">
-                  <SampleTag />
-                  <h3 className="mt-3 text-xl">{s.name}</h3>
-                  <p className="text-sm text-ink-soft">{s.college}</p>
-                  <p className="mt-3 font-medium">{s.path}</p>
-                </div>
-              </article>
+          {alumniStories.map((s, i) => (
+            <Reveal as="li" key={s.name} delay={i * 0.08}>
+              <figure className="card card-hover flex h-full flex-col p-6">
+                <blockquote className="flex-1 font-medium leading-relaxed">“{s.quote}”</blockquote>
+                <figcaption className="mt-5 flex items-center gap-3">
+                  <span aria-hidden className="grid h-10 w-10 place-items-center rounded-full bg-black font-display font-bold text-white">{s.name[0]}</span>
+                  <span><span className="block font-semibold">{s.name}</span><span className="text-sm text-ink-soft">KodeZ alumni · {s.where}</span></span>
+                </figcaption>
+              </figure>
             </Reveal>
           ))}
         </ul>
-        <p className="mt-6 text-sm text-ink-soft">Replace with real, consented stories only. We don&apos;t publish invented testimonials.</p>
+        <p className="mt-6 text-sm text-ink-soft">Quotes as published by <a className="underline" href={SOURCE.url} rel="noopener">{SOURCE.label}</a>. Placement support is not a guarantee of a job.</p>
       </div>
     </section>
   );
 }
 
 export function Recognition() {
-  // Add ONLY real, verifiable entries. T-Hub incubation is the one fact supplied by the founders.
-  const items = [
-    { Icon: Building2, t: "Incubated at T-Hub, Hyderabad", s: "2024" },
-    { Icon: Award, t: "[Award — add only if real]", s: "[Year]", ph: true },
-    { Icon: Newspaper, t: "[Press mention — add only if real]", s: "[Publication]", ph: true },
-  ];
   return (
     <section className="py-16">
       <div className="container">
         <h2 className="text-center font-sans text-sm font-semibold tracking-normal text-ink-soft">Awards &amp; recognition</h2>
-        <ul className="mt-6 grid gap-4 md:grid-cols-3">
-          {items.map(({ Icon, t, s, ph }) => (
-            <li key={t} className={`card flex items-center gap-4 p-5 ${ph ? "border-dashed" : ""}`}>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-spot/10 text-spot "><Icon className="h-5 w-5" /></span>
+        <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {recognitions.map(({ t, s }, i) => (
+            <li key={t} className="card flex items-center gap-4 p-5">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-spot/10 text-spot">{i === 0 ? <Building2 className="h-5 w-5" /> : <Award className="h-5 w-5" />}</span>
               <div><p className="font-semibold leading-snug">{t}</p><p className="text-sm text-ink-soft">{s}</p></div>
             </li>
           ))}
         </ul>
+        <p className="mt-4 text-center text-xs text-ink-soft">Awards other than T-Hub incubation are those of Robokalam, as listed on <a className="underline" href={SOURCE.url} rel="noopener">{SOURCE.label}</a>.</p>
       </div>
     </section>
   );
@@ -120,16 +116,14 @@ export function Team() {
   return (
     <section className="section bg-muted">
       <div className="container grid items-center gap-12 md:grid-cols-[320px_1fr]">
-        <Reveal><PhotoPlaceholder label="Mohammed Sajeed Khan" className="aspect-[4/5] rounded-card-lg" /></Reveal>
+        <Reveal><div aria-hidden className="grid aspect-[4/5] place-items-center rounded-card-lg bg-black font-display text-8xl font-extrabold text-white">MS</div></Reveal>
         <Reveal delay={0.1}>
           <p className="eyebrow">The team behind Kalwings</p>
-          <blockquote className="mt-4 font-display text-2xl font-bold leading-snug tracking-tight md:text-3xl">
-            “[Founder note — draft for Sajeed to edit] For years we built STEM labs and skilling programmes through Robokalam and CareerKalam. We kept meeting students who could build — and employers who couldn&apos;t see it. Kalwings is how we close that gap.”
-          </blockquote>
+          <h2 className="mt-4 font-display text-2xl font-bold leading-snug tracking-tight md:text-3xl">Students who can build, and employers who can&apos;t see it yet. Kalwings closes that gap.</h2>
           <p className="mt-5 font-semibold">Mohammed Sajeed Khan</p>
-          <p className="text-ink-soft">Co-founder, Kalwings</p>
-          <p className="mt-4 text-[15px] text-ink-soft">Built by the team behind Robokalam (DPIIT-recognised deep-tech EdTech) and CareerKalam, and guided by mentors and advisors with global industry experience.</p>
-          <Link href="/about#advisors" className="mt-5 inline-flex items-center gap-1 font-semibold text-accent hover:underline ">Meet our advisors <ArrowRight className="h-4 w-4" /></Link>
+          <p className="text-ink-soft">Co-founder, Kalwings · Program Instructor, KodeZ</p>
+          <p className="mt-4 text-[15px] text-ink-soft">Built by the team behind Robokalam (DPIIT-recognised deep-tech EdTech running STEM labs) and KodeZ, the mentor-led Python / AI, Java and Web programmes in Hyderabad, with mentors and advisors from industry.</p>
+          <Link href="/about#advisors" className="mt-5 inline-flex items-center gap-1 font-semibold text-accent hover:underline ">Meet our mentors and advisors <ArrowRight className="h-4 w-4" /></Link>
         </Reveal>
       </div>
     </section>

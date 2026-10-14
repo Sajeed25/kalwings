@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { BadgeCheck, Clock, MapPin } from "lucide-react";
-import { Reveal } from "@/components/ui/reveal";
 import { Badge, SampleTag } from "@/components/ui/badge";
-import { opportunities, type Opportunity } from "@/data/sample";
+import type { Opportunity } from "@/data/sample";
 
 export function OpportunityCard({ o }: { o: Opportunity }) {
   return (
@@ -27,25 +26,5 @@ export function OpportunityCard({ o }: { o: Opportunity }) {
         {o.isSample !== false && <SampleTag />}
       </div>
     </article>
-  );
-}
-
-export function LiveOpportunities() {
-  return (
-    <section className="section bg-muted">
-      <div className="container">
-        <Reveal className="flex items-end justify-between gap-6">
-          <div className="max-w-2xl">
-            <p className="eyebrow">Live opportunities</p>
-            <h2 className="h-section mt-3">Real roles. Real pay shown up front.</h2>
-          </div>
-          <Link href="/opportunities" className="hidden shrink-0 font-semibold hover:underline md:block">View all →</Link>
-        </Reveal>
-        <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {opportunities.map((o, i) => (<Reveal as="li" key={o.id} delay={(i % 3) * 0.07}><OpportunityCard o={o} /></Reveal>))}
-        </ul>
-        <Link href="/opportunities" className="mt-8 block font-semibold md:hidden">View all →</Link>
-      </div>
-    </section>
   );
 }
