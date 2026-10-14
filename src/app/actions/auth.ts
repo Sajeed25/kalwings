@@ -9,6 +9,7 @@ import { clientIp } from "@/lib/request";
 import { uniqueSlug } from "@/lib/slug";
 import { rateLimit } from "@/lib/rate-limit";
 import { maybePromoteAdmin } from "@/lib/admin-bootstrap";
+import { PASSWORD_MAX, fakeVerify, verifyPassword } from "@/lib/password";
 
 const DOWN = "We're having trouble connecting right now. Please try again in a few minutes.";
 
@@ -62,6 +63,29 @@ export async function submitOtp(prev: AuthState, fd: FormData): Promise<AuthStat
     return { ...prev, name: typedName, error: DOWN };
   }
   redirect(dest); // outside the try: redirect() works by throwing
+}
+
+/** Password login for people who set a password in Account. Email codes keep working for everyone. */
+export async function loginWithPassword(prev: AuthState, fd: FormData): Promise<AuthState> {
+  const id = normaliseIdentifier(String(fd.get("identifier") ?? ""));
+  const pw = String(fd.get("password") ?? "");
+  const wrong: AuthState = { ...prev, step: "identify", error: "Incorrect email, mobile number or password." };
+  if (!id || !pw || pw.length > PASSWORD_MAX) return wrong;
+  const dest = "/dashboard";
+  try {
+    if (!(await rateLimit(`pw-ip:${await clientIp()}`, 30, 60 * 60 * 1000))) return { ...prev, step: "identify", error: "Too many attempts. Try again later, or use an email code." };
+    if (!(await rateLimit(`pw:${id.value}`, 8, 15 * 60 * 1000))) return { ...prev, step: "identify", error: "Too many attempts for this account. Wait 15 minutes, or log in with an email code." };
+    let user = await db.user.findUnique({ where: id.kind === "email" ? { email: id.value } : { phone: id.value } });
+    if (!user?.passwordHash) { await fakeVerify(pw); return wrong; } // same message and similar timing whether or not the account exists
+    if (!(await verifyPassword(pw, user.passwordHash))) return wrong;
+    if (user.suspendedAt) return { ...prev, step: "identify", error: "This account has been suspended. Please contact support." };
+    user = await maybePromoteAdmin(user);
+    await createSession(user.id, "password");
+  } catch (e) {
+    console.error("[auth] loginWithPassword failed:", e instanceof Error ? e.message : e);
+    return { ...prev, step: "identify", error: DOWN };
+  }
+  redirect(dest);
 }
 
 export async function logout() {

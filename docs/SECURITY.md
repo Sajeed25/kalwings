@@ -4,9 +4,10 @@ Status key: **Done** (implemented and covered by an automated test or inspection
 
 ## Authentication and sessions
 - **Done**: one-time codes are hashed, expire in 10 minutes, allow 5 attempts, and are rate-limited per identifier and per IP.
+- **Done**: optional **password login** next to email codes: scrypt (N=2^15, r=8) with per-password salt and constant-time compare; 10 to 128 characters, common and email-derived passwords refused; login limited to 8 tries per account per 15 minutes and 30 per IP per hour (email codes still work during a lockout); wrong email and unknown email give the identical message and similar timing; changing or removing needs the current password, except within 10 minutes of an email-code login (so a forgotten password can be reset); password-login sessions can't skip the check; the hash never appears in exports; changes are audited and notified.
 - **Done**: sessions are signed JWTs in an `httpOnly`, `sameSite=lax`, `secure` (production) cookie; suspension takes effect on the next request (the user is re-read from the database every time).
 - **Done**: `AUTH_SECRET` and `DATABASE_URL` are validated at startup; secrets are never sent to the browser. Logs print only the length and shape of the DB password.
-- **Not done**: SMS sign-in, 2FA. Google sign-in exists but is untested against real credentials.
+- **Not done**: SMS sign-in, 2FA, a breached-password list check (only a short common-password list is used). Google sign-in exists but is untested against real credentials.
 
 ## Authorization
 - **Done**: every server action and API route checks the role on the server (`requireActionRole` / `requirePageRole`); see `docs/API.md`.

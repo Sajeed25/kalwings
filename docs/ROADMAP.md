@@ -46,3 +46,6 @@ Auth (email OTP, sessions, roles), onboarding wizard, profile completeness, port
 - Font name from os.nexpreneur.com; official logo file (PR #5).
 - Live DB `auth_failed` fix (needs `[startup]` log line); rotate leaked secrets.
 - Payment provider, SMS provider, sandbox host, LLM provider (phases 8, 11, 12 ship adapters that are off until configured).
+
+## Addendum: optional password login
+Email + password login added next to email codes (scrypt, rate limited, reset via a fresh email-code session). Registration still verifies the email with a code. Not built: 2FA, breached-password check.

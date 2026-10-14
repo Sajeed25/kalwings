@@ -5,6 +5,7 @@ import { parseNaturalQuery } from "../src/lib/nlsearch";
 import { checkJobDescription } from "../src/lib/jdcheck";
 import { profileFeedback } from "../src/lib/feedback";
 import { publicOrigin } from "../src/lib/origin";
+import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
 
@@ -48,4 +49,18 @@ t("OAuth origin prefers the configured https site URL over an internal proxy add
   assert.equal(publicOrigin(req({ "x-forwarded-host": "evil.com/x", "x-forwarded-proto": "https" }, "http://localhost:3000"), ""), "http://localhost:3000");
   assert.equal(publicOrigin(req({}, "http://localhost:3000"), "http://example.com"), "http://localhost:3000");
 });
-console.log(`\n${n} unit tests passed`);
+const asyncTests: Promise<void>[] = [];
+const ta = (name: string, fn: () => Promise<void>) => { asyncTests.push(fn().then(() => { n++; console.log("PASS " + name); })); };
+ta("password hashes verify, differ per salt, and wrong or malformed ones fail", async () => {
+  const h1 = await hashPassword("correct horse battery"), h2 = await hashPassword("correct horse battery");
+  assert.notEqual(h1, h2); assert.ok(h1.startsWith("scrypt$32768$8$1$"));
+  assert.equal(await verifyPassword("correct horse battery", h1), true); assert.equal(await verifyPassword("correct horse batterY", h1), false);
+  assert.equal(await verifyPassword("x", "garbage"), false); assert.equal(await verifyPassword("x", "scrypt$1$1$1$zz$zz"), false);
+  await fakeVerify("anything");
+});
+t("password rules: length, common passwords, own email name", () => {
+  const c = { email: "sajeed.khan@example.com", name: "Sajeed Khan" };
+  assert.ok(passwordProblem("short", c)); assert.ok(passwordProblem("password123", c)); assert.ok(passwordProblem("aaaaaaaaaaaa", c)); assert.ok(passwordProblem("my-sajeed.khan-pass", c));
+  assert.ok(passwordProblem("x".repeat(129), c)); assert.equal(passwordProblem("blue river walks home", c), null);
+});
+Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

@@ -61,6 +61,8 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | email | String? | @unique |  |
 | phone | String? | @unique |  |
 | googleId | String? | @unique |  |
+| passwordHash | String? | @db.VarChar(255) | optional scrypt hash; email codes always work too |
+| passwordSetAt | DateTime? |  |  |
 | name | String |  |  |
 | role | Role | @default(STUDENT) |  |
 | createdAt | DateTime | @default(now()) |  |

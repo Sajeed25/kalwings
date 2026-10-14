@@ -9,7 +9,7 @@ Next.js 15 (App Router) · TypeScript · Tailwind CSS · Prisma + MySQL/MariaDB 
 | Area | State |
 | --- | --- |
 | Public website and design system (black + neon, dark by default) | Built |
-| Auth (email codes), roles, onboarding, profile score | Built |
+| Auth (email codes, optional password login, Google if configured), roles, onboarding, profile score | Built |
 | Marketplace: server-side search, filters, sort, pagination, 7 listing types | Built |
 | Talent Passport: username URL, privacy tiers, evidence labels, admin verification, resume view | Built |
 | Hiring workspace: pipeline to Hired, interviews, offers, team, stage names, analytics | Built |

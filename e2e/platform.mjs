@@ -459,6 +459,32 @@ await student.goto(`${B}/dashboard/plans`); ok(!/plans/.test(student.url()), 'st
 await admin.goto(`${B}/dashboard/insights`); ok(await admin.locator('text=Platform insights').count() > 0 && await admin.locator('text=New accounts per week').count() > 0, 'admin insights show real weekly counts');
 await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Applications per week').count() > 0, 'recruiter analytics include weekly applications');
 
+// --- optional password login (email codes always keep working)
+const pwEmail = `pw${tag}@example.com`, PW1 = 'blue river walks home', PW2 = 'green hill sings softly';
+const pwu = await user(); await auth(pwu, 'join', pwEmail, { name: `Password User ${tag}`, role: 'STUDENT' });
+await pwu.goto(`${B}/dashboard/account`);
+const trySet = async (page, f) => { for (const [k, v] of Object.entries(f)) await page.fill(`input[name=${k}]`, v); await page.click('button:has-text("Turn on password login"), button:has-text("Change password")'); };
+await pwu.evaluate(() => document.querySelectorAll('input[name=password]').forEach((i) => i.removeAttribute('minlength')));
+await trySet(pwu, { password: 'short1', confirmPassword: 'short1' }); await pwu.waitForSelector('p[role=alert]'); ok((await pwu.locator('p[role=alert]').first().innerText()).includes('at least 10'), 'short password refused by the server');
+await trySet(pwu, { password: 'password123', confirmPassword: 'password123' }); await pwu.waitForTimeout(1500); ok((await pwu.locator('p[role=alert]').first().innerText()).includes('too easy'), 'common password refused');
+await trySet(pwu, { password: PW1, confirmPassword: 'different phrase here' }); await pwu.waitForTimeout(1500); ok((await pwu.locator('p[role=alert]').first().innerText()).includes("don't match"), 'mismatched confirmation refused');
+await trySet(pwu, { password: PW1, confirmPassword: PW1 }); await pwu.waitForSelector('text=Password login is on');
+const pwl = await user(); await pwl.goto(`${B}/login`, { waitUntil: 'networkidle' }); await pwl.click('button:has-text("Use my password instead")'); await pwl.waitForSelector('input[name=password]');
+const pwLogin = async (page, id, pw) => { await page.fill('input[name=identifier]', id); await page.fill('input[name=password]', pw); await page.click('button:has-text("Log in")'); };
+await pwLogin(pwl, pwEmail, 'wrong password here'); await pwl.waitForSelector('p[role=alert]'); const wrongMsg = await pwl.locator('p[role=alert]').first().innerText(); ok(wrongMsg.includes('Incorrect'), 'wrong password is refused');
+await pwLogin(pwl, `nobody${tag}@example.com`, 'whatever password'); await pwl.waitForTimeout(1500); ok((await pwl.locator('p[role=alert]').first().innerText()) === wrongMsg, 'unknown account gets the identical message (no account enumeration)');
+await pwLogin(pwl, pwEmail, PW1); await pwl.waitForURL(/\/dashboard/, { timeout: 20000 }); ok(true, 'correct password logs in');
+await pwl.goto(`${B}/dashboard/account`); await trySet(pwl, { password: PW2, confirmPassword: PW2 }); await pwl.waitForSelector('p[role=alert]'); ok((await pwl.locator('p[role=alert]').first().innerText()).includes('current password'), 'a password-login session cannot change the password without the current one');
+await trySet(pwl, { current: 'not my password', password: PW2, confirmPassword: PW2 }); await pwl.waitForTimeout(1500); ok((await pwl.locator('p[role=alert]').first().innerText()).includes('incorrect'), 'wrong current password refused');
+await trySet(pwl, { current: PW1, password: PW2, confirmPassword: PW2 }); await pwl.waitForSelector('text=Password changed'); ok(true, 'password can be changed with the current one');
+await pwu.goto(`${B}/dashboard/account`); await trySet(pwu, { password: PW1, confirmPassword: PW1 }); await pwu.waitForSelector('text=Password changed'); ok(true, 'a fresh email-code session can reset a forgotten password');
+const exp = await (await pwu.request.get(`${B}/api/account/export`)).text(); ok(!exp.includes('scrypt') && !exp.includes('passwordHash'), 'data export never includes the password hash');
+const pwb = await user(); await pwb.goto(`${B}/login`, { waitUntil: 'networkidle' }); await pwb.click('button:has-text("Use my password instead")'); await pwb.waitForSelector('input[name=password]');
+for (let i = 0; i < 9; i++) { try { await pwb.fill('input[name=identifier]', pwEmail, { timeout: 8000 }); await pwb.fill('input[name=password]', `bad guess number ${i}`, { timeout: 8000 }); await pwb.click('button:has-text("Log in")'); } catch (e) { console.log('LOCKOUT LOOP failed at', i, '| url', pwb.url(), '| inputs', await pwb.locator('input').evaluateAll((l) => l.map((x) => x.name)), '| text', (await pwb.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' / ')); throw e; } await pwb.waitForTimeout(350); }
+await pwb.waitForSelector('text=Too many attempts'); await pwLogin(pwb, pwEmail, PW1); await pwb.waitForTimeout(1500); ok((await pwb.locator('p[role=alert]').first().innerText()).includes('Too many attempts'), 'repeated wrong guesses lock password login (email codes still work)');
+await pwu.goto(`${B}/dashboard/account`, { waitUntil: 'networkidle' }); await pwu.locator('summary:has-text("Turn off password login")').click(); await pwu.fill('details input[name=current]', PW1); await pwu.click('button:has-text("Remove password")'); await pwu.waitForSelector('text=Password removed');
+await pwu.reload(); ok(await pwu.locator('button:has-text("Turn on password login")').count() > 0, 'password login can be turned off again');
+
 // --- Talent Passport: username, evidence labels, verification, privacy, resume
 const uname = `pp${tag}`.toLowerCase();
 await student.goto(`${B}/dashboard/passport`);

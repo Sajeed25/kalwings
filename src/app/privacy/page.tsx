@@ -20,7 +20,7 @@ export default function Page() {
 
       <h2 className={H}>2. What we collect</h2>
       <ul>
-        <li><b>Account:</b> your name, email address and/or mobile number (used to sign you in), and your role.</li>
+        <li><b>Account:</b> your name, email address and/or mobile number (used to sign you in), and your role. If you choose to turn on password login, we store only a salted one-way hash of your password, never the password itself.</li>
         <li><b>Profile and Talent Passport (students):</b> headline, bio, city, graduation year, college and department, skills, links such as GitHub, what you are looking for, projects, photos and screenshots you upload, experience, achievements, hackathons and certificates, and any evidence links you give us.</li>
         <li><b>Activity:</b> applications and their status, messages with employers, interviews and offers, challenge submissions, assessment answers and code, mentor session requests, community posts and comments, reports you file, and notifications.</li>
         <li><b>Organisations:</b> company or college name, website, team members, plan, and drive details. Mentors: role, company, country and domain.</li>
@@ -89,7 +89,7 @@ export default function Page() {
       <p>If you cannot use the tools above, or want to complain, email {mail}. We aim to reply within 7 days and to resolve requests within 30 days. If you are not satisfied you may approach the Data Protection Board of India as provided by law.</p>
 
       <h2 className={H}>9. Security</h2>
-      <p>We use encrypted connections, signed session cookies, one-time sign-in codes stored only as hashes, server-side permission checks on every action, rate limiting, restricted uploads, and an audit log for sensitive actions. No system is perfectly secure. If a breach affects your data we will notify you and the authorities as the law requires.</p>
+      <p>We use encrypted connections, signed session cookies, one-time sign-in codes and optional passwords stored only as salted hashes, rate limits on sign-in attempts, server-side permission checks on every action, rate limiting, restricted uploads, and an audit log for sensitive actions. No system is perfectly secure. If a breach affects your data we will notify you and the authorities as the law requires.</p>
 
       <h2 className={H}>10. Where data is processed</h2>
       <p>Our providers may process data in India or other countries. By using the service you understand your data may be transferred as needed to operate it, under the protections described here.</p>

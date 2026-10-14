@@ -14,8 +14,8 @@ function key() {
   return new TextEncoder().encode(s);
 }
 
-export async function createSession(userId: string) {
-  const token = await new SignJWT({}).setProtectedHeader({ alg: "HS256" }).setSubject(userId).setIssuedAt().setExpirationTime(`${MAX_AGE}s`).sign(key());
+export async function createSession(userId: string, method: "code" | "password" = "code") {
+  const token = await new SignJWT({ m: method }).setProtectedHeader({ alg: "HS256" }).setSubject(userId).setIssuedAt().setExpirationTime(`${MAX_AGE}s`).sign(key());
   (await cookies()).set(COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: MAX_AGE });
   // Non-sensitive UI hint only (lets static pages show "Dashboard"). Never used for authorisation.
   (await cookies()).set("kw_in", "1", { sameSite: "lax", path: "/", maxAge: MAX_AGE });
@@ -24,6 +24,16 @@ export async function createSession(userId: string) {
 export async function destroySession() {
   (await cookies()).delete(COOKIE);
   (await cookies()).delete("kw_in");
+}
+
+/**
+ * Seconds since this session was created by an email-code or Google login, or Infinity otherwise (no session, or created with a password).
+ * Used to let someone who just proved control of their email set a new password without knowing the old one.
+ */
+export async function sessionAgeSeconds(): Promise<number> {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return Infinity;
+  try { const { payload } = await jwtVerify(token, key()); if (payload.m === "password") return Infinity; return typeof payload.iat === "number" ? Math.max(0, Math.floor(Date.now() / 1000) - payload.iat) : Infinity; } catch { return Infinity; }
 }
 
 /** Current user (fresh from DB so role changes apply immediately), or null. */
