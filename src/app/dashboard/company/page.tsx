@@ -7,6 +7,8 @@ import { DEFAULT_LABEL, stageLabels } from "@/lib/stages";
 import { PLAN_LIMITS, usage } from "@/lib/plans";
 import Link from "next/link";
 import { CopyButton } from "@/components/dash/copy-button";
+import { CompanyLogo } from "@/components/ui/company-logo";
+import { ImageUpload } from "@/components/dash/image-upload";
 import { site } from "@/lib/site";
 
 export default async function Page() {
@@ -24,9 +26,10 @@ export default async function Page() {
       <PageTitle title="Company" sub="Every company is reviewed before it can post roles or search talent." />
       {mem ? (
         <div className="space-y-6">
-          <Panel><div className="flex items-center justify-between"><h2 className="text-xl">{mem.company.name}</h2><Status s={mem.company.status} /></div>
+          <Panel><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-4"><CompanyLogo name={mem.company.name} logoId={mem.company.logoId} className="h-16 w-16" /><h2 className="text-2xl font-bold">{mem.company.name}</h2></div><Status s={mem.company.status} /></div>
             <p className="mt-2 text-sm text-ink-soft">{mem.company.website}</p>{mem.company.about && <p className="mt-2">{mem.company.about}</p>}
             <p className="mt-4 text-sm text-ink-soft">{mem.company.status === "PENDING" ? "We'll notify you once the review is done." : verified ? "You can post roles and search talent." : "This company was not approved. Contact support to appeal."}</p></Panel>
+          <Panel title="Company logo"><ImageUpload kind="COMPANY_LOGO" label="Upload logo" maxDim={512} currentUrl={mem.company.logoId ? `/api/files/${mem.company.logoId}` : null} /><p className="mt-3 text-xs text-ink-soft">Shown on your listings, career page and in candidates&apos; applications. Use a square logo on a plain background for the best result.</p></Panel>
           {verified && used && mem && (
             <Panel title={`${PLAN_LIMITS[mem.company.plan].label} plan`}>
               <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{(["listings", "challenges", "assessments", "team"] as const).map((k) => <li key={k} className="rounded-lg border border-line p-3"><p className="text-ink-soft">{k === "team" ? "Team seats" : k[0].toUpperCase() + k.slice(1)}</p><p className="font-display text-xl font-bold">{used[k]} / {PLAN_LIMITS[mem.company.plan][k]}</p></li>)}</ul>

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import { Block } from "@/components/pages/shell";
 import { Badge, SampleTag } from "@/components/ui/badge";
+import { CompanyLogo } from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { ActionButton, ActionForm, Area } from "@/components/dash/action-form";
 import { applyTo, applyWithAnswers, toggleSave } from "@/app/actions/student";
@@ -58,10 +59,10 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <Link href="/opportunities" className="text-sm font-semibold text-accent">← All opportunities</Link>
       <div className="mt-6 max-w-3xl">
-        <div className="flex gap-2"><Badge tone="accent">{TYPE_LABEL[o.type]}</Badge>{o.company.isSample && <SampleTag />}</div>
-        <h1 className="mt-3 text-4xl font-semibold md:text-5xl">{o.title}</h1>
-        <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
-        <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">
+        <div className="flex items-center gap-4"><CompanyLogo name={o.company.name} logoId={o.company.logoId} className="h-16 w-16" /><div className="flex flex-wrap gap-2"><Badge tone="accent">{TYPE_LABEL[o.type]}</Badge>{o.company.isSample && <SampleTag />}</div></div>
+        <h1 className="mt-5 text-4xl font-bold leading-tight md:text-5xl">{o.title}</h1>
+        <p className="mt-3 text-lg text-ink-soft"><span className="serif-accent text-[1.2em] text-ink">{o.company.name}</span> · Verified employer ✓</p>
+        <dl className="card mt-8 grid gap-6 p-7 sm:grid-cols-2">
           {[["Pay", o.payText + (o.unpaid ? " (Unpaid)" : "")], ["Location", o.location], ["Work mode", MODE[o.workMode]], ["Eligibility", o.eligibility], ["Deadline", o.deadline.toLocaleDateString("en-IN", { dateStyle: "long", timeZone: "Asia/Kolkata" })], ["Skills", asList(o.skills).join(", ") || "—"]].map(([k, v]) => (
             <div key={k}><dt className="text-sm text-ink-soft">{k}</dt><dd className="font-semibold">{v}</dd></div>
           ))}

@@ -44,7 +44,7 @@ export function OpportunityBrowser({ items, total, page, pages, query }: { items
           <select name="sort" defaultValue={query.sort ?? "new"} className={sel + " mt-1.5"}>{Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         </label>
         <div className="flex gap-2">
-          <button className="h-11 flex-1 rounded-lg bg-primary font-semibold text-white hover:brightness-110">Apply filters</button>
+          <button className="h-11 flex-1 rounded-lg bg-primary font-semibold text-on-primary hover:brightness-110">Apply filters</button>
           <Link href="/opportunities" className="grid h-11 place-items-center rounded-lg border border-line px-4 text-sm font-semibold">Reset</Link>
         </div>
       </form>

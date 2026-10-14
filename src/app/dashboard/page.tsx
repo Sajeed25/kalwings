@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { completeness } from "@/lib/completeness";
 import { Button } from "@/components/ui/button";
-import { PageTitle, Panel, Stat, Empty, Status } from "@/components/dash/ui";
+import { PageTitle, Panel, Serif, Stat, Empty, Status } from "@/components/dash/ui";
+import { CompanyLogo } from "@/components/ui/company-logo";
 import { reviewCollege, reviewCompany, reviewMentor } from "@/app/actions/admin";
 import { ActionButton } from "@/components/dash/action-form";
 import { Workspace } from "@/components/dash/workspace";
@@ -30,14 +31,14 @@ async function StudentHome({ userId, name }: { userId: string; name: string }) {
   const { score, todo } = completeness(p, ev);
   return (
     <>
-      <PageTitle title={`Hi ${name.split(" ")[0]}`} sub="Build proof, get noticed." />
+      <PageTitle title={<>Hi <Serif>{name.split(" ")[0]}</Serif></>} sub="Build proof, get noticed." />
       <div className="grid gap-6 md:grid-cols-3">
         <Panel title="Profile completeness" className="md:col-span-2">
           <div className="flex items-center gap-4"><div className="h-3 flex-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={score} aria-valuemin={0} aria-valuemax={100} aria-label="Profile completeness"><div className="h-full rounded-full bg-accent" style={{ width: `${score}%` }} /></div><b className="font-display text-2xl">{score}%</b></div>
           {todo.length ? <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-ink-soft">{todo.map((t) => <li key={t}>{t}</li>)}</ul> : <p className="mt-4 text-sm text-ink-soft">Your profile is complete. Keep adding projects.</p>}
           <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href="/dashboard/profile">Edit profile</Link></Button><Button asChild variant="secondary"><Link href={`/talent/${p.username ?? p.slug}`}>View my Talent Card</Link></Button></div>
         </Panel>
-        <Stat label="Projects" value={p.projects.length} />
+        <Stat label="Projects" value={p.projects.length} tone="sun" />
       </div>
       <Panel title="Recent applications" className="mt-6" action={<Link href="/dashboard/applications" className="text-sm font-semibold underline">All</Link>}>
         {p.applications.length ? <ul className="divide-y divide-line">{p.applications.map((a) => <li key={a.id} className="flex items-center justify-between py-3"><span>{a.opportunity.title} <span className="text-ink-soft">· {a.opportunity.company.name}</span></span><Status s={a.stage} /></li>)}</ul> : <Empty>No applications yet. <Link className="font-semibold underline" href="/opportunities">Browse opportunities</Link></Empty>}
@@ -70,11 +71,11 @@ async function EmployerHome({ userId }: { userId: string }) {
   const c = mem.company;
   return (
     <>
-      <PageTitle title={c.name} sub={c.status === "VERIFIED" ? "Verified employer" : c.status === "PENDING" ? "Verification pending — you can't post or search yet." : "Verification was not approved."} />
+      <PageTitle title={<span className="flex items-center gap-4"><CompanyLogo name={c.name} logoId={c.logoId} className="h-14 w-14" />{c.name}</span>} sub={c.status === "VERIFIED" ? "Verified employer" : c.status === "PENDING" ? "Verification pending — you can't post or search yet." : "Verification was not approved."} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Status" value={<Status s={c.status} />} />
-        <Stat label="Roles" value={c.opportunities.length} />
-        <Stat label="Applications" value={c.opportunities.reduce((n, o) => n + o._count.applications, 0)} />
+        <Stat label="Roles" value={c.opportunities.length} tone="lilac" />
+        <Stat label="Applications" value={c.opportunities.reduce((n, o) => n + o._count.applications, 0)} tone="mint" />
       </div>
       <div className="mt-6 flex gap-3"><Button asChild><Link href="/dashboard/roles">Post a role</Link></Button><Button asChild variant="secondary"><Link href="/dashboard/pipeline">Open pipeline</Link></Button></div>
     </>
@@ -93,8 +94,8 @@ async function AdminHome() {
     <>
       <PageTitle title="Admin overview" />
       <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Students" value={students} /><Stat label="Verified mentors" value={mentors} /><Stat label="Verified companies" value={companies} />
-        <Stat label="Live listings" value={opps} /><Stat label="Applications" value={apps} /><Stat label="Open reports" value={reports} />
+        <Stat label="Students" value={students} tone="lilac" /><Stat label="Verified mentors" value={mentors} tone="sun" /><Stat label="Verified companies" value={companies} tone="mint" />
+        <Stat label="Live listings" value={opps} /><Stat label="Applications" value={apps} /><Stat label="Open reports" value={reports} tone="primary" />
       </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title={`Company verification (${pc.length})`}>

@@ -33,14 +33,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
     <>
       <PageTitle title="Pipeline" sub="Move candidates forward, schedule interviews, extend offers and keep private notes. Candidates are never rejected automatically." />
       <BulkBar stageNames={{ UNDER_REVIEW: labels.UNDER_REVIEW, SHORTLISTED: labels.SHORTLISTED, REJECTED: labels.REJECTED }} />
-      {(allTags.length > 0 || tagFilter) && <p className="mb-4 text-sm"><span className="font-semibold">Filter by tag: </span>{tagFilter && <Link href="/dashboard/pipeline" className="mr-2 font-semibold underline">All candidates</Link>}{allTags.map((t) => <Link key={t.label} href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className={`mr-2 inline-block rounded-full border border-line px-2.5 py-0.5 ${t.label === tagFilter ? "bg-primary text-white" : "hover:bg-muted"}`}>{t.label}</Link>)}</p>}
+      {(allTags.length > 0 || tagFilter) && <p className="mb-4 text-sm"><span className="font-semibold">Filter by tag: </span>{tagFilter && <Link href="/dashboard/pipeline" className="mr-2 font-semibold underline">All candidates</Link>}{allTags.map((t) => <Link key={t.label} href={`/dashboard/pipeline?tag=${encodeURIComponent(t.label)}`} className={`mr-2 inline-block rounded-full border border-line px-2.5 py-0.5 ${t.label === tagFilter ? "bg-primary text-on-primary" : "hover:bg-muted"}`}>{t.label}</Link>)}</p>}
       <div className="overflow-x-auto pb-4" role="region" aria-label="Pipeline board, scroll sideways for more stages" tabIndex={0}>
         <div className="grid min-w-[1320px] grid-cols-6 gap-4">
           {PIPELINE.map((stage, ci) => {
             const col = apps.filter((a) => a.stage === stage);
             return (
-              <section key={stage} aria-label={labels[stage]} className="min-w-0">
-                <h2 className="mb-3 font-sans text-sm font-semibold tracking-normal text-ink-soft">{labels[stage]} ({col.length})</h2>
+              <section key={stage} aria-label={labels[stage]} className="min-h-[18rem] min-w-0 rounded-card bg-muted/50 p-3">
+                <h2 className="mb-3 flex items-center justify-between px-1 font-sans text-sm font-bold tracking-normal text-ink">{labels[stage]} <span className="rounded-full bg-bg px-2.5 py-0.5 text-xs font-semibold text-ink-soft">{col.length}</span></h2>
                 <div className="space-y-3">{col.map((a) => {
                   const next = PIPELINE[ci + 1];
                   const direct = next && next !== "OFFER" && next !== "HIRED" ? next : null;

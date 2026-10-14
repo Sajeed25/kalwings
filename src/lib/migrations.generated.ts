@@ -89,5 +89,10 @@ export const MIGRATIONS: { name: string; checksum: string; sql: string }[] = [
     "name": "20261017100000_candidate_tags",
     "checksum": "a5cfc38109ee230df55def31a0ec759a29789fc25ee4f9d962a065849e268071",
     "sql": "-- CreateTable\nCREATE TABLE `CandidateTag` (\n    `id` VARCHAR(191) NOT NULL,\n    `applicationId` VARCHAR(191) NOT NULL,\n    `label` VARCHAR(30) NOT NULL,\n    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n\n    UNIQUE INDEX `CandidateTag_applicationId_label_key`(`applicationId`, `label`),\n    PRIMARY KEY (`id`)\n) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n\n-- AddForeignKey\nALTER TABLE `CandidateTag` ADD CONSTRAINT `CandidateTag_applicationId_fkey` FOREIGN KEY (`applicationId`) REFERENCES `Application`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;\n"
+  },
+  {
+    "name": "20261018100000_company_logo",
+    "checksum": "d174840872197eb9c26f07eae29869173c141f3e8d1cb7f5f6eff2579e4d1f02",
+    "sql": "-- AlterTable\nALTER TABLE `Company` ADD COLUMN `logoId` VARCHAR(191) NULL;\n"
   }
 ];

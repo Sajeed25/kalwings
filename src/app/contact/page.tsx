@@ -1,3 +1,4 @@
+import { Serif } from "@/components/ui/serif";
 import type { Metadata } from "next";
 import { PageHero, Block } from "@/components/pages/shell";
 import { ActionForm, Area, Field, inputCls } from "@/components/dash/action-form";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Contact" };
 export default function Page() {
   return (
     <>
-      <PageHero eyebrow="Contact" title="Let's talk." lead="Students, employers, colleges, mentors or press — tell us what you need." />
+      <PageHero eyebrow="Contact" title={<>Let&apos;s <Serif>talk</Serif>.</>} lead="Students, employers, colleges, mentors or press — tell us what you need." />
       <Block>
         <div className="max-w-xl">
           <ActionForm action={sendContact} reset submit="Send message" success="Thanks — we'll get back to you soon.">

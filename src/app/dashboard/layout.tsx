@@ -13,9 +13,9 @@ export default async function DashLayout({ children }: { children: React.ReactNo
   const user = await requirePageRole();
   const unread = await db.notification.count({ where: { userId: user.id, readAt: null } });
   return (
-    <div className="container grid grid-cols-[minmax(0,1fr)] gap-8 py-8 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[288px_minmax(0,1fr)]">
       <Sidebar name={user.name} role={user.role} sections={MODULES[user.role]} unread={unread} logout={logout} />
-      <div className="min-w-0"><SectionTabs groups={tabGroups(user.role)} />{children}</div>
+      <div className="min-w-0 px-5 py-8 lg:px-12 lg:py-10"><div className="max-w-[1440px]"><SectionTabs groups={tabGroups(user.role)} />{children}</div></div>
     </div>
   );
 }

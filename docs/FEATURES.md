@@ -46,12 +46,13 @@ No feature was removed because it overlapped; overlapping screens were merged in
 
 ## Look and feel
 
-- Flat surfaces, thin borders, no gradients, no animation on scroll, no marketing sections.
-- One typeface (Inter), two weights in headings, small corner radius.
-- Colour comes from the blue-lavender of the Kalwings mark on a deep navy. Light mode uses the same blue on white.
-- Every feature has one plain name. Page names are descriptive (Opportunities, Applications, Profile, Pipeline), with no invented product names.
+- **Two typefaces only.** Plus Jakarta Sans for everything, and Instrument Serif italic for one emphasised word in a heading ("Hire on *proof*", "Builders helping *builders*"). The Kalwings wordmark uses its own bold capitals as part of the logo artwork. The code editor in assessments keeps the browser's monospace font because code needs it.
+- **Colour.** Warm near-black and warm white, one hot orange for actions, and soft lilac, sun and mint "sticker" colours (always with dark text) for highlights, stat tiles and icon tiles. Light mode uses warm paper with white cards. Dark is the default; light is in Settings > Appearance.
+- **Shape.** Pill buttons, 20px cards, rounded inputs with an orange focus ring, segmented-pill tabs, icon sidebar with an orange active pill.
+- **Logo.** The K mark and the ALWINGS lockup keep the purple-to-green artwork. They are redrawn in code from the supplied image (the original file was not available); drop the original into `public/brand/` and swap `src/components/ui/brand.tsx` to use it exactly.
+- **Company logos.** Employers upload a logo under Company. It shows on listing cards, the listing page, challenge pages, the career page and in candidates' applications. Until then a coloured monogram tile is shown.
 
 ## Still to do
 
 - Use the exact product wording from kalwings.com. The names in `src/lib/modules.ts` are plain placeholders for it, and a few older page headings still use earlier names ("Talent Passport", "Talent Card").
-- Replace the redrawn logo mark with the official artwork (`src/components/ui/brand.tsx`, `public/brand/`).
+- Use the original logo file instead of the code redraw.

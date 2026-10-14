@@ -1,3 +1,4 @@
+import { CompanyLogo } from "@/components/ui/company-logo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -39,7 +40,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       <div className="mt-6 max-w-3xl">
         <div className="flex flex-wrap gap-2"><Badge tone="spot">{KIND_LABEL[c.kind]}</Badge><Badge tone="accent">{STYLE_LABEL[c.style]}</Badge>{c.allowTeams && <Badge>Teams allowed</Badge>}{o.company.isSample && <SampleTag />}</div>
         <h1 className="mt-3 text-4xl font-semibold md:text-5xl">{o.title}</h1>
-        <p className="mt-2 text-lg text-ink-soft">{o.company.name} · Verified employer ✓</p>
+        <p className="mt-3 flex items-center gap-3 text-lg text-ink-soft"><CompanyLogo name={o.company.name} logoId={o.company.logoId} className="h-10 w-10 rounded-xl" /><span><span className="serif-accent text-[1.2em] text-ink">{o.company.name}</span> · Verified employer ✓</span></p>
         <p className="mt-2 text-sm text-ink-soft">{STYLE_HELP[c.style]}</p>
         <dl className="card mt-8 grid gap-6 p-6 sm:grid-cols-2">
           {[["Reward", o.payText + (o.unpaid ? " (Unpaid)" : "")], ["Location", o.location], ["Work mode", o.workMode.toLowerCase()], ["Eligibility", o.eligibility], ["Deadline", o.deadline.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })]].map(([k, v]) => (

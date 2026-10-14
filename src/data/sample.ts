@@ -47,6 +47,7 @@ export type Opportunity = {
   /** Approx. monthly pay in INR for range filtering (0 = unpaid / prize-only). */
   monthly: number;
   isSample?: boolean;
+  logoId?: string | null;
 };
 
 export const opportunities: Opportunity[] = [

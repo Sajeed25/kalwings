@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /** Picks an image, downscales it in the browser (canvas → JPEG), uploads it, then refreshes the page. */
-export function ImageUpload({ kind, projectId, currentUrl, label, maxDim = 1024, round }: { kind: "AVATAR" | "PROJECT"; projectId?: string; currentUrl?: string | null; label: string; maxDim?: number; round?: boolean }) {
+export function ImageUpload({ kind, projectId, currentUrl, label, maxDim = 1024, round }: { kind: "AVATAR" | "PROJECT" | "COMPANY_LOGO"; projectId?: string; currentUrl?: string | null; label: string; maxDim?: number; round?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);

@@ -1,3 +1,4 @@
+import { Serif } from "@/components/ui/serif";
 import type { Metadata } from "next";
 import { PageHero, Block } from "@/components/pages/shell";
 import { LEGAL } from "@/lib/legal";
@@ -12,7 +13,7 @@ const faqs = [
 export default function Page() {
   return (
     <>
-      <PageHero eyebrow="Help Centre" title="How can we help?" />
+      <PageHero eyebrow="Help Centre" title={<>How can we <Serif>help</Serif>?</>} />
       <Block>
         <div className="max-w-3xl space-y-3">
           {faqs.map(([q, a]) => (<details key={q} className="card group p-5"><summary className="cursor-pointer font-display text-lg font-bold">{q}</summary><p className="mt-2 text-ink-soft">{a}</p></details>))}

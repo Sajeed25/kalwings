@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Badge, PhotoPlaceholder, SampleTag } from "@/components/ui/badge";
+import { Badge, SampleTag } from "@/components/ui/badge";
+import { tileFill } from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import type { Mentor } from "@/data/sample";
 
@@ -9,7 +10,7 @@ export function MentorCard({ m }: { m: Mentor }) {
       {m.photo
         // eslint-disable-next-line @next/next/no-img-element
         ? <img src={m.photo} alt={`Photo of ${m.name}`} className="h-44 w-full object-cover" width={400} height={176} loading="lazy" />
-        : <PhotoPlaceholder label="mentor" className="h-44" />}
+        : <div role="img" aria-label={`${m.name}, no photo yet`} className={`grid h-44 w-full place-items-center font-serif text-7xl italic ${tileFill(m.name)}`}>{m.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("")}</div>}
       <div className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-xl">{m.name}</h3>

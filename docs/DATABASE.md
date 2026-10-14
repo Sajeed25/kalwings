@@ -256,6 +256,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | assessments | Assessment[] |  |  |
 | shortlists | Shortlist[] |  |  |
 | slug | String? | @unique @db.VarChar(40) | public career page: /careers/<slug> |
+| logoId | String? |  | Upload.id of the company logo |
 | plan | Plan | @default(STARTER) | set by a platform admin; no online payments yet |
 | stageLabels | Json? |  | optional display names per stage, e.g. {"UNDER_REVIEW":"Screening"} |
 | invites | CompanyInvite[] |  |  |
