@@ -1,5 +1,6 @@
 "use server";
 import { cleanSource } from "@/lib/distribution";
+import { stageEvent } from "@/lib/stage-history";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireActionRole } from "@/lib/session";
@@ -76,24 +77,44 @@ export async function toggleContactVisible() {
   revalidatePath("/dashboard", "layout");
 }
 
-export async function applyTo(opportunityId: string, srcIn?: string, refIn?: string) {
+async function createApplication(opportunityId: string, srcIn: string | undefined, refIn: string | undefined, answers: Map<string, string>) {
   const { u, p } = await me();
-  const o = await db.opportunity.findUnique({ where: { id: opportunityId }, include: { company: { include: { members: true } } } });
+  const o = await db.opportunity.findUnique({ where: { id: opportunityId }, include: { questions: { orderBy: { position: "asc" } }, company: { include: { members: true } } } });
   if (!o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) throw new Error("This opportunity isn't open for applications.");
   if (!p.headline) throw new Error("Complete your profile before applying.");
   const existing = await db.application.findUnique({ where: { opportunityId_studentId: { opportunityId, studentId: p.id } } });
   if (existing) return;
+  const missing = o.questions.find((q) => !(answers.get(q.id) ?? "").trim());
+  if (missing) throw new Error("Please answer every screening question.");
   const src = cleanSource(srcIn);
   const ref = refIn && refIn !== p.id ? (await db.studentProfile.findUnique({ where: { id: refIn }, select: { id: true } }))?.id ?? null : null;
-  await db.application.create({ data: { opportunityId, studentId: p.id, source: ref ? "referral" : src, referrerId: ref } });
+  await db.application.create({ data: {
+    opportunityId, studentId: p.id, source: ref ? "referral" : src, referrerId: ref,
+    events: { create: { toStage: "APPLIED", actorId: u.id } },
+    answers: { create: o.questions.map((q) => ({ questionId: q.id, answer: (answers.get(q.id) ?? "").trim().slice(0, 1000) })) },
+  } });
   await Promise.all(o.company.members.map((m) => notify(m.userId, "New application", `${u.name} applied to ${o.title}`)));
   revalidatePath("/dashboard", "layout");
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
+/** One-click apply for listings without screening questions. */
+export async function applyTo(opportunityId: string, srcIn?: string, refIn?: string) {
+  await createApplication(opportunityId, srcIn, refIn, new Map());
+}
+
+/** Apply to a listing that has screening questions. Answers are for the hiring team to read; they never score or filter anyone. */
+export async function applyWithAnswers(opportunityId: string, srcIn: string | undefined, refIn: string | undefined, _: Result, fd: FormData): Promise<Result> {
+  const answers = new Map<string, string>();
+  for (const [k, v] of fd.entries()) if (k.startsWith("q_") && typeof v === "string") answers.set(k.slice(2), v);
+  try { await createApplication(opportunityId, srcIn, refIn, answers); } catch (e) { return { error: e instanceof Error ? e.message : "Could not apply." }; }
+  return { ok: true };
+}
+
 export async function withdrawApplication(id: string) {
   const { p } = await me();
-  await db.application.updateMany({ where: { id, studentId: p.id, stage: { in: WITHDRAWABLE } }, data: { stage: "WITHDRAWN" } });
+  const cur = await db.application.findFirst({ where: { id, studentId: p.id, stage: { in: WITHDRAWABLE } }, select: { stage: true } });
+  if (cur) await db.$transaction([db.application.updateMany({ where: { id, studentId: p.id, stage: { in: WITHDRAWABLE } }, data: { stage: "WITHDRAWN" } }), stageEvent(id, cur.stage, "WITHDRAWN", p.userId)]);
   revalidatePath("/dashboard", "layout");
 }
 
@@ -206,7 +227,7 @@ export async function respondOffer(applicationId: string, accept: boolean) {
   if (!app?.offer) return;
   await db.$transaction([
     db.offer.update({ where: { id: app.offer.id }, data: { status: accept ? "ACCEPTED" : "DECLINED", respondedAt: new Date() } }),
-    ...(accept ? [] : [db.application.update({ where: { id: app.id }, data: { stage: "WITHDRAWN" } })]),
+    ...(accept ? [] : [db.application.update({ where: { id: app.id }, data: { stage: "WITHDRAWN" } }), stageEvent(app.id, "OFFER", "WITHDRAWN", u.id)]),
   ]);
   await Promise.all(app.opportunity.company.members.map((m) => notify(m.userId, accept ? "Offer accepted" : "Offer declined", `${u.name} · ${app.opportunity.title}`)));
   revalidatePath("/dashboard", "layout");

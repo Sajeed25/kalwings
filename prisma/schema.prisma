@@ -188,19 +188,20 @@ model User {
   role               Role      @default(STUDENT)
   createdAt          DateTime  @default(now())
 
-  student          StudentProfile?
-  mentor           MentorProfile?
-  employer         EmployerMember?
-  college          CollegeAdmin?
-  notifications    Notification[]
-  auditLogs        AuditLog[]
-  messages         Message[]
-  reports          Report[]
-  groupMemberships GroupMember[]
-  posts            Post[]
-  comments         Comment[]
-  blocksMade       Block[]         @relation("blocker")
-  blocksReceived   Block[]         @relation("blocked")
+  student           StudentProfile?
+  mentor            MentorProfile?
+  employer          EmployerMember?
+  college           CollegeAdmin?
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  messages          Message[]
+  interviewFeedback InterviewFeedback[]
+  reports           Report[]
+  groupMemberships  GroupMember[]
+  posts             Post[]
+  comments          Comment[]
+  blocksMade        Block[]             @relation("blocker")
+  blocksReceived    Block[]             @relation("blocked")
 }
 
 model StudentProfile {
@@ -359,6 +360,7 @@ model Company {
   members       EmployerMember[]
   drives        Drive[]
   opportunities Opportunity[]
+  templates     MessageTemplate[]
 }
 
 model EmployerMember {
@@ -374,6 +376,7 @@ model Opportunity {
   id           String             @id @default(cuid())
   companyId    String
   company      Company            @relation(fields: [companyId], references: [id])
+  questions    JobQuestion[]
   title        String
   type         OpportunityType
   description  String             @db.Text
@@ -398,20 +401,22 @@ model Opportunity {
 }
 
 model Application {
-  id            String           @id @default(cuid())
+  id            String              @id @default(cuid())
   opportunityId String
-  opportunity   Opportunity      @relation(fields: [opportunityId], references: [id])
+  opportunity   Opportunity         @relation(fields: [opportunityId], references: [id])
   studentId     String
-  student       StudentProfile   @relation(fields: [studentId], references: [id])
-  stage         ApplicationStage @default(APPLIED)
-  source        String?          @db.VarChar(30) // e.g. linkedin, whatsapp, careers-page
+  student       StudentProfile      @relation(fields: [studentId], references: [id])
+  stage         ApplicationStage    @default(APPLIED)
+  source        String?             @db.VarChar(30) // e.g. linkedin, whatsapp, careers-page
   referrerId    String?
-  referrer      StudentProfile?  @relation("Referrals", fields: [referrerId], references: [id], onDelete: SetNull)
-  employerNotes String?          @db.Text
+  referrer      StudentProfile?     @relation("Referrals", fields: [referrerId], references: [id], onDelete: SetNull)
+  employerNotes String?             @db.Text
   messages      Message[]
   interviews    Interview[]
+  events        ApplicationEvent[]
+  answers       ApplicationAnswer[]
   offer         Offer?
-  createdAt     DateTime         @default(now())
+  createdAt     DateTime            @default(now())
 
   @@unique([opportunityId, studentId])
 }
@@ -611,20 +616,91 @@ model DriveInvite {
 }
 
 model Interview {
-  id            String          @id @default(cuid())
+  id            String              @id @default(cuid())
   applicationId String
-  application   Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application   Application         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   scheduledAt   DateTime
-  minutes       Int             @default(30)
+  minutes       Int                 @default(30)
   mode          InterviewMode
-  detail        String          @db.VarChar(300) // meeting link or address
-  notes         String?         @db.Text
-  status        InterviewStatus @default(SCHEDULED)
+  detail        String              @db.VarChar(300) // meeting link or address
+  notes         String?             @db.Text
+  status        InterviewStatus     @default(SCHEDULED)
+  feedback      InterviewFeedback[]
   createdById   String
-  createdAt     DateTime        @default(now())
+  createdAt     DateTime            @default(now())
 
   @@index([applicationId])
   @@index([scheduledAt])
+}
+
+// Stage history: one row per move, so a candidate timeline and time-in-stage / time-to-hire can be shown.
+model ApplicationEvent {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStage     ApplicationStage?
+  toStage       ApplicationStage
+  actorId       String?
+  createdAt     DateTime          @default(now())
+
+  @@index([applicationId, createdAt])
+}
+
+// Optional questions the employer asks at apply time. Answers are for human reading only: they never score, filter or reject anyone.
+model JobQuestion {
+  id            String              @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  text          String              @db.VarChar(300)
+  position      Int                 @default(0)
+  answers       ApplicationAnswer[]
+
+  @@index([opportunityId])
+}
+
+model ApplicationAnswer {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      JobQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer        String      @db.Text
+
+  @@unique([applicationId, questionId])
+}
+
+enum FeedbackRecommendation {
+  STRONG_YES
+  YES
+  NO
+  STRONG_NO
+}
+
+// Interviewer scorecard. Private to the hiring team: candidates never see it, and it never moves anyone between stages by itself.
+model InterviewFeedback {
+  id             String                 @id @default(cuid())
+  interviewId    String
+  interview      Interview              @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User                   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating         Int
+  recommendation FeedbackRecommendation
+  strengths      String?                @db.Text
+  concerns       String?                @db.Text
+  createdAt      DateTime               @default(now())
+
+  @@unique([interviewId, authorId])
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(60)
+  body      String   @db.VarChar(1000)
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
 }
 
 model Offer {

@@ -56,5 +56,8 @@ Public company career page (`/careers/<slug>`), an embeddable widget (`/embed/ca
 ## Addendum: email via Hostinger SMTP
 Transactional email now goes over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`) using a Hostinger mailbox. The Resend integration was removed.
 
+## Addendum: ATS batch 2
+Screening questions (up to 5 per listing, answered when applying, read by people only, never scored or used to filter), interviewer scorecards (rating 1 to 5 plus recommendation, private to the hiring team, never moves a candidate by itself), reusable message templates, stage history with time in stage and time to hire, and a printable offer letter. Not built: automatic scoring or rejection of any kind, bulk actions, tags, e-signature.
+
 ## Addendum: real content from KodeZ by Robokalam
 The public site no longer shows placeholders. Homepage trust strip, impact figures, alumni voices, awards, mentor community, About, Press, Help, Contact and employer pricing text now use facts published at kodez.robokalam.in (`src/data/robokalam.ts`, with the source cited on each page). Live opportunities, mentors and the challenge spotlight come from the database and show an honest empty state when there is nothing to show. `src/data/sample.ts` is now seed-only, modelled on the KodeZ tracks and never rendered on the live site. Still needed from the owner: confirmed placement and internship totals, written consent for named alumni quotes and mentors, partner college and company names with permission, real employer prices, logos and photos.

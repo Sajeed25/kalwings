@@ -9,7 +9,7 @@ import { Block } from "@/components/pages/shell";
 import { Badge, SampleTag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ActionButton, ActionForm, Area } from "@/components/dash/action-form";
-import { applyTo, toggleSave } from "@/app/actions/student";
+import { applyTo, applyWithAnswers, toggleSave } from "@/app/actions/student";
 import { reportContent } from "@/app/actions/common";
 import { site } from "@/lib/site";
 import { cleanSource } from "@/lib/distribution";
@@ -20,7 +20,7 @@ const MODE = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" } as const;
 async function load(id: string) {
   return db.opportunity.findFirst({
     where: { id, moderated: "VERIFIED", company: { status: "VERIFIED", members: { none: { user: { suspendedAt: { not: null } } } } } },
-    include: { company: true },
+    include: { company: true, questions: { orderBy: { position: "asc" } } },
   });
 }
 
@@ -73,10 +73,18 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             : !user ? <Button asChild size="lg"><Link href="/login">Log in to apply</Link></Button>
             : user.role !== "STUDENT" ? <Badge>Only students can apply</Badge>
             : applied ? <Badge tone="accent">You&apos;ve applied — track it in your dashboard</Badge>
+            : o.questions.length > 0 ? null
             : <ActionButton variant="primary" size="md" action={applyTo.bind(null, o.id, cleanSource(src) ?? undefined, typeof ref === "string" ? ref.slice(0, 40) : undefined)}>Apply with my Talent Card</ActionButton>}
           {user?.role === "STUDENT" && <ActionButton variant="secondary" size="md" action={toggleSave.bind(null, o.id)}>{saved ? "Saved ✓" : "Save role"}</ActionButton>}
           {user?.role === "STUDENT" && <Link href={`/dashboard/copilot?listing=${o.id}`} className="text-sm font-semibold text-accent underline">How well do I match?</Link>}
         </div>
+        {user?.role === "STUDENT" && !applied && !closed && o.questions.length > 0 && (
+          <ActionForm action={applyWithAnswers.bind(null, o.id, cleanSource(src) ?? undefined, typeof ref === "string" ? ref.slice(0, 40) : undefined)} submit="Apply with my Talent Card" success="Applied" className="mt-6 max-w-xl space-y-3">
+            <h2 className="text-lg font-bold">A few questions from {o.company.name}</h2>
+            {o.questions.map((q) => <Area key={q.id} label={q.text} name={`q_${q.id}`} required maxLength={1000} />)}
+            <p className="text-xs text-ink-soft">Your answers are read by the hiring team. They are not scored by software.</p>
+          </ActionForm>
+        )}
         {myId && !closed && <p className="mt-6 text-sm text-ink-soft">Know someone who fits? Share your referral link: <code className="break-all rounded bg-muted px-1.5 py-0.5 text-xs">{`${site.url}/opportunities/${o.id}?ref=${myId}`}</code>. The employer will see that you referred them. It doesn&apos;t change how anyone is assessed.</p>}
         {user && (
           <details className="mt-10 text-sm"><summary className="cursor-pointer font-semibold text-ink-soft">Report this listing</summary>

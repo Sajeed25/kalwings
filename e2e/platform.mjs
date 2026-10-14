@@ -603,6 +603,49 @@ ok(await employer.locator(`article:has-text("Referred Friend ${tag}")`).locator(
 ok(await employer.locator(`article:has-text("Weird Source ${tag}")`).locator('text=Kalwings marketplace').count() > 0, 'an unsafe source tag is dropped');
 await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=Where candidates came from').count() > 0 && await employer.locator('li:has-text("Referral")').count() > 0, 'analytics breaks applications down by source');
 
+// --- ATS batch 2: stage history, interview scorecards, templates, screening questions, offer letter, speed analytics
+await employer.goto(`${B}/dashboard/pipeline`);
+const hc = () => employer.locator('article').filter({ hasText: new RegExp(`^\\s*Test Student ${tag}`) }).filter({ hasText: `Embedded Intern ${tag}` }).first();
+await hc().locator('summary:text-is("Stage history")').click();
+ok((await hc().locator('details:has(summary:text-is("Stage history")) li').allInnerTexts()).join(' ').includes('Applied') && (await hc().locator('details:has(summary:text-is("Stage history")) li').count()) >= 3, 'stage history lists the recorded moves');
+await employer.goto(`${B}/dashboard/interviews`); await employer.locator('li', { hasText: `Test Student ${tag}` }).first().locator('button:has-text("Mark done")').click(); await employer.waitForTimeout(1200);
+await employer.goto(`${B}/dashboard/pipeline`); await hc().locator('summary:has-text("Interview feedback")').click();
+await hc().locator('select[name=rating]').selectOption('4'); await hc().locator('select[name=recommendation]').selectOption('STRONG_YES');
+await hc().locator('input[name=strengths]').fill(`Clear firmware reasoning ${tag}`); await hc().locator('button:has-text("Save my feedback")').click(); await employer.waitForSelector('text=Saved');
+await employer.reload(); ok(await employer.locator(`summary:has-text("Interview feedback (1 · avg 4.0/5)")`).count() > 0, 'scorecard is saved and summarised');
+await student.goto(`${B}/dashboard/interviews`); ok(await student.locator(`text=Clear firmware reasoning ${tag}`).count() === 0, 'candidates never see interviewer feedback');
+// templates
+await employer.goto(`${B}/dashboard/company`); await employer.fill('input[name=name]', `Invite ${tag}`); await employer.fill('textarea[name=body]', 'Hi, we would love to chat about the role this week.'); await employer.click('button:has-text("Save template")'); await employer.waitForSelector(`text=Invite ${tag}`);
+await employer.goto(`${B}/dashboard/pipeline`); await hc().locator('summary:text-is("Notes & messages")').click();
+await hc().locator('select').filter({ has: employer.locator(`option:has-text("Invite ${tag}")`) }).selectOption({ label: `Invite ${tag}` });
+ok((await hc().locator('input[name=body]').inputValue()).includes('love to chat'), 'a saved template fills the message box');
+// offer letter
+const offerHref = await hc().locator('a:has-text("Printable offer letter")').getAttribute('href');
+await employer.goto(B + offerHref); ok(await employer.locator('text=Embedded engineer, 6 LPA').count() > 0 && await employer.locator(`text=Acme Labs ${tag}`).count() > 0, 'printable offer letter shows the terms and company');
+await student.goto(B + offerHref); ok(await student.locator('text=Embedded engineer, 6 LPA').count() === 0, 'candidates cannot open the employer offer letter');
+const outsider = await user(); await auth(outsider, 'join', `letter${tag}@example.com`, { name: 'Letter Outsider', role: 'EMPLOYER' });
+await outsider.goto(B + offerHref); ok(await outsider.locator('text=Embedded engineer, 6 LPA').count() === 0, 'another company cannot open it');
+// screening questions
+await employer.goto(`${B}/dashboard/roles`);
+await employer.fill('input[name=title]', `Screened Role ${tag}`); await employer.fill('textarea[name=description]', 'A role used to check that screening questions work for applicants.');
+await employer.fill('input[name=payText]', '₹20,000 / month'); await employer.fill('input[name=monthlyINR]', '20000'); await employer.fill('input[name=location]', 'Hyderabad');
+await employer.fill('input[name=deadline]', '2027-03-01'); await employer.fill('input[name=eligibility]', '2026 graduates');
+await employer.fill('textarea[name=questions]', `Which project are you proudest of? ${tag}\nWhen can you start?`); await employer.click('button:has-text("Submit for review")'); await employer.waitForSelector('text=Submitted for review');
+await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: `Screened Role ${tag}` }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(800);
+await student.goto(`${B}/opportunities?q=${encodeURIComponent('Screened Role ' + tag)}`); const screenedHref = await student.locator('article', { hasText: `Screened Role ${tag}` }).locator('a:has-text("View details")').getAttribute('href');
+const sq = await user(); await auth(sq, 'join', `screen${tag}@example.com`, { name: `Screen Candidate ${tag}`, role: 'STUDENT' });
+await sq.goto(`${B}/dashboard/profile`); await sq.fill('input[name=headline]', 'Screening test profile'); await sq.fill('input[name=graduationYear]', '2026'); await sq.click('button:has-text("Save"):not(:has-text("college"))'); await sq.waitForSelector('text=Saved');
+await sq.goto(B + screenedHref, { waitUntil: 'networkidle' });
+ok(await sq.locator(`text=Which project are you proudest of? ${tag}`).count() > 0 && await sq.locator('button:text-is("Apply with my Talent Card")').count() === 1, 'listing with screening questions shows them before applying');
+await sq.locator('textarea').first().fill(`My robotics arm ${tag}`); await sq.locator('textarea').nth(1).fill('');
+await sq.click('button:text-is("Apply with my Talent Card")'); await sq.waitForTimeout(500);
+ok(await sq.locator('textarea:invalid').count() > 0 && await sq.locator("text=You've applied").count() === 0, 'every screening question must be answered');
+await sq.locator('textarea').nth(1).fill('Immediately'); await sq.click('button:text-is("Apply with my Talent Card")'); await sq.waitForSelector("text=You've applied");
+await employer.goto(`${B}/dashboard/pipeline`); const sc = employer.locator('article', { hasText: `Screen Candidate ${tag}` }).first();
+await sc.locator('summary:has-text("Screening answers")').click(); ok(await sc.locator(`text=My robotics arm ${tag}`).count() > 0 && await sc.locator('text=Immediately').count() > 0, 'employer reads the screening answers in the pipeline');
+// speed analytics
+await employer.goto(`${B}/dashboard/analytics`); ok(await employer.locator('text=How fast you move').count() > 0 && await employer.locator('text=time to hire').count() > 0, 'analytics shows time to hire');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 

@@ -1,3 +1,4 @@
+import { daysBetween } from "@/lib/stage-history";
 import { sourceLabel } from "@/lib/distribution";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
@@ -19,6 +20,10 @@ export default async function Page() {
   const recent = await db.application.findMany({ where: { opportunity: { companyId: mem.companyId }, createdAt: { gte: new Date(Date.now() - 8 * 7 * 864e5) } }, select: { createdAt: true } });
   const weekly = Array(8).fill(0) as number[]; recent.forEach((a) => { weekly[Math.min(7, Math.floor((Date.now() - a.createdAt.getTime()) / (7 * 864e5)))]++; });
   const wmax = Math.max(1, ...weekly);
+  // Speed: days from applying to each later stage, and time to hire. Only moves that were recorded as events are counted.
+  const timed = await db.application.findMany({ where: { opportunity: { companyId: mem.companyId } }, select: { createdAt: true, events: { select: { toStage: true, createdAt: true }, orderBy: { createdAt: "asc" } } } });
+  const avgDays = (stage: string) => { const xs = timed.map((a) => { const e = a.events.find((x) => x.toStage === stage); return e ? daysBetween(a.createdAt, e.createdAt) : null; }).filter((x): x is number => x != null); return xs.length ? { n: xs.length, d: Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10 } : null; };
+  const speed = (["SHORTLISTED", "INTERVIEW", "OFFER", "HIRED"] as const).map((s) => ({ s, v: avgDays(s) }));
   return (
     <>
       <PageTitle title="Hiring analytics" sub="Counts from your real pipeline, as it stands now. Nothing is estimated." />
@@ -36,6 +41,10 @@ export default async function Page() {
           </Panel>
           <Panel title="Applications per week">
             <ul className="space-y-2 text-sm">{weekly.map((n, i) => <li key={i} className="grid grid-cols-[100px_1fr_36px] items-center gap-3"><span className="text-ink-soft">{i === 0 ? "This week" : `${i} wk ago`}</span><span className="h-3 rounded bg-muted" role="img" aria-label={`${n} applications`}><span className="block h-3 rounded bg-neon" style={{ width: `${(n / wmax) * 100}%` }} /></span><b className="text-right">{n}</b></li>)}</ul>
+          </Panel>
+          <Panel title="How fast you move">
+            <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{speed.map(({ s, v }) => <li key={s} className="rounded-lg border border-line p-3"><p className="text-ink-soft">Apply → {s === "HIRED" ? "hired (time to hire)" : labels[s]}</p><p className="font-display text-xl font-bold">{v ? `${v.d} days` : "No data yet"}</p>{v && <p className="text-xs text-ink-soft">average of {v.n} candidate{v.n === 1 ? "" : "s"}</p>}</li>)}</ul>
+            <p className="mt-3 text-xs text-ink-soft">Based on recorded stage moves only. Earlier moves, made before history was recorded, are not included.</p>
           </Panel>
           <Panel title="Where candidates came from">
             <ul className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">{Object.entries(apps.reduce<Record<string, number>>((m, a) => { const k = sourceLabel(a.source); m[k] = (m[k] ?? 0) + 1; return m; }, {})).sort((x, y) => y[1] - x[1]).map(([k, n]) => <li key={k} className="rounded-lg border border-line p-3"><p className="text-ink-soft">{k}</p><p className="font-display text-xl font-bold">{n}</p></li>)}</ul>
