@@ -8,6 +8,10 @@ export async function register() {
     const site = describeSiteUrl();
     console.log(`[startup] ${site.line}`);
     if (site.problem) console.error(`[startup] NEXT_PUBLIC_SITE_URL problem: ${site.problem}`);
+    const key = process.env.EMAIL_API_KEY ?? "", from = process.env.EMAIL_FROM ?? "";
+    console.log(`[startup] email: from=${from || "MISSING"} apiKey=${key ? `set (${key.length} chars, starts "${key.slice(0, 3)}")` : "MISSING"}`);
+    if (key && !key.startsWith("re_")) console.error('[startup] EMAIL_API_KEY does not start with "re_": Resend keys do. Check you pasted the key, not something else.');
+    if (from && !/^([^<]*<)?[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>?$/.test(from.trim())) console.error('[startup] EMAIL_FROM is not a valid address. Use e.g. hello@kalwings.com or Kalwings <hello@kalwings.com>.');
     if (!d.problem && process.env.AUTO_MIGRATE !== "false") {
       const { runMigrations } = await import("@/lib/migrate");
       await runMigrations();
