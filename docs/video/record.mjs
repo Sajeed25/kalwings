@@ -1,4 +1,5 @@
-// Records the animated walkthrough (docs/video/video.html) to MP4. Needs docs/manual/img-clean/ (CLEAN=1 node docs/manual/shots.mjs) and ffmpeg.
+// Records the animated, narrated walkthrough (docs/video/video.html) to MP4. Needs docs/manual/img-clean/ (CLEAN=1 node docs/manual/shots.mjs),
+// docs/video/_audio/ (python3 docs/video/gen-audio.py) and ffmpeg.
 // Usage: CHROMIUM_PATH=/path/to/chrome node docs/video/record.mjs
 import { chromium } from 'playwright-core';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { execFileSync } from 'node:child_process';
@@ -12,8 +13,12 @@ const ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, recordV
 const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('PAGEERROR', e.message)); p.on('console', (m) => { if (m.type() === 'error') console.log('console error', m.text()); });
 await p.goto('http://localhost:5055/video/video.html'); const t0 = Date.now();
 await p.waitForFunction(() => window.__done === true, null, { timeout: 15 * 60 * 1000, polling: 500 });
-await p.waitForTimeout(600); await ctx.close(); await b.close(); srv.close();
+await p.waitForTimeout(600);
+const meta = await p.evaluate(() => ({ marks: window.__marks, flashEnd: window.__flashEnd }));
+fs.writeFileSync(TMP + '/marks.json', JSON.stringify(meta));
+await ctx.close(); await b.close(); srv.close();
 const webm = fs.readdirSync(TMP).find((f) => f.endsWith('.webm'));
-execFileSync('ffmpeg', ['-y', '-i', TMP + '/' + webm, '-vf', 'fps=30,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-movflags', '+faststart', '-an', OUT], { stdio: 'ignore' });
+// soundtrack + trim + mux (clips placed at the exact page times where each line was spoken)
+execFileSync('python3', [DOCS + 'video/mux.py', TMP + '/' + webm, TMP + '/marks.json', DOCS + 'video/_audio', OUT], { stdio: 'inherit' });
 fs.rmSync(TMP, { recursive: true, force: true });
 console.log(`Recorded ${(Date.now() - t0) / 1000 | 0}s -> ${OUT}`);
