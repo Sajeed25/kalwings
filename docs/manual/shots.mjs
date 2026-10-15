@@ -3,7 +3,10 @@
 import { chromium } from 'playwright-core';
 import fs from 'fs';
 const B = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
-const OUT = new URL('./img/', import.meta.url).pathname;
+const CLEAN = process.env.CLEAN === '1';   // CLEAN=1: no drawn marks; writes img-clean/ and boxes.json for the animated video
+const OUT = new URL(CLEAN ? './img-clean/' : './img/', import.meta.url).pathname;
+fs.mkdirSync(OUT, { recursive: true });
+const BOXES = {};
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 let ip = 10;
 async function ctx(w = 1280, h = 900) { const c = await b.newContext({ viewport: { width: w, height: h }, extraHTTPHeaders: { 'x-forwarded-for': `203.0.113.${ip++}` } }); const p = await c.newPage(); p.on('pageerror', (e) => console.log('PAGEERROR', e.message)); return p; }
@@ -27,7 +30,7 @@ async function shot(p, name, marks = [], { maxH = 1500, full = true, generic = f
     const bb = await loc.evaluate((el) => { const r = el.getBoundingClientRect(); return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height }; });
     boxes.push({ n: i + 1, bb });
   }
-  await p.evaluate((boxes) => {
+  if (!CLEAN) await p.evaluate((boxes) => {
     for (const { n, bb } of boxes) {
       const o = document.createElement('div'); o.setAttribute('data-mark', '1');
       Object.assign(o.style, { position: 'absolute', left: bb.x - 4 + 'px', top: bb.y - 4 + 'px', width: bb.width + 8 + 'px', height: bb.height + 8 + 'px', border: '3px solid #ff2d55', borderRadius: '10px', pointerEvents: 'none', zIndex: 99998 });
@@ -39,6 +42,8 @@ async function shot(p, name, marks = [], { maxH = 1500, full = true, generic = f
   const h = await p.evaluate(() => Math.max(document.documentElement.scrollHeight, 600));
   let y0 = 0;
   if (from) y0 = Math.max(0, Math.round(await p.locator(from).first().evaluate((el) => el.getBoundingClientRect().top + window.scrollY)) - 24);
+  const hh = Math.max(200, Math.min(h - y0, maxH));
+  BOXES[name] = { w: p.viewportSize().width, h: hh, boxes: boxes.map(({ n, bb }) => ({ n, x: bb.x, y: bb.y - y0, w: bb.width, h: bb.height })) };
   await p.screenshot({ path: `${OUT}${name}.png`, clip: { x: 0, y: y0, width: p.viewportSize().width, height: Math.max(200, Math.min(h - y0, maxH)) }, fullPage: full });
   console.log('shot', name, boxes.length, 'marks');
 }
@@ -149,5 +154,6 @@ await go(col, '/dashboard/drives'); await shot(col, '71-college-drives', [], { m
 // ---------- phone ----------
 const ph = await ctx(390, 844); await login(ph, 'student@sample.kalwings.test'); await go(ph, '/dashboard'); await shot(ph, '80-phone-home', [], { maxH: 1400, generic: true });
 
+if (CLEAN) fs.writeFileSync(OUT + 'boxes.json', JSON.stringify(BOXES));
 await b.close();
 console.log('done');
