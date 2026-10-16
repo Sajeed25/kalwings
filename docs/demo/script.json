@@ -1,0 +1,82 @@
+{
+ "act1": "The student",
+ "act2": "The employer",
+ "beats": [
+  {
+   "key": "intro",
+   "text": "This is Kalwings, live. Freshers struggle to show what they can do, and employers struggle to see it. In three minutes, watch a student prove a skill by completing a real challenge, and an employer review that proof."
+  },
+  {
+   "key": "b1",
+   "text": "Meet a final-year student. She signs in and opens Challenges: real tasks set by employers, open to everyone."
+  },
+  {
+   "key": "b2",
+   "text": "Every card shows who is hiring and what the task is. Pay or reward, location and eligibility are always shown up front, so there are no surprises."
+  },
+  {
+   "key": "b3",
+   "text": "The brief is a real task, not a quiz. And the rubric shows exactly how a person will judge her work: forty points for correctness, thirty for clarity, and thirty for the write-up. She knows the rules before she starts."
+  },
+  {
+   "key": "b4",
+   "text": "She builds her solution, then submits a title, a short write-up of her approach, and a link to her work."
+  },
+  {
+   "key": "b5",
+   "text": "One click to submit. It is saved, and she can update it until it has been reviewed."
+  },
+  {
+   "key": "b6",
+   "text": "It now appears in her submissions, waiting for a person to read it."
+  },
+  {
+   "key": "mid",
+   "text": "Now, the employer's side."
+  },
+  {
+   "key": "b7",
+   "text": "A recruiter at Sample Co A opens Challenges and sees every submission, one per candidate."
+  },
+  {
+   "key": "b8",
+   "text": "Instead of a CV, the recruiter sees the actual work: the write-up, and the link. Nothing is hidden behind a score."
+  },
+  {
+   "key": "b9",
+   "text": "She opens Review and scores each rubric criterion, in points, against what the candidate really delivered."
+  },
+  {
+   "key": "b10",
+   "text": "She adds written feedback, chooses an outcome, and awards the skill, so it is backed by evidence."
+  },
+  {
+   "key": "b11",
+   "text": "A person makes every decision. There is no automatic rejection, and scores are advice, not a verdict."
+  },
+  {
+   "key": "b12",
+   "text": "Saved. The candidate is shortlisted, and joins the employer's hiring pipeline."
+  },
+  {
+   "key": "b12b",
+   "text": "Later, when she searches talent by skill, verified evidence is shown separately from self-declared skills. So the recruiter always knows which claims were proven, and which were only stated."
+  },
+  {
+   "key": "b13",
+   "text": "Back to the student. She sees her score and the feedback straight away."
+  },
+  {
+   "key": "b14",
+   "text": "And the skill the employer awarded now appears on her public profile, with the reason it was awarded. That is proof anyone can check."
+  },
+  {
+   "key": "recap",
+   "text": "Students get a fair way to show real work. Employers see proof, not promises. And every decision stays with a person."
+  },
+  {
+   "key": "outro",
+   "text": "Real work, judged by people. That is Kalwings."
+  }
+ ]
+}
