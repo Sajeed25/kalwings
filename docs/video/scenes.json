@@ -1,0 +1,94 @@
+[
+ {"type":"title","title":"Kalwings","kicker":"Platform walkthrough","sub":"Staff guide and developer overview","notes":"Welcome. In the next few minutes you will see how to run Kalwings as an admin, and how the code is organised for developers."},
+ {"type":"rules","title":"Five rules that never change","items":[
+   ["Real people only, with consent","Never add a student or mentor who has not agreed to be listed."],
+   ["Pay, mode, location, eligibility","Always shown on every listing. Unpaid roles say so."],
+   ["Student contact stays private","Unless the student chooses to share it."],
+   ["No invented numbers","No made-up stats, logos, awards or testimonials."],
+   ["People decide","No auto-rejection. Scores are advice. No guaranteed jobs."]]},
+ {"type":"section","title":"Part A","sub":"Staff guide"},
+ {"type":"shot","img":"01-login","title":"1. Sign in","steps":[
+   {"n":1,"cap":"Open the login page and type your email address."},
+   {"n":2,"cap":"Press Send one-time code. There are no passwords: a six-digit code is emailed to you."}]},
+ {"type":"shot","img":"02-login-code","title":"1. Sign in","steps":[
+   {"n":1,"cap":"Type the six-digit code from your inbox. It works for 10 minutes."},
+   {"n":2,"cap":"Press Log in. You land in your workspace."}]},
+ {"type":"shot","img":"10-admin-home","title":"2. The admin workspace","steps":[
+   {"n":1,"cap":"Directory: companies, colleges, mentors and users live here."},
+   {"n":2,"cap":"Bulk upload: add many students, companies or mentors from a spreadsheet."},
+   {"n":3,"cap":"Launch readiness: a live checklist of what is still missing."}]},
+ {"type":"shot","img":"21-companies","title":"3. Companies","steps":[
+   {"n":1,"cap":"Add a company yourself: name, website, status and plan."},
+   {"n":2,"cap":"Search by name, or filter by status."},
+   {"n":3,"cap":"Open a company to manage it."}]},
+ {"type":"shot","img":"22-company-detail","title":"3. Inside a company","steps":[
+   {"n":1,"cap":"Edit details, upload a logo, set the career page address."},
+   {"n":2,"cap":"Verification: only verified companies can post and search."},
+   {"n":3,"cap":"Plan: choose which limits apply."},
+   {"n":4,"cap":"Team: add an HR person by name and email. They sign in with an emailed code."}]},
+ {"type":"shot","img":"23-company-listing","title":"3. Post a listing for a company","steps":[
+   {"n":1,"cap":"Fill title, type, description, pay, mode, location, eligibility and deadline. Pay is mandatory."},
+   {"n":2,"cap":"Listings appear here. Close or reopen any time."}]},
+ {"type":"shot","img":"24-colleges","title":"4. Colleges","steps":[
+   {"n":1,"cap":"Add a college and verify it so students can pick it."},
+   {"n":2,"cap":"Edit a college whenever you need to."}]},
+ {"type":"shot","img":"25-mentors","title":"5. Mentors","steps":[
+   {"n":1,"cap":"Add a mentor with every detail: role, company, country, domain, topics and bio."},
+   {"n":2,"cap":"Edit later, or upload a photo for them. The mentor can update their own profile after signing in."}]},
+ {"type":"shot","img":"26-users","title":"6. Users and roles","steps":[
+   {"n":2,"cap":"Add anyone: student, mentor, HR at another company, college admin or admin."},
+   {"n":3,"cap":"Change role: the account and all its data stay exactly as they were."},
+   {"n":1,"cap":"Role requests from users wait here. Approve or decline."},
+   {"n":4,"cap":"Search by name or email. Suspending is reversible and never deletes anyone."}]},
+ {"type":"shot","img":"61-request-role","title":"6. What the user does","steps":[
+   {"n":1,"cap":"In Settings, a user picks the role they need..."},
+   {"n":2,"cap":"...explains why..."},
+   {"n":3,"cap":"...and sends the request. Nothing changes until an admin approves."}]},
+ {"type":"shot","img":"29-bulk-page","title":"7. Bulk upload","steps":[
+   {"n":1,"cap":"Three panels: students, companies and mentors."},
+   {"n":2,"cap":"Each takes an Excel or CSV file, up to 1,000 rows."},
+   {"n":3,"cap":"Mentors need role, company, country and domain as well as name and email."}]},
+ {"type":"shot","img":"27-bulk-preview","title":"7. Preview, then import","steps":[
+   {"n":1,"cap":"Download the template and keep its first row."},
+   {"n":2,"cap":"Choose your filled-in file."},
+   {"n":3,"cap":"Preview saves nothing. Every row shows ready, skipped or error."},
+   {"n":5,"cap":"Two ready, one error. Fix it or leave it out."},
+   {"n":4,"cap":"Import adds only the ready rows. One bad row never blocks the others."}]},
+ {"type":"shot","img":"20-plans","title":"8. Employer plans","steps":[
+   {"n":1,"cap":"Rename a plan."},
+   {"n":2,"cap":"Set the price text employers see."},
+   {"n":4,"cap":"Change the four limits: listings, challenges, assessments, team."},
+   {"n":5,"cap":"Save: every company on the plan sees it at once."}]},
+ {"type":"shot","img":"20c-plans-assign","title":"8. Assign a plan","steps":[
+   {"n":3,"cap":"Press a plan button to switch a company. Its team is notified."}]},
+ {"type":"shot","img":"30-site-settings","title":"9. Site settings","steps":[
+   {"n":1,"cap":"An announcement banner for every signed-in page."},
+   {"n":2,"cap":"The support email shown on Help and Contact."},
+   {"n":3,"cap":"Untick a role to close sign-ups for it."},
+   {"n":4,"cap":"Save. Changes show straight away."}]},
+ {"type":"shot","img":"31-launch","title":"10. Launch readiness","steps":[
+   {"n":2,"cap":"If sign-in emails are not ticked, nobody can receive codes. Fix that first."},
+   {"n":3,"cap":"Real companies, colleges, mentors and listings: each line links to where you fix it."}]},
+ {"type":"shot","img":"32-moderation","title":"11. Reviews","steps":[
+   {"n":3,"cap":"Approve or reject new listings. Check pay, mode, location and eligibility are honest."}]},
+ {"type":"shot","img":"37-audit","title":"12. Audit log","steps":[
+   {"n":3,"cap":"Every admin decision is recorded: who, what and when. Entries cannot be edited."}]},
+ {"type":"section","title":"Part B","sub":"Developer overview"},
+ {"type":"flow","title":"How a request flows","notes":"A request flows from the browser to a server component, which checks the role and reads the database with Prisma."},
+ {"type":"actions","title":"Every server action follows six steps","steps":[
+   ["requireActionRole","Who is calling? First line of every action."],
+   ["zod validate","Check and cap every input on the server."],
+   ["Business rules","Return friendly errors, do not throw."],
+   ["Prisma write","Scope queries to the owner."],
+   ["audit()","Record sensitive changes."],
+   ["revalidatePath","Refresh pages and return a result."]]},
+ {"type":"migrate","title":"Changing the database safely","steps":[
+   ["Edit schema.prisma","Additive changes only."],
+   ["prisma migrate diff","Generate the SQL from your local database."],
+   ["Add migration.sql","New timestamped folder. Never edit an old one."],
+   ["embed-migrations","Compile the SQL into the build. Commit the generated file."],
+   ["migrate deploy","Apply and check for drift."],
+   ["docs:db and docs:api","Regenerate docs, then commit together."]]},
+ {"type":"quality","title":"Ship with confidence","gates":["lint","typecheck","unit tests","build","e2e"],"ci":["MySQL 8","MariaDB 10.11"]},
+ {"type":"outro","title":"Read the full manual","sub":"KALWINGS-Manual.pdf: 69 pages, every step with labelled screenshots"}
+]
