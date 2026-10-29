@@ -17,13 +17,15 @@ export function cleanSource(v: unknown): string | null {
   return /^[a-z0-9][a-z0-9_-]{0,29}$/.test(s) ? s : null;
 }
 
-export const SOURCE_LABEL: Record<string, string> = { linkedin: "LinkedIn", whatsapp: "WhatsApp", x: "X / Twitter", email: "Email", careers: "Career page", embed: "Embedded widget", referral: "Referral", qr: "QR code", direct: "Direct link" };
+export const SOURCE_LABEL: Record<string, string> = { linkedin: "LinkedIn", whatsapp: "WhatsApp", x: "X / Twitter", email: "Email", careers: "Career page", embed: "Embedded widget", telegram: "Telegram", link: "Copied link", share: "Phone share", referral: "Referral", qr: "QR code", direct: "Direct link" };
 export const sourceLabel = (s: string | null | undefined) => (s ? SOURCE_LABEL[s] ?? s : "Kalwings marketplace");
 
 export const xmlEscape = (s: string) => s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
 export const cdata = (s: string) => `<![CDATA[${s.replace(/\]\]>/g, "]]]]><![CDATA[>")}]]>`;
 
 export const jobUrl = (id: string, src?: string) => `${site.url}/opportunities/${id}${src ? `?src=${src}` : ""}`;
+/** The short, friendly link to share (falls back to the long one for old rows without a code). */
+export const shortUrl = (o: { id: string; shortCode?: string | null }, src?: string) => o.shortCode ? `${site.url}/j/${o.shortCode}${src ? `?src=${src}` : ""}` : jobUrl(o.id, src);
 export function shareLinks(url: string, title: string) {
   const t = encodeURIComponent(title), u = (s: string) => encodeURIComponent(`${url}${url.includes("?") ? "&" : "?"}src=${s}`);
   return {

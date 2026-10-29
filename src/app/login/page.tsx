@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Announcement } from "@/components/dash/announcement";
+import { safeNext } from "@/lib/next-path";
 import { AuthCard } from "@/components/pages/auth-card";
 
 export const metadata: Metadata = { title: "Log in", robots: { index: false } };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ role?: string; error?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ role?: string; error?: string; next?: string }> }) {
   const sp = await searchParams;
-  return <><Announcement /><AuthCard mode="login" initialRole={(sp.role ?? "").toUpperCase()} errorCode={sp.error} googleEnabled={!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET} /></>;
+  return <><Announcement /><AuthCard next={safeNext(sp.next) ?? undefined} mode="login" initialRole={(sp.role ?? "").toUpperCase()} errorCode={sp.error} googleEnabled={!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET} /></>;
 }

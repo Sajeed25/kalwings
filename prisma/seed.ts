@@ -65,7 +65,7 @@ async function seed() {
         companyId: companies.get(o.company)!, title: o.role, type: typeMap[o.type as keyof typeof typeMap], description: `[Sample listing] ${o.role} at ${o.company}. Replace with a real description of the work, the team and how selection works.`,
         payText: o.pay, unpaid: o.unpaid, monthlyINR: o.monthly, workMode: modeMap[o.mode], location: o.location, eligibility: o.eligibility,
         gradYears: (o.eligibility.match(/20\d\d/g) ?? []).map(Number), skills: o.skills,
-        deadline: new Date(Date.now() + 45 * 864e5), moderated: "VERIFIED",
+        deadline: new Date(Date.now() + 45 * 864e5), moderated: "VERIFIED", shortCode: `s${Math.random().toString(36).slice(2, 10)}`,
       },
     });
   }

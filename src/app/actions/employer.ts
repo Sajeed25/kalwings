@@ -10,6 +10,7 @@ import { DEFAULT_LABEL } from "@/lib/stages";
 import { limitError } from "@/lib/plans";
 import { notify } from "@/lib/audit";
 import { slugProblem } from "@/lib/distribution";
+import { uniqueShortCode } from "@/lib/short-code";
 import { stageEvent } from "@/lib/stage-history";
 import { MAX_BULK, MAX_TAGS_PER_CANDIDATE, cleanTag } from "@/lib/tags";
 import { fail, obj, type Result } from "./_shared";
@@ -51,6 +52,7 @@ export async function postOpportunity(_: Result, fd: FormData): Promise<Result> 
       unpaid: d.unpaid, monthlyINR: d.unpaid ? 0 : d.monthlyINR, workMode: d.workMode, location: d.location, eligibility: d.eligibility,
       gradYears: csv(d.gradYears).map(Number).filter((n) => n > 2000 && n < 2100), skills: csv(d.skills), deadline: d.deadline,
       moderated: "PENDING", // listed only after admin moderation
+      shortCode: await uniqueShortCode(),
       questions: { create: questions.map((text, position) => ({ text, position })) },
     },
   });
@@ -239,7 +241,7 @@ export async function createChallenge(_: Result, fd: FormData): Promise<Result> 
     data: {
       companyId: company.id, title: d.title, type: "CHALLENGE", description: d.description, payText: d.unpaid ? `Unpaid: ${d.payText}` : d.payText,
       unpaid: d.unpaid, monthlyINR: 0, workMode: d.workMode, location: d.location, eligibility: d.eligibility, gradYears: [], skills: d.skillTag ? [d.skillTag] : [],
-      deadline: d.deadline, moderated: "PENDING",
+      deadline: d.deadline, moderated: "PENDING", shortCode: await uniqueShortCode(),
       challenge: { create: { kind: d.kind, style: d.style, allowTeams: d.allowTeams, brief: d.brief, rubric, skillTag: d.skillTag || null } },
     },
   });

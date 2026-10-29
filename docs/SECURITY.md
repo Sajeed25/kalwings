@@ -40,6 +40,13 @@ Status key: **Done** (implemented and covered by an automated test or inspection
 - **Known property**: uploaded images are served by unguessable ID without a login (a capability URL, cached by browsers). They appear only where the owner's profile is shown, but anyone holding the URL can fetch the image. Don't upload anything sensitive.
 - **Not done**: encryption of individual database fields (rely on provider disk encryption and TLS).
 
+## Resumes and videos
+- **Done**: resumes and intro videos are private files. They are served only through `/api/docs/[id]` (owner, platform admin, or a verified company that received the file on an application), with `Cache-Control: private, no-store`, `nosniff`, `Content-Disposition: attachment` for resumes and a sandbox CSP. The public image route refuses these kinds.
+- **Done**: content checks (magic bytes, not file names): PDF, DOC, DOCX, RTF only, macros, JavaScript, launch actions and embedded objects refused; WebM and MP4 for video. Size caps are enforced on the server.
+- **Done**: the video requires a 100% profile, enforced on the server; sharing it is a per-application choice; deletion removes it from every company.
+- **Done**: share and return links: `?next=` accepts only same-site paths on an allow-list, never full URLs.
+- **Not done**: antivirus scanning of uploads; the camera permission prompt is the browser's.
+
 ## Dependencies and supply chain
 - **Done**: lockfile committed, CI builds from it, Dependabot enabled. Run `npm audit` before launch and review results.
 

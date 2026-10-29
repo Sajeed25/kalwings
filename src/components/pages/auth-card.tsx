@@ -8,7 +8,7 @@ import { loginWithPassword, requestOtp, submitOtp, type AuthState } from "@/app/
 const f = "mt-1.5 h-12 w-full border border-line bg-bg px-4 text-[15px]";
 const errs: Record<string, string> = { "google-closed": "New sign-ups for that role are closed right now. Please contact us.", "google-not-configured": "Google sign-in isn't configured yet.", "google-state": "Google sign-in expired. Try again.", "google-token": "Google sign-in failed.", "google-email": "Your Google email isn't verified.", suspended: "This account has been suspended. Please contact support." };
 
-export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean }) {
+export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false, next }: { mode: "join" | "login"; initialRole: string; errorCode?: string; googleEnabled?: boolean; next?: string }) {
   const join = mode === "join";
   const [role, setRole] = useState(["STUDENT", "MENTOR", "EMPLOYER", "COLLEGE_ADMIN"].includes(initialRole) ? initialRole : "STUDENT");
   const [s1, a1, p1] = useActionState(requestOtp, { step: "identify", mode } as AuthState);
@@ -39,6 +39,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
 
         {passwordMode ? (
           <form action={a3} className="mt-6 space-y-4">
+            {next && <input type="hidden" name="next" value={next} />}
             <label className="block text-sm font-semibold">Email<input className={f} name="identifier" type="email" placeholder="you@example.com" autoComplete="username" required defaultValue={s3.identifier} /></label>
             <label className="block text-sm font-semibold">Password<input className={f} name="password" type="password" autoComplete="current-password" required maxLength={128} /></label>
             <Button size="lg" className="w-full" disabled={p3}>{p3 ? "Checking…" : "Log in"}</Button>
@@ -46,6 +47,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
           </form>
         ) : !code ? (
           <form action={a1} className="mt-6 space-y-4">
+            {next && <input type="hidden" name="next" value={next} />}
             {join && (
               <label className="block text-sm font-semibold">I am a…
                 <select className={f} name="role" value={role} onChange={(e) => setRole(e.target.value)}>
@@ -60,6 +62,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
           </form>
         ) : (
           <form action={a2} className="mt-6 space-y-4">
+            {next && <input type="hidden" name="next" value={next} />}
             <input type="hidden" name="identifier" value={s1.identifier} />
             <p className="text-sm text-ink-soft">We emailed a 6-digit code to <b className="text-ink">{s1.identifier}</b>.</p>
             {s1.devCode && <p className="rounded-xl border border-dashed border-spot/60 bg-spot/10 p-3 text-sm text-spot">Dev mode — no email provider is connected. Your code is <b>{s1.devCode}</b>.</p>}
@@ -69,7 +72,7 @@ export function AuthCard({ mode, initialRole, errorCode, googleEnabled = false }
             <Button size="lg" className="w-full" disabled={p2}>{p2 ? "Checking…" : join ? "Create my account" : "Log in"}</Button>
           </form>
         )}
-        <p className="mt-6 text-center text-sm text-ink-soft">{join ? <>Already a member? <Link className="font-semibold text-ink underline" href="/login">Log in</Link></> : <>New here? <Link className="font-semibold text-ink underline" href="/join">Create an account</Link></>}</p>
+        <p className="mt-6 text-center text-sm text-ink-soft">{join ? <>Already a member? <Link className="font-semibold text-ink underline" href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}>Log in</Link></> : <>New here? <Link className="font-semibold text-ink underline" href={next ? `/join?next=${encodeURIComponent(next)}` : "/join"}>Create an account</Link></>}</p>
       </div>
     </div>
   );

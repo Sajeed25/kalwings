@@ -10,6 +10,7 @@ import { slugProblem } from "@/lib/distribution-utils";
 import { uniqueSlug } from "@/lib/slug";
 import { emailAccountReady } from "@/lib/account-email";
 import { SIGNUP_ROLES } from "@/lib/settings";
+import { uniqueShortCode } from "@/lib/short-code";
 
 /**
  * Platform admin console: everything an admin can create or change directly. Each action re-checks the role, validates its input,
@@ -144,7 +145,7 @@ export async function postListingFor(_: NoteResult, fd: FormData): Promise<NoteR
       companyId: company.id, title: d.title, type: d.type, description: d.description, payText: d.unpaid ? `Unpaid — ${d.payText}` : d.payText,
       unpaid: d.unpaid, monthlyINR: d.unpaid ? 0 : d.monthlyINR, workMode: d.workMode, location: d.location, eligibility: d.eligibility,
       gradYears: csv(d.gradYears).map(Number).filter((n) => n > 2000 && n < 2100), skills: csv(d.skills), deadline: d.deadline,
-      moderated: "VERIFIED", questions: { create: questions.map((text, position) => ({ text, position })) },
+      moderated: "VERIFIED", shortCode: await uniqueShortCode(), questions: { create: questions.map((text, position) => ({ text, position })) },
     },
   });
   await audit(a.id, "listing.posted_by_admin", `${d.title} at ${company.name} (${o.id})`.slice(0, 190));

@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { parseNaturalQuery } from "@/lib/nlsearch";
 import { PageHero, Block } from "@/components/pages/shell";
 import { searchOpportunities, SORTS, type OppQuery, type SortKey } from "@/lib/public-data";
+import Link from "next/link";
+import { liveCities } from "@/lib/cities";
 import { OpportunityBrowser } from "@/components/pages/opportunity-browser";
 
 export const metadata: Metadata = { title: "Opportunities", description: "Internships, jobs and challenges for freshers — with pay, work mode and eligibility always shown." };
@@ -36,6 +38,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   };
   let res: Awaited<ReturnType<typeof searchOpportunities>> = { total: 0, page: 1, pages: 1, items: [] };
   let unavailable = false;
+  let cityChips: Awaited<ReturnType<typeof liveCities>> = [];
+  try { cityChips = (await liveCities()).slice(0, 8); } catch { /* chips are optional */ }
   try { res = await searchOpportunities(query); } catch (e) { unavailable = true; console.error("[opportunities] load failed:", e instanceof Error ? e.message : e); }
   return (
     <>
@@ -44,6 +48,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
         <form role="search" aria-label="Describe what you want" className="mb-6 flex flex-wrap gap-2"><label className="sr-only" htmlFor="nl">Describe what you want</label>
           <input id="nl" name="nl" placeholder="Describe what you want, e.g. remote React internship, paid, class of 2026" className="h-11 min-w-[260px] flex-1 rounded-lg border border-line bg-surface px-3" />
           <button className="h-11 rounded-lg bg-primary px-5 font-semibold text-on-primary">Find</button></form>
+        {cityChips.length > 0 && <nav aria-label="Browse by city" className="mb-6 flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-ink-soft">Near you:</span>{cityChips.map((c) => <Link key={c.slug} href={`/jobs-in/${c.slug}`} className="rounded-full border border-line px-3 py-1.5 font-semibold hover:border-accent">{c.name} <span className="text-ink-soft">{c.count}</span></Link>)}<Link href="/jobs-in" className="font-semibold text-accent underline">All cities</Link></nav>}
         {interpreted && <p className="mb-4 text-sm text-ink-soft" role="status">We read that as: {interpreted}. Adjust the filters below if that is not what you meant.</p>}
         {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">Listings are temporarily unavailable. Please check back in a few minutes.</p>}
         <OpportunityBrowser items={res.items} total={res.total} page={res.page} pages={res.pages} query={query} />

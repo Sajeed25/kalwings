@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 /** Serves an uploaded profile photo / project screenshot. IDs are unguessable and change on replacement, so responses are cached forever. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const f = await db.upload.findUnique({ where: { id }, select: { mime: true, data: true } });
+  // Only public images are served here. Resumes and intro videos are private and go through /api/docs/[id].
+  const f = await db.upload.findFirst({ where: { id, kind: { in: ["AVATAR", "PROJECT", "COMPANY_LOGO"] } }, select: { mime: true, data: true } });
   if (!f) return new Response("Not found", { status: 404 });
   return new Response(new Uint8Array(f.data), {
     headers: {

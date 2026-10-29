@@ -24,7 +24,7 @@ const student: Section[] = [
   ] },
   { title: "Profile", items: [
     { label: "Profile", icon: "user", href: "/dashboard/profile", desc: "Your details, projects and verified skills, and the public page employers see. You decide who can see your contact details.", tabs: [
-      { label: "Details", href: "/dashboard/profile" }, { label: "Projects", href: "/dashboard/portfolio" }, { label: "Public profile", href: "/dashboard/passport" },
+      { label: "Details", href: "/dashboard/profile" }, { label: "Projects", href: "/dashboard/portfolio" }, { label: "Public profile", href: "/dashboard/passport" }, { label: "Resume & video", href: "/dashboard/resume" },
     ] },
   ] },
   { title: "Grow", items: [

@@ -1,14 +1,14 @@
 import QRCode from "qrcode";
 import { CopyButton } from "@/components/dash/copy-button";
-import { jobUrl, shareLinks } from "@/lib/distribution";
+import { shareLinks, shortUrl } from "@/lib/distribution";
 import { TYPE_LABEL } from "@/lib/opportunity-types";
 import type { Opportunity } from "@prisma/client";
 
 /** Share tools for one approved listing. Kalwings does not post to third-party boards for you; these links help you do it in one click. */
 export async function ShareKit({ o, company }: { o: Opportunity; company: string }) {
-  const url = jobUrl(o.id);
+  const url = shortUrl(o);
   const links = shareLinks(url, `${o.title} at ${company}`);
-  const qr = await QRCode.toString(jobUrl(o.id, "qr"), { type: "svg", margin: 1, width: 120 });
+  const qr = await QRCode.toString(shortUrl(o, "qr"), { type: "svg", margin: 1, width: 120 });
   const text = `${company} is hiring: ${o.title}\n${TYPE_LABEL[o.type]} · ${o.location} · ${o.payText}${o.unpaid ? " (Unpaid)" : ""}\nEligibility: ${o.eligibility}\nApply by ${o.deadline.toLocaleDateString("en-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" })}: ${url}`;
   return (
     <details className="mt-2 text-sm"><summary className="cursor-pointer font-semibold text-accent">Share &amp; distribute</summary>

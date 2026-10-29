@@ -5,7 +5,7 @@ const MAIL = process.env.MAIL_CAPTURE;
 const lastMail = () => (MAIL && fs.existsSync(MAIL) ? JSON.parse(fs.readFileSync(MAIL, 'utf8')) : null);
 // Run against `npm run dev` (OTP codes are only shown in dev). Needs the sample seed (admin@sample.kalwings.test).
 const B = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
-const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
 const tag = Date.now().toString().slice(-6);
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
@@ -587,7 +587,7 @@ const feedJson = await (await anon.request.get(`${B}/feeds/jobs.json`)).json(); 
 ok((await (await anon.request.get(`${B}/sitemap.xml`)).text()).includes(`/careers/acme-${tag}`), 'sitemap lists the career page');
 await employer.goto(`${B}/dashboard/roles`); await employer.locator('li', { hasText: `Embedded Intern ${tag}` }).locator('summary:has-text("Share")').click();
 ok(await employer.locator(`li:has-text("Embedded Intern ${tag}") a:has-text("LinkedIn")`).getAttribute('href').then((h) => h.includes('linkedin.com') && decodeURIComponent(h).includes('src=linkedin')) && await employer.locator(`li:has-text("Embedded Intern ${tag}") svg`).count() > 0, 'share kit has a tagged LinkedIn link and a QR code');
-await student.goto(B + oppHref); const myRef = (await student.locator('code').first().innerText()).split('ref=')[1];
+await student.goto(B + oppHref); const myRef = (await student.locator('section[aria-label="Share this opportunity"] p.break-all').innerText()).split('ref=')[1];
 ok(!!myRef, 'student sees a personal referral link');
 const jobLd = JSON.parse((await anon.goto(B + oppHref).then(() => anon.locator('script[type="application/ld+json"]').evaluateAll((els) => els.map((e) => e.textContent)))).find((t) => t.includes('JobPosting')));
 ok(jobLd.directApply === true && jobLd.identifier?.value, 'listing structured data has directApply and identifier');
@@ -832,6 +832,80 @@ const bulkNonAdmin = await student.request.post(`${B}/api/admin/bulk`, { multipa
 // --- launch readiness: admin-only, read from real data
 await admin.goto(`${B}/dashboard/launch`, { waitUntil: 'networkidle' }); ok(await admin.locator('h1:has-text("Launch readiness")').count() === 1 && await admin.locator('text=Real companies added').count() === 1, 'admin sees the launch readiness checklist');
 await employer.goto(`${B}/dashboard/launch`); ok(!/\/dashboard\/launch/.test(employer.url()), 'only platform admins can open launch readiness');
+
+// --- hiring flow: short links, sharing, friend sign-in that returns to the listing, resume, selfie video, employer view
+const SHARE = 'section[aria-label="Share this opportunity"]';
+await anon.goto(B + oppHref); ok(await anon.locator(SHARE).count() === 1 && await anon.locator(`${SHARE} a:has-text("Share on WhatsApp")`).count() === 1, 'anyone can share a listing, without signing in');
+const waHref = decodeURIComponent(await anon.locator(`${SHARE} a:has-text("Share on WhatsApp")`).getAttribute('href'));
+ok(waHref.includes('wa.me') && waHref.includes('₹18,000') && waHref.includes('Hyderabad') && waHref.includes('Eligibility') && waHref.includes('src=whatsapp'), 'the WhatsApp message carries pay, place, eligibility and a tagged link');
+const shortCode = (await anon.locator(`${SHARE} p.break-all`).innerText()).match(/\/j\/([a-z0-9]+)/)?.[1]; ok(!!shortCode, 'the share link is a short /j/ link');
+await anon.goto(`${B}/j/${shortCode}?src=whatsapp&ref=abc123`); ok(anon.url().endsWith(`${oppHref}?src=whatsapp&ref=abc123`), 'a short link opens the listing and keeps the source and referrer');
+await anon.goto(`${B}/j/nopenope1`); ok(/\/opportunities$/.test(anon.url()), 'an unknown short link lands on the opportunities list');
+await anon.goto(`${B}/login?next=https://evil.example`); ok(await anon.locator('input[name=next]').count() === 0, 'an off-site return link is ignored');
+// a friend opens the shared link, creates an account, and comes back to the same listing
+const friendCtx = await b.newContext({ viewport: { width: 1300, height: 900 }, extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.88' } }); const friend = await friendCtx.newPage(); friend.on('pageerror', (e) => { console.log('PAGEERROR', e.message); fails++; });
+await friend.goto(`${B}/j/${shortCode}?src=whatsapp`); await friend.click('a:has-text("New here? Create a free account")'); await friend.waitForURL(/\/join\?/); ok(friend.url().includes('next='), 'create-account link remembers the listing');
+const fEmail = `friend${tag}@example.com`;
+await friend.fill('input[name=identifier]', fEmail); await friend.click('button:has-text("Send one-time code")'); await friend.waitForSelector('input[name=code]');
+const fCode = (await friend.locator('text=Your code is').locator('b').innerText()).trim(); await friend.fill('input[name=name]', `Friend Student ${tag}`); await friend.fill('input[name=code]', fCode); await friend.click('button:has-text("Create my account")');
+await friend.waitForURL(/onboarding/); ok(friend.url().includes('next='), 'onboarding keeps the way back to the listing');
+await friend.fill('input[name=headline]', 'ECE fresher, embedded'); await friend.fill('input[name=graduationYear]', '2026'); await friend.fill('input[name=city]', 'Hyderabad'); await friend.click('button:has-text("Next")');
+await friend.fill('input[name=skills]', 'Embedded C, Python, Circuits'); await friend.fill('textarea[name=bio]', 'I build small sensor projects and want to ship real firmware.'); await friend.click('button:has-text("Save & continue")');
+await friend.waitForSelector('input[name=title]'); await friend.fill('input[name=title]', 'Sensor logger'); await friend.fill('textarea[name=summary]', 'A data logger with a tiny web page.'); await friend.click('button:has-text("Add project & finish")');
+await friend.waitForURL((u) => u.pathname === oppHref.split('?')[0]); ok(friend.url().includes('src=whatsapp'), 'after joining, the friend is back on the listing with the share source kept');
+ok(await friend.locator('fieldset:has-text("receives")').count() === 1 && await friend.locator('text=No resume on file').count() === 1, 'the apply form says what the company receives and offers to add a resume');
+// resume upload: formats, size and safety
+await friend.click('a:has-text("Add your resume")'); await friend.waitForURL(/dashboard\/resume/); ok(friend.url().includes('next='), 'resume page can send the friend back to the listing');
+const RES = 'input[aria-label="Choose resume file"]'; const alertTxt = async () => { await friend.waitForSelector('[role=alert]'); return friend.locator('[role=alert]').first().innerText(); };
+await friend.setInputFiles(RES, { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') }); ok((await alertTxt()).includes('PDF, DOC, DOCX or RTF'), 'a text file is refused with the accepted formats listed');
+await friend.setInputFiles(RES, { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.concat([Buffer.from('MZ'), Buffer.alloc(500, 1)]) }); await friend.waitForFunction(() => /safe PDF/i.test(document.body.innerText)); ok(true, 'a program renamed to .pdf is refused by content');
+await friend.setInputFiles(RES, { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.concat([Buffer.from('%PDF-1.7 /JavaScript '), Buffer.alloc(500, 32)]) }); await friend.waitForFunction(() => /safe PDF/i.test(document.body.innerText)); ok(true, 'a PDF carrying script is refused');
+await friend.setInputFiles(RES, { name: 'big.pdf', mimeType: 'application/pdf', buffer: Buffer.concat([Buffer.from('%PDF-1.7 '), Buffer.alloc(2_100_000, 32)]) }); await friend.waitForFunction(() => /limit is 2 MB/.test(document.body.innerText)); ok(true, 'a file over 2 MB is refused before upload');
+const goodPdf = Buffer.concat([Buffer.from('%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n'), Buffer.alloc(1_200_000, 32), Buffer.from('\n%%EOF')]); // over 1 MB: proves the chunked upload
+await friend.setInputFiles(RES, { name: 'My CV (final).pdf', mimeType: 'application/pdf', buffer: goodPdf }); await friend.waitForURL((u) => u.pathname === oppHref.split('?')[0]); ok(true, 'a 1.2 MB PDF uploads in pieces and returns to the listing');
+ok(await friend.locator('label:has-text("Attach my resume")').count() === 1 && await friend.locator('input[name=attachResume]').isChecked(), 'the resume is attached by default, and the choice is the candidate\'s');
+ok(await friend.locator('text=Unlocks at a 100% profile').count() > 0, 'the selfie video is shown as locked below a 100% profile');
+await friend.click('button:has-text("Apply with my Talent Card")'); await friend.waitForSelector("text=You've applied");
+ok(await friend.locator(`${SHARE} h2:has-text("You've applied")`).count() === 1, 'after applying, the friend is invited to share it too');
+await friend.goto(`${B}/dashboard/applications`); ok(await friend.locator('text=Sent with this application: Talent Card, resume.').count() === 1, 'the candidate sees exactly what was sent');
+// employer sees the application, its source and the resume; nobody else can open it
+await employer.goto(`${B}/dashboard/pipeline`); const fCard = employer.locator('article', { hasText: `Friend Student ${tag}` });
+ok(await fCard.count() === 1 && (await fCard.innerText()).includes('Source: WhatsApp'), 'the employer sees the new applicant and that they came from WhatsApp');
+const resHref = await fCard.locator('a:has-text("Download resume")').getAttribute('href'); ok(!!resHref, 'the application carries a resume download');
+const dl = await employer.request.get(B + resHref); ok(dl.status() === 200 && /attachment/.test(dl.headers()['content-disposition']) && dl.headers()['content-type'] === 'application/pdf' && (await dl.body()).subarray(0, 5).toString() === '%PDF-' && /My CV/.test(decodeURIComponent(dl.headers()['content-disposition'])), 'the employer downloads the PDF as an attachment');
+ok(dl.headers()['x-content-type-options'] === 'nosniff' && /no-store/.test(dl.headers()['cache-control']), 'resume downloads are never cached or sniffed');
+const resId = resHref.split('/').pop();
+ok((await rec3.request.get(B + resHref)).status() === 404 && (await student.request.get(B + resHref)).status() === 404, 'another recruiter or student cannot open the resume');
+ok((await anon.request.get(B + resHref)).status() === 401 && (await anon.request.get(`${B}/api/files/${resId}`)).status() === 404, 'a signed-out visitor cannot open it, and the public image route never serves it');
+// selfie video: locked below 100%, enforced on the server
+await friend.goto(`${B}/dashboard/resume`); ok(await friend.locator('text=Locked until your profile is 100% complete').count() === 1 && await friend.locator('button:has-text("Open camera")').count() === 0, 'the video recorder is locked until the profile is 100%');
+const tok = 'e2etokenabcdefghij' + tag; await friend.request.post(`${B}/api/upload/chunk?token=${tok}&i=0`, { data: Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(3000, 1)]) });
+const gate = await friend.request.post(`${B}/api/intro-video`, { data: { token: tok, count: 1 } }); ok(gate.status() === 403 && /100%/.test((await gate.json()).error), 'the server refuses an intro video below a 100% profile');
+// a student at 100% can record, save, share and delete
+await student.goto(`${B}/dashboard/resume`);
+if (await student.locator('text=Locked until your profile is 100% complete').count()) { const todo = await student.locator('ul.list-disc li').allInnerTexts(); console.log('  student still needs:', todo.join(' | ')); if (todo.some((x) => /project/.test(x))) { await student.goto(`${B}/dashboard/portfolio`); await student.fill('input[name=title]', 'Sensor dashboard'); await student.fill('textarea[name=summary]', 'Cleaned noisy readings and charted them.'); await student.click('button:has-text("Add project")'); await student.waitForSelector('text=Sensor dashboard'); } if (todo.some((x) => /GitHub/.test(x))) { await student.goto(`${B}/dashboard/profile`); await student.fill('input[name=githubUrl]', 'https://github.com/example/student'); await student.click('button:has-text("Save")'); await student.waitForSelector('text=Saved'); await student.goto(`${B}/dashboard/resume`); } }
+ok(await student.locator('button:has-text("Open camera")').count() === 1, 'a 100% profile unlocks the selfie introduction');
+await student.click('button:has-text("Open camera")'); await student.waitForSelector('video[aria-label="Camera preview"]'); await student.click('button:has-text("Start recording")'); await student.waitForSelector('text=Recording', { timeout: 8000 });
+ok(await student.locator('button:has-text("Stop (available at 10s)")').count() === 1, 'a recording has a minimum length');
+await student.waitForSelector('button:text-is("Stop")', { timeout: 15000 }); await student.click('button:text-is("Stop")'); await student.waitForSelector('video[aria-label="Your recording"]');
+await student.click('button:has-text("Save this video")'); await student.waitForSelector('video[aria-label="Your intro video"]', { timeout: 30000 }); ok(true, 'the recorded video is saved');
+const vidRole = `Video Role ${tag}`; await employer.goto(`${B}/dashboard/roles`); await employer.fill('input[name=title]', vidRole); await employer.fill('textarea[name=description]', 'Firmware role where you will present your work to the team every week.'); await employer.fill('input[name=payText]', '₹20,000 / month'); await employer.fill('input[name=monthlyINR]', '20000'); await employer.fill('input[name=location]', 'Hyderabad'); await employer.fill('input[name=deadline]', '2027-03-01'); await employer.fill('input[name=eligibility]', '2026 graduates'); await employer.fill('input[name=gradYears]', '2026'); await employer.fill('input[name=skills]', 'Embedded C'); await employer.click('button:has-text("Submit for review")'); await employer.waitForSelector('text=Submitted for review');
+await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: vidRole }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1000);
+await student.goto(`${B}/opportunities?q=${encodeURIComponent(vidRole)}`); await student.locator('article', { hasText: vidRole }).locator('a:has-text("View details")').click();
+await student.waitForSelector('input[name=shareIntro]'); ok(await student.locator('input[name=shareIntro]').count() === 1 && !(await student.locator('input[name=shareIntro]').isChecked()), 'sharing the intro video is a separate choice that starts switched off');
+await student.check('input[name=shareIntro]'); await student.click('button:has-text("Apply with my Talent Card")'); await student.waitForSelector("text=You've applied");
+await employer.goto(`${B}/dashboard/pipeline`); const vcard = employer.locator('article', { hasText: `Test Student ${tag}` }).filter({ hasText: vidRole });
+ok(await vcard.locator('summary:has-text("Selfie introduction")').count() === 1, 'the employer sees the selfie introduction the candidate chose to share');
+const vHref = await vcard.locator('video').getAttribute('src'); const part = await employer.request.get(B + vHref, { headers: { Range: 'bytes=0-99' } });
+ok(part.status() === 206 && /bytes 0-99\//.test(part.headers()['content-range']) && (await part.body()).length === 100, 'the video can be played and scrubbed (range requests)');
+ok((await rec3.request.get(B + vHref)).status() === 404 && (await friend.request.get(B + vHref)).status() === 404, 'no one else can watch it');
+await student.goto(`${B}/dashboard/resume`); student.once('dialog', (d) => d.accept()); await student.click('button:has-text("Delete video")'); await student.waitForSelector('button:has-text("Open camera")');
+ok((await employer.request.get(B + vHref)).status() === 404, 'deleting the video removes it from every company it was shared with');
+// local jobs by city
+await anon.goto(`${B}/opportunities`); ok(await anon.locator('nav[aria-label="Browse by city"] a:has-text("Hyderabad")').count() === 1, 'the opportunities page offers cities near you');
+await anon.goto(`${B}/jobs-in`); await anon.click('a:has-text("Hyderabad")'); await anon.waitForURL(/\/jobs-in\/hyderabad/); ok(await anon.locator(`text=Embedded Intern ${tag}`).count() > 0 && await anon.locator('text=Share Hyderabad opportunities').count() === 1, 'a city page lists open roles and can be shared');
+ok((await anon.goto(`${B}/jobs-in/no-such-city-zz`)).status() === 404, 'an unknown city is a 404');
+await friendCtx.close();
 
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');

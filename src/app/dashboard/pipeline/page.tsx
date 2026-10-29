@@ -52,6 +52,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
                       {a.student.contactVisible ? <p className="mt-1 text-xs">{a.student.user.email}</p> : <p className="mt-1 text-xs text-ink-soft">Contact private, use messages</p>}
                       <a href={`/talent/${a.student.username ?? a.student.slug}`} className="mt-1 inline-block text-xs font-semibold underline">Talent Passport</a>
                       <p className="mt-1 text-xs text-ink-soft">Source: {sourceLabel(a.source)}{a.referrer && <> · Referred by {a.referrer.user.name}</>}</p>
+                      {a.resumeId ? <a href={`/api/docs/${a.resumeId}`} className="mt-1 inline-block text-xs font-semibold underline">Download resume</a> : <p className="mt-1 text-xs text-ink-soft">No resume attached</p>}
+                      {a.introVideoId && <details className="mt-1"><summary className="cursor-pointer text-xs font-semibold">Selfie introduction</summary><video controls preload="none" playsInline aria-label={`Selfie introduction from ${a.student.user.name}`} src={`/api/docs/${a.introVideoId}`} className="mt-2 aspect-[4/3] w-full rounded-lg bg-black object-cover" /><p className="mt-1 text-xs text-ink-soft">Shared with your company by the candidate. Judge it like an interview: a person decides, nothing is scored.</p></details>}
                       {a.interviews.find((i) => i.status === "SCHEDULED") && <p className="mt-2 text-xs text-ink-soft">Next interview: {fmtTime(a.interviews.find((i) => i.status === "SCHEDULED")!.scheduledAt)} IST</p>}
                       <p className="text-xs text-ink-soft">In this stage for {daysBetween(a.events.at(-1)?.createdAt ?? a.createdAt, new Date())} days</p>
                       {a.answers.length > 0 && (

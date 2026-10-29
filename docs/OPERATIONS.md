@@ -18,6 +18,13 @@
 Migrations run automatically on every start (see `AUTO_MIGRATE`). After adding a migration under `prisma/migrations`, `npm run build` regenerates `src/lib/migrations.generated.ts`; commit it (CI fails if it is stale).
 Merge a PR into `main`; GitHub CI runs; Hostinger pulls, builds (`npm run build`) and starts (`npm start`, which runs `prisma migrate deploy` first). Rollback: revert the PR on GitHub (auto-deploys) or redeploy the previous commit from hPanel. **Migrations are forward-only** and additive: never edit a deployed migration; fix forward with a new one. Merge stacked PRs bottom-up.
 
+## Resumes and intro videos
+- Stored in the database (`Upload`, kinds `RESUME` and `INTRO_VIDEO`), private: served only by `/api/docs/[id]` to the owner, to platform admins, and to a member of a verified company that received the file on an application. Never by the public `/api/files/[id]` route.
+- Limits: resume 2 MB (PDF, DOC, DOCX, RTF); video 8 MB and 60 seconds; the video needs a 100% profile. Uploads travel in 500 KB pieces (`UploadChunk`), so hosting proxies with small request limits cannot block them; pieces older than two hours are deleted automatically on the next upload.
+- Database size: a video is up to 8 MB per student who records one. Watch the database size and the `max_allowed_packet` setting (16 MB or more is needed; MariaDB's default is 16 MB, MySQL 8's is 64 MB).
+- No virus scanner is connected. Files are checked by content and anything with macros, scripts or embedded objects is refused, and downloads are served as attachments with `nosniff` and a sandbox policy. Add a scanner before opening uploads to non-student users.
+- Deleting an account deletes its files. Candidates can delete a resume or video at any time; it disappears from every application.
+
 ## Health and monitoring
 - `GET /api/health` returns `{"ok":true}`; on failure it returns a safe category (`unreachable`, `auth_failed`, `unknown_database`, `bad_database_url`, `prisma_engine`, `too_many_connections`). Point an uptime monitor at it (UptimeRobot/BetterStack, 1-minute check, alert by email/SMS).
 - Startup writes `[startup]` lines to the runtime log with the database host, user and password length (never the password) and the site URL.
