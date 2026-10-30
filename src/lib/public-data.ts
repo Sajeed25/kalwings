@@ -75,3 +75,8 @@ export async function searchOpportunities(p: OppQuery) {
   const cur = Math.min(page, pages);
   return { total: filtered.length, page: cur, pages, items: filtered.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE).map(toCardOpp) };
 }
+
+/** How many listings the public can see right now with no filters. Used to tell "nothing matches your filters" apart from "nothing is published yet". */
+export function openListingCount() {
+  return db.opportunity.count({ where: { moderated: "VERIFIED", closedAt: null, deadline: { gt: new Date() }, company: { status: "VERIFIED", members: { none: { user: { suspendedAt: { not: null } } } } } } });
+}

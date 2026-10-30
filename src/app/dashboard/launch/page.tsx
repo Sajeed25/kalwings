@@ -11,7 +11,7 @@ type Check = { label: string; done: boolean; detail: string; href?: string; fix?
 export default async function Page() {
   await requirePageRole("PLATFORM_ADMIN");
   const now = new Date();
-  const [admins, companies, colleges, mentors, plans, live, pCompanies, pColleges, pMentors, pListings, samples, settings] = await Promise.all([
+  const [admins, companies, colleges, mentors, plans, live, pCompanies, pColleges, pMentors, pListings, samples, settings, totalListings, rejectedListings, unverifiedCo, expired, closed] = await Promise.all([
     db.user.count({ where: { role: "PLATFORM_ADMIN", suspendedAt: null, email: { not: { endsWith: "@sample.kalwings.test" } } } }),
     db.company.count({ where: { status: "VERIFIED", isSample: false } }),
     db.college.count({ where: { status: "VERIFIED", NOT: { name: { startsWith: "Sample " } } } }),
@@ -24,6 +24,11 @@ export default async function Page() {
     db.opportunity.count({ where: { moderated: "PENDING" } }),
     db.company.count({ where: { isSample: true } }),
     getSettings(),
+    db.opportunity.count(),
+    db.opportunity.count({ where: { moderated: "REJECTED" } }),
+    db.opportunity.count({ where: { moderated: "VERIFIED", company: { status: { not: "VERIFIED" } } } }),
+    db.opportunity.count({ where: { moderated: "VERIFIED", closedAt: null, deadline: { lte: now }, company: { status: "VERIFIED" } } }),
+    db.opportunity.count({ where: { moderated: "VERIFIED", closedAt: { not: null }, company: { status: "VERIFIED" } } }),
   ]);
   const checks: Check[] = [
     { label: "A real platform admin exists", done: admins > 0, detail: admins ? `${admins} admin${admins === 1 ? "" : "s"}.` : "Set ADMIN_EMAILS on the server and sign in with that email.", href: "/dashboard/users", fix: "Users" },
@@ -48,6 +53,22 @@ export default async function Page() {
             <div><p className="font-semibold"><span aria-hidden>{c.done ? "✓ " : "○ "}</span>{c.label}<span className="sr-only">{c.done ? " (done)" : " (to do)"}</span></p><p className="text-sm text-ink-soft">{c.detail}</p></div>
             {c.href && !c.done && <Link href={c.href} className="text-sm font-semibold text-accent underline-offset-2 hover:underline">{c.fix} →</Link>}
           </li>))}</ul>
+      </Panel>
+      <Panel title="Why students may see no opportunities" className="mt-6">
+        <p className="mb-3 text-sm text-ink-soft">The public list shows a listing only when it is approved, its company is verified, it is not closed and its deadline has not passed. Here is where every listing is right now:</p>
+        <ul className="divide-y divide-line text-sm">
+          {([
+            ["Visible to the public now", live, "/opportunities", "View the public page"],
+            ["Waiting for your approval", pListings, "/dashboard/moderation", "Review listings"],
+            ["Approved, but the company is not verified", unverifiedCo, "/dashboard/companies?status=PENDING", "Verify companies"],
+            ["Approved, but the deadline has passed", expired, "/dashboard/companies", "Open a company to reopen or repost"],
+            ["Closed by the employer or an admin", closed, "/dashboard/companies", "Open a company"],
+            ["Rejected", rejectedListings, "/dashboard/moderation", "Review"],
+          ] as [string, number, string, string][]).map(([label, n, href, cta]) => (
+            <li key={label} className="flex flex-wrap items-center justify-between gap-3 py-2.5"><span><b>{n}</b> {label}</span>{n > 0 && <Link href={href} className="font-semibold text-accent underline-offset-2 hover:underline">{cta} →</Link>}</li>
+          ))}
+        </ul>
+        {totalListings === 0 && <p className="mt-3 rounded-xl border border-dashed border-line p-3 text-sm">There are no listings at all yet. Add the first one: <Link href="/dashboard/companies" className="font-semibold text-accent underline">Companies</Link> → open a verified company → “Post a listing for this company” (it goes live at once), or ask an employer to post and approve it in Listing moderation.</p>}
       </Panel>
     </>
   );

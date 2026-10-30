@@ -466,7 +466,7 @@ await pwu.goto(`${B}/dashboard/account`);
 const trySet = async (page, f) => { for (const [k, v] of Object.entries(f)) await page.fill(`input[name=${k}]`, v); await page.click('button:has-text("Turn on password login"), button:has-text("Change password")'); };
 await pwu.evaluate(() => document.querySelectorAll('input[name=password]').forEach((i) => i.removeAttribute('minlength')));
 await trySet(pwu, { password: 'short1', confirmPassword: 'short1' }); await pwu.waitForSelector('p[role=alert]'); ok((await pwu.locator('p[role=alert]').first().innerText()).includes('at least 10'), 'short password refused by the server');
-await trySet(pwu, { password: 'password123', confirmPassword: 'password123' }); await pwu.waitForTimeout(1500); ok((await pwu.locator('p[role=alert]').first().innerText()).includes('too easy'), 'common password refused');
+await trySet(pwu, { password: 'password123', confirmPassword: 'password123' }); await pwu.waitForSelector('p[role=alert]:has-text("too easy")', { timeout: 10000 }).catch(() => {}); ok((await pwu.locator('p[role=alert]').first().innerText()).includes('too easy'), 'common password refused');
 await trySet(pwu, { password: PW1, confirmPassword: 'different phrase here' }); await pwu.waitForTimeout(1500); ok((await pwu.locator('p[role=alert]').first().innerText()).includes("don't match"), 'mismatched confirmation refused');
 await trySet(pwu, { password: PW1, confirmPassword: PW1 }); await pwu.waitForSelector('text=Password login is on');
 const openPasswordForm = async (page) => { for (let i = 0; i < 8; i++) { if (await page.locator('input[name=password]').count()) return; await page.click('button:has-text("Use my password instead")').catch(() => {}); await page.waitForTimeout(700); } await page.waitForSelector('input[name=password]'); };
@@ -906,6 +906,12 @@ await anon.goto(`${B}/opportunities`); ok(await anon.locator('nav[aria-label="Br
 await anon.goto(`${B}/jobs-in`); await anon.click('a:has-text("Hyderabad")'); await anon.waitForURL(/\/jobs-in\/hyderabad/); ok(await anon.locator(`text=Embedded Intern ${tag}`).count() > 0 && await anon.locator('text=Share Hyderabad opportunities').count() === 1, 'a city page lists open roles and can be shared');
 ok((await anon.goto(`${B}/jobs-in/no-such-city-zz`)).status() === 404, 'an unknown city is a 404');
 await friendCtx.close();
+
+// --- why are listings hidden: the admin breakdown and the public empty state
+await admin.goto(`${B}/dashboard/launch`, { waitUntil: 'networkidle' }); const why = await admin.locator('section:has(h2:has-text("Why students may see no opportunities"))').innerText();
+ok(/Visible to the public now/.test(why) && /Waiting for your approval/.test(why) && /company is not verified/.test(why) && /deadline has passed/.test(why), 'launch readiness explains where every listing is, and why it may be hidden');
+await anon.goto(`${B}/opportunities?q=zz-nothing-${tag}`); ok(await anon.locator('[data-testid=nothing-open]').count() === 0 && await anon.locator('text=Nothing matches').count() > 0, 'a search with no match says so, and does not claim nothing is open');
+await anon.goto(B + oppHref); ok(await anon.locator('a:has-text("Log in to apply")').count() === 1 && (await anon.locator('a:has-text("Log in to apply")').getAttribute('href')).includes('next='), 'a visitor can read a listing, and applying asks them to log in, then returns to it');
 
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
