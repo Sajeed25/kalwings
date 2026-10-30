@@ -16,7 +16,7 @@ function href(p: OppQuery, page: number) {
 }
 
 /** Server-rendered, URL-driven filters: shareable, works without JavaScript, and paginates in the database layer. */
-export function OpportunityBrowser({ items, total, page, pages, query }: { items: Opportunity[]; total: number; page: number; pages: number; query: OppQuery }) {
+export function OpportunityBrowser({ items, total, page, pages, query, nothingOpen = false, isAdmin = false }: { items: Opportunity[]; total: number; page: number; pages: number; query: OppQuery; nothingOpen?: boolean; isAdmin?: boolean }) {
   return (
     <div className="grid gap-8 lg:grid-cols-[290px_1fr]">
       <form method="get" action="/opportunities" role="search" aria-label="Filter opportunities" className="card h-fit space-y-4 p-5 lg:sticky lg:top-24">
@@ -52,6 +52,17 @@ export function OpportunityBrowser({ items, total, page, pages, query }: { items
         <h2 className="sr-only">Results</h2>
         <p className="mb-4 text-sm text-ink-soft" aria-live="polite">{total} {total === 1 ? "opportunity" : "opportunities"}{pages > 1 && ` · page ${page} of ${pages}`}</p>
         {items.length ? <ul className="grid gap-6 sm:grid-cols-2">{items.map((o) => <li key={o.id}><OpportunityCard o={o} /></li>)}</ul>
+          : nothingOpen ? (
+            <div className="card p-10 text-center" data-testid="nothing-open">
+              <h3 className="text-xl font-bold">No opportunities are open right now</h3>
+              <p className="mx-auto mt-2 max-w-xl text-ink-soft">Roles appear here as soon as a verified employer publishes one. Nothing is hidden: there is simply nothing open at the moment.</p>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <Link href="/join?role=STUDENT" className="inline-flex h-11 items-center rounded-full bg-primary px-6 font-bold text-on-primary">Create my profile and be ready</Link>
+                <Link href="/join?role=EMPLOYER" className="inline-flex h-11 items-center rounded-full border border-line px-6 font-semibold">I am hiring: post a role</Link>
+              </div>
+              {isAdmin && <p className="mt-5 rounded-xl border border-dashed border-line p-3 text-sm text-ink-soft">Admin: open <Link href="/dashboard/launch" className="font-semibold text-accent underline">Launch readiness</Link> to see why nothing is visible, or <Link href="/dashboard/companies" className="font-semibold text-accent underline">Companies</Link> to post the first listing.</p>}
+            </div>
+          )
           : <p className="card p-10 text-center text-ink-soft">Nothing matches those filters yet. Try widening them or <Link href="/opportunities" className="text-accent underline">reset</Link>.</p>}
         {pages > 1 && (
           <nav aria-label="Pagination" className="mt-8 flex items-center justify-between">

@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseNaturalQuery } from "@/lib/nlsearch";
 import { PageHero, Block } from "@/components/pages/shell";
-import { searchOpportunities, SORTS, type OppQuery, type SortKey } from "@/lib/public-data";
+import { getUser } from "@/lib/session";
+import { openListingCount, searchOpportunities, SORTS, type OppQuery, type SortKey } from "@/lib/public-data";
 import Link from "next/link";
 import { liveCities } from "@/lib/cities";
 import { OpportunityBrowser } from "@/components/pages/opportunity-browser";
@@ -40,7 +41,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   let unavailable = false;
   let cityChips: Awaited<ReturnType<typeof liveCities>> = [];
   try { cityChips = (await liveCities()).slice(0, 8); } catch { /* chips are optional */ }
-  try { res = await searchOpportunities(query); } catch (e) { unavailable = true; console.error("[opportunities] load failed:", e instanceof Error ? e.message : e); }
+  let nothingOpen = false;
+  try { res = await searchOpportunities(query); if (res.total === 0) nothingOpen = (await openListingCount()) === 0; } catch (e) { unavailable = true; console.error("[opportunities] load failed:", e instanceof Error ? e.message : e); }
   return (
     <>
       <PageHero eyebrow="Opportunities" title={<>Roles that show you the <Serif>pay</Serif>.</>} lead="Every listing shows pay, work mode, location and eligibility. Unpaid roles are labelled clearly. Nothing here is a guaranteed job." />
@@ -51,7 +53,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
         {cityChips.length > 0 && <nav aria-label="Browse by city" className="mb-6 flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-ink-soft">Near you:</span>{cityChips.map((c) => <Link key={c.slug} href={`/jobs-in/${c.slug}`} className="rounded-full border border-line px-3 py-1.5 font-semibold hover:border-accent">{c.name} <span className="text-ink-soft">{c.count}</span></Link>)}<Link href="/jobs-in" className="font-semibold text-accent underline">All cities</Link></nav>}
         {interpreted && <p className="mb-4 text-sm text-ink-soft" role="status">We read that as: {interpreted}. Adjust the filters below if that is not what you meant.</p>}
         {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">Listings are temporarily unavailable. Please check back in a few minutes.</p>}
-        <OpportunityBrowser items={res.items} total={res.total} page={res.page} pages={res.pages} query={query} />
+        <OpportunityBrowser items={res.items} total={res.total} page={res.page} pages={res.pages} query={query} nothingOpen={nothingOpen && !unavailable} isAdmin={nothingOpen ? (await getUser())?.role === "PLATFORM_ADMIN" : false} />
       </Block>
     </>
   );
