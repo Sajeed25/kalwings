@@ -9,6 +9,8 @@ import { MIGRATIONS } from "../src/lib/migrations.generated";
 import { cdata, cleanSource, shareLinks, slugProblem, xmlEscape } from "../src/lib/distribution-utils";
 import { cleanTag } from "../src/lib/tags";
 import { normaliseIdentifier } from "../src/lib/identifier";
+import { sniffResume, sniffVideo, safeFileName, MAX_RESUME_BYTES } from "../src/lib/files";
+import { safeNext } from "../src/lib/next-path";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -101,5 +103,42 @@ t("sign-in is email only: mobile numbers are refused unless MOBILE_LOGIN is on",
   process.env.MOBILE_LOGIN = "true";
   assert.deepEqual(normaliseIdentifier("9876543210"), { kind: "phone", value: "+919876543210" });
   delete process.env.MOBILE_LOGIN;
+});
+
+// ---- resumes, intro videos and safe return links ----
+const pad = (head: Buffer, n = 200) => Buffer.concat([head, Buffer.alloc(n, 0x20)]);
+t("resumes: PDF, DOC, DOCX and RTF are recognised by content, whatever the file is called", () => {
+  assert.equal(sniffResume(pad(Buffer.from("%PDF-1.7\n")))?.ext, "pdf");
+  assert.equal(sniffResume(pad(Buffer.from("{\\rtf1\\ansi ")))?.ext, "rtf");
+  assert.equal(sniffResume(pad(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])))?.ext, "doc");
+  assert.equal(sniffResume(pad(Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from("word/document.xml")])))?.ext, "docx");
+});
+t("resumes: macros, embedded objects, scripts, other zips, images and tiny files are refused", () => {
+  assert.equal(sniffResume(pad(Buffer.from("%PDF-1.7 /JavaScript (app.alert(1))"))), null);
+  assert.equal(sniffResume(pad(Buffer.from("%PDF-1.7 /Launch"))), null);
+  assert.equal(sniffResume(pad(Buffer.from("{\\rtf1 \\objdata 0105"))), null);
+  assert.equal(sniffResume(pad(Buffer.concat([Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]), Buffer.from("VBA", "utf16le")]))), null);
+  assert.equal(sniffResume(pad(Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from("word/document.xml word/vbaProject.bin")]))), null);
+  assert.equal(sniffResume(pad(Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from("xl/workbook.xml")]))), null); // an Excel file
+  assert.equal(sniffResume(pad(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))), null);
+  assert.equal(sniffResume(Buffer.from("%PDF-")), null);
+  assert.equal(MAX_RESUME_BYTES, 2_000_000);
+});
+t("intro videos: WebM and MP4 recordings are recognised, other files are not", () => {
+  assert.equal(sniffVideo(pad(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), 2000)), "video/webm");
+  assert.equal(sniffVideo(pad(Buffer.from([0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70]), 2000)), "video/mp4");
+  assert.equal(sniffVideo(pad(Buffer.from("%PDF-1.7"), 2000)), null);
+  assert.equal(sniffVideo(Buffer.from([0x1a, 0x45, 0xdf, 0xa3])), null);
+});
+t("download names are safe and always end in the real extension", () => {
+  assert.equal(safeFileName("../../My Résumé (final).docx", "pdf"), "My Rsum (final).pdf");
+  assert.equal(safeFileName("", "pdf"), "resume.pdf");
+  assert.equal(safeFileName('a"b\r\nc.rtf', "rtf"), "abc.rtf");
+});
+t("return links: only same-site paths on the allow-list survive", () => {
+  assert.equal(safeNext("/opportunities/abc123?src=whatsapp&ref=x1"), "/opportunities/abc123?src=whatsapp&ref=x1");
+  for (const ok of ["/challenges/xyz", "/j/ab12cd34", "/jobs-in/hyderabad", "/dashboard/resume", "/dashboard"]) assert.equal(safeNext(ok), ok);
+  for (const bad of ["https://evil.example", "//evil.example", "/\\evil.example", "javascript:alert(1)", "/api/auth/google", "/login", "", "opportunities/x", "/opportunities/\nx", "/dashboardx".padEnd(400, "a")]) assert.equal(safeNext(bad), null, String(bad).slice(0, 30));
+  assert.equal(safeNext(undefined), null);
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

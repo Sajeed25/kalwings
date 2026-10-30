@@ -9,6 +9,7 @@ import { usernameSchema } from "@/lib/passport";
 import { WITHDRAWABLE } from "@/lib/stages";
 import { completeness } from "@/lib/completeness";
 import { notify } from "@/lib/audit";
+import { liveProfileScore } from "@/lib/profile-score";
 import { fail, obj, type Result } from "./_shared";
 
 async function me() {
@@ -77,7 +78,8 @@ export async function toggleContactVisible() {
   revalidatePath("/dashboard", "layout");
 }
 
-async function createApplication(opportunityId: string, srcIn: string | undefined, refIn: string | undefined, answers: Map<string, string>) {
+type Attach = { resume: boolean; intro: boolean };
+async function createApplication(opportunityId: string, srcIn: string | undefined, refIn: string | undefined, answers: Map<string, string>, attach: Attach) {
   const { u, p } = await me();
   const o = await db.opportunity.findUnique({ where: { id: opportunityId }, include: { questions: { orderBy: { position: "asc" } }, company: { include: { members: true } } } });
   if (!o || o.moderated !== "VERIFIED" || o.company.status !== "VERIFIED" || o.closedAt || o.deadline < new Date()) throw new Error("This opportunity isn't open for applications.");
@@ -86,28 +88,32 @@ async function createApplication(opportunityId: string, srcIn: string | undefine
   if (existing) return;
   const missing = o.questions.find((q) => !(answers.get(q.id) ?? "").trim());
   if (missing) throw new Error("Please answer every screening question.");
+  // The candidate chooses what this company receives: the resume on file, and (only at a 100% profile) the intro video
+  const resumeId = attach.resume ? p.resumeId ?? null : null;
+  let introVideoId: string | null = null;
+  if (attach.intro && p.introVideoId && (await liveProfileScore(p.id)).score >= 100) introVideoId = p.introVideoId;
   const src = cleanSource(srcIn);
   const ref = refIn && refIn !== p.id ? (await db.studentProfile.findUnique({ where: { id: refIn }, select: { id: true } }))?.id ?? null : null;
   await db.application.create({ data: {
-    opportunityId, studentId: p.id, source: ref ? "referral" : src, referrerId: ref,
+    opportunityId, studentId: p.id, source: ref ? "referral" : src, referrerId: ref, resumeId, introVideoId,
     events: { create: { toStage: "APPLIED", actorId: u.id } },
     answers: { create: o.questions.map((q) => ({ questionId: q.id, answer: (answers.get(q.id) ?? "").trim().slice(0, 1000) })) },
   } });
-  await Promise.all(o.company.members.map((m) => notify(m.userId, "New application", `${u.name} applied to ${o.title}`)));
+  await Promise.all(o.company.members.map((m) => notify(m.userId, "New application", `${u.name} applied to ${o.title}${resumeId ? " (resume attached)" : ""}${introVideoId ? " (intro video shared)" : ""}`)));
   revalidatePath("/dashboard", "layout");
   revalidatePath(`/opportunities/${opportunityId}`);
 }
 
 /** One-click apply for listings without screening questions. */
 export async function applyTo(opportunityId: string, srcIn?: string, refIn?: string) {
-  await createApplication(opportunityId, srcIn, refIn, new Map());
+  await createApplication(opportunityId, srcIn, refIn, new Map(), { resume: true, intro: false }); // one tap: sends the resume on file, never the video
 }
 
 /** Apply to a listing that has screening questions. Answers are for the hiring team to read; they never score or filter anyone. */
 export async function applyWithAnswers(opportunityId: string, srcIn: string | undefined, refIn: string | undefined, _: Result, fd: FormData): Promise<Result> {
   const answers = new Map<string, string>();
   for (const [k, v] of fd.entries()) if (k.startsWith("q_") && typeof v === "string") answers.set(k.slice(2), v);
-  try { await createApplication(opportunityId, srcIn, refIn, answers); } catch (e) { return { error: e instanceof Error ? e.message : "Could not apply." }; }
+  try { await createApplication(opportunityId, srcIn, refIn, answers, { resume: fd.get("attachResume") === "on", intro: fd.get("shareIntro") === "on" }); } catch (e) { return { error: e instanceof Error ? e.message : "Could not apply." }; }
   return { ok: true };
 }
 
@@ -260,5 +266,29 @@ export async function submitWork(_: Result, fd: FormData): Promise<Result> {
 export async function withdrawSubmission(id: string) {
   const { p } = await me();
   await db.submission.updateMany({ where: { id, studentId: p.id, status: "SUBMITTED" }, data: { status: "WITHDRAWN" } });
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Removes every resume this student ever uploaded, including from applications that carried it. */
+export async function deleteResume() {
+  const { u, p } = await me();
+  const ids = (await db.upload.findMany({ where: { ownerId: u.id, kind: "RESUME" }, select: { id: true } })).map((x) => x.id);
+  await db.$transaction([
+    db.application.updateMany({ where: { resumeId: { in: ids } }, data: { resumeId: null } }),
+    db.upload.deleteMany({ where: { id: { in: ids }, ownerId: u.id } }),
+    db.studentProfile.update({ where: { id: p.id }, data: { resumeId: null, resumeName: null } }),
+  ]);
+  revalidatePath("/dashboard", "layout");
+}
+
+/** Removes the intro video everywhere: from the profile and from every company it was shared with. */
+export async function deleteIntroVideo() {
+  const { u, p } = await me();
+  const ids = (await db.upload.findMany({ where: { ownerId: u.id, kind: "INTRO_VIDEO" }, select: { id: true } })).map((x) => x.id);
+  await db.$transaction([
+    db.application.updateMany({ where: { introVideoId: { in: ids } }, data: { introVideoId: null } }),
+    db.upload.deleteMany({ where: { id: { in: ids }, ownerId: u.id } }),
+    db.studentProfile.update({ where: { id: p.id }, data: { introVideoId: null, introVideoAt: null } }),
+  ]);
   revalidatePath("/dashboard", "layout");
 }

@@ -14,7 +14,7 @@ Freshers cannot show what they can do, and employers cannot see it. Everything b
 |---|---|---|
 | Student | Find work | Opportunities, challenges, campus drives, saved roles |
 | Student | Applications | Applications, interviews, challenge submissions, assessments (one tab bar) |
-| Student | Profile | Details, projects, public profile (one tab bar) |
+| Student | Profile | Details, projects, public profile, resume and selfie video (one tab bar) |
 | Student | Grow | Career copilot, mentor sessions, community |
 | Employer | Company | Verification, team, plan limits, career page and embed, message templates, stage names |
 | Employer | Hiring | Roles, challenges, assessments, description check (one tab bar) |
@@ -44,6 +44,15 @@ Any signed-in user can ask for a different role under Settings > Change my role.
 | Career copilot (student) and match notes in talent search (employer) | Same matching engine, shown to different people | One engine, two views; no duplicate logic |
 | Several public pages that described the product (for students, employers, colleges, about, press) | Marketing, which kalwings.com already does | Removed from the app. Old links forward to kalwings.com |
 | Light/dark toggle in the header | A setting, not navigation | Dark by default; the choice is in Settings > Appearance |
+
+## Hiring flow (resume, selfie video, sharing, local jobs)
+
+- **Resume:** PDF, DOC, DOCX or RTF up to 2 MB, checked by content (macros, scripts and embedded objects are refused), private, attached to an application by choice, deletable everywhere. The employer downloads it from the pipeline card.
+- **Selfie introduction:** up to 60 seconds recorded in the browser; only at a 100% profile score; shared per application by an un-ticked choice; the employer watches it on the pipeline card; deleting it removes it from every company.
+- **Sharing:** every listing and challenge has a short link (`/j/<code>`) and a share panel (WhatsApp, Telegram, LinkedIn, X, email, phone share sheet, copy) whose message carries pay, place, eligibility and deadline. Links are tagged by channel and carry a referral for signed-in students; employers see the source on each applicant and in analytics.
+- **Friend flow:** a shared link opens the listing without an account; "Log in to apply" and "Create a free account" return to the same listing after the email code (and after the 3-step profile for new students).
+- **Local jobs:** `/jobs-in` and `/jobs-in/<city>` list the cities with open roles right now; city chips on the opportunities page.
+- See `docs/JOURNEYS.md` for the full aspirant and employer journeys and how this compares with Apna, Job Hai and Naukri.
 
 No feature was removed because it overlapped; overlapping screens were merged into tabs so each job has one place.
 

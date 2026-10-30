@@ -6,7 +6,7 @@ import { addProject, saveProfile } from "@/app/actions/student";
 import { PageTitle, Panel } from "@/components/dash/ui";
 import type { Result } from "@/app/actions/_shared";
 
-export function Wizard({ name, hasProfile }: { name: string; hasProfile: boolean }) {
+export function Wizard({ name, hasProfile, next }: { name: string; hasProfile: boolean; next?: string }) {
   const [step, setStep] = useState(hasProfile ? 3 : 1);
   const router = useRouter();
   const steps = ["About you", "Skills", "First project"];
@@ -23,7 +23,7 @@ export function Wizard({ name, hasProfile }: { name: string; hasProfile: boolean
   };
   const project = async (p: Result, fd: FormData): Promise<Result> => {
     const r = await addProject(p, fd);
-    if (r.ok) router.push("/dashboard");
+    if (r.ok) router.push(next ?? "/dashboard");
     return r;
   };
 
@@ -56,7 +56,7 @@ export function Wizard({ name, hasProfile }: { name: string; hasProfile: boolean
               <Area label="What did you build, and what was your part?" name="summary" required minLength={10} />
               <div className="grid gap-4 sm:grid-cols-2"><Field label="Code link" name="githubUrl" type="url" /><Field label="Demo link" name="demoUrl" type="url" /></div>
             </ActionForm>
-            <button onClick={() => router.push("/dashboard")} className="mt-4 text-sm font-semibold underline">Skip for now</button>
+            <button onClick={() => router.push(next ?? "/dashboard")} className="mt-4 text-sm font-semibold underline">Skip for now</button>
           </>
         )}
       </Panel>

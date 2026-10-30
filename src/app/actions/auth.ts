@@ -9,6 +9,7 @@ import { clientIp } from "@/lib/request";
 import { uniqueSlug } from "@/lib/slug";
 import { rateLimit } from "@/lib/rate-limit";
 import { maybePromoteAdmin } from "@/lib/admin-bootstrap";
+import { safeNext } from "@/lib/next-path";
 import { signupClosedMessage } from "@/lib/settings";
 import { PASSWORD_MAX, fakeVerify, verifyPassword } from "@/lib/password";
 
@@ -64,7 +65,8 @@ export async function submitOtp(prev: AuthState, fd: FormData): Promise<AuthStat
     if (user.suspendedAt) return { ...prev, step: "identify", error: "This account has been suspended. Please contact support." };
     user = await maybePromoteAdmin(user);
     await createSession(user.id);
-    dest = user.role === "STUDENT" && prev.mode === "join" ? "/dashboard/onboarding" : "/dashboard";
+    const next = safeNext(fd.get("next"));
+    dest = user.role === "STUDENT" && prev.mode === "join" ? `/dashboard/onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}` : next ?? "/dashboard";
   } catch (e) {
     console.error("[auth] submitOtp failed:", e instanceof Error ? e.message : e);
     return { ...prev, name: typedName, error: DOWN };
@@ -78,7 +80,7 @@ export async function loginWithPassword(prev: AuthState, fd: FormData): Promise<
   const pw = String(fd.get("password") ?? "");
   const wrong: AuthState = { ...prev, step: "identify", error: "Incorrect email or password." };
   if (!id || !pw || pw.length > PASSWORD_MAX) return wrong;
-  const dest = "/dashboard";
+  const dest = safeNext(fd.get("next")) ?? "/dashboard";
   try {
     if (!(await rateLimit(`pw-ip:${await clientIp()}`, 30, 60 * 60 * 1000))) return { ...prev, step: "identify", error: "Too many attempts. Try again later, or use an email code." };
     if (!(await rateLimit(`pw:${id.value}`, 8, 15 * 60 * 1000))) return { ...prev, step: "identify", error: "Too many attempts for this account. Wait 15 minutes, or log in with an email code." };

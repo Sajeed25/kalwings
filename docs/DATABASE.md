@@ -4,7 +4,7 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (50)
+## Models (51)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
@@ -58,6 +58,7 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [PlanConfig](#planconfig) | Employer plans, editable by a platform admin (names, prices, limits, features). Company.plan holds a key. |  |
 | [SiteSetting](#sitesetting) | Platform-wide settings an admin can change (announcement banner, contact email, which roles can sign up). |  |
 | [RoleChangeRequest](#rolechangerequest) | / A signed-in user asking a platform admin to change their role. An admin approves or declines; nothing changes until approved. | user |
+| [UploadChunk](#uploadchunk) | / Pieces of a file being uploaded (resume or intro video), sent in small requests so hosting proxies with small body limits cannot block it. |  |
 
 ### User
 
@@ -109,6 +110,10 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
 | slug | String | @unique | public Talent Card URL |
 | headline | String? |  |  |
+| resumeId | String? |  | Upload.id of the candidate's current resume (private) |
+| resumeName | String? | @db.VarChar(160) |  |
+| introVideoId | String? |  | Upload.id of the intro video (private; only shared per application, only at a 100% profile) |
+| introVideoAt | DateTime? |  |  |
 | bio | String? | @db.Text |  |
 | city | String? |  |  |
 | githubUrl | String? | @db.VarChar(400) |  |
@@ -304,6 +309,7 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | deadline | DateTime |  |  |
 | sponsored | Boolean | @default(false) | must be labelled "Sponsored"; never implies verification |
 | moderated | VerificationStatus | @default(PENDING) |  |
+| shortCode | String? | @unique @db.VarChar(12) | short share link: /j/<shortCode> |
 | challenge | Challenge? |  |  |
 | applications | Application[] |  |  |
 | saved | SavedOpportunity[] |  |  |
@@ -323,6 +329,8 @@ A badge/skill is only displayable when backed by evidence or a defined assessmen
 | referrerId | String? |  |  |
 | referrer | StudentProfile? | @relation("Referrals", fields: [referrerId], references: [id], onDelete: SetNull) |  |
 | employerNotes | String? | @db.Text |  |
+| resumeId | String? |  | Upload.id of the resume the candidate chose to attach to this application |
+| introVideoId | String? |  | Upload.id of the intro video the candidate chose to share with this company |
 | messages | Message[] |  |  |
 | interviews | Interview[] |  |  |
 | events | ApplicationEvent[] |  |  |
@@ -847,8 +855,9 @@ Only validated PNG/JPEG/WebP, max 1 MB (the browser downscales before upload).
 | --- | --- | --- | --- |
 | id | String | @id @default(cuid()) |  |
 | ownerId | String |  | User.id of the uploader |
-| kind | String | @db.VarChar(20) | AVATAR | PROJECT |
-| mime | String | @db.VarChar(40) |  |
+| kind | String | @db.VarChar(20) | AVATAR | PROJECT | COMPANY_LOGO (public images) | RESUME | INTRO_VIDEO (private) |
+| name | String? | @db.VarChar(160) | original file name for downloads |
+| mime | String | @db.VarChar(100) |  |
 | size | Int |  |  |
 | data | Bytes | @db.LongBlob |  |
 | createdAt | DateTime | @default(now()) |  |
@@ -904,6 +913,22 @@ Platform-wide settings an admin can change (announcement banner, contact email, 
 | createdAt | DateTime | @default(now()) |  |
 
 Indexes and constraints: `@@index([status, createdAt])`, `@@index([userId])`
+
+### UploadChunk
+
+/ Pieces of a file being uploaded (resume or intro video), sent in small requests so hosting proxies with small body limits cannot block it.
+/ Assembled into an Upload when the browser says it is finished; leftovers older than two hours are deleted.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| token | String | @db.VarChar(40) |  |
+| userId | String |  |  |
+| idx | Int |  |  |
+| data | Bytes | @db.LongBlob |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@unique([token, idx])`, `@@index([createdAt])`, `@@index([userId])`
 
 ## Enums
 

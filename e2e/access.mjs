@@ -7,7 +7,7 @@ const ROLES = ['ANON', ...Object.keys(SAMPLE)];
 const ALL = ['STUDENT', 'EMPLOYER', 'PLATFORM_ADMIN', 'COLLEGE_ADMIN', 'MENTOR'];
 const PAGES = {
   '/dashboard': ALL, '/dashboard/notifications': ALL, '/dashboard/account': ALL,
-  '/dashboard/profile': ['STUDENT'], '/dashboard/portfolio': ['STUDENT'], '/dashboard/passport': ['STUDENT'], '/dashboard/copilot': ['STUDENT'], '/dashboard/applications': ['STUDENT'], '/dashboard/submissions': ['STUDENT'], '/dashboard/saved': ['STUDENT'], '/dashboard/mentoring': ['STUDENT', 'MENTOR'],
+  '/dashboard/profile': ['STUDENT'], '/dashboard/portfolio': ['STUDENT'], '/dashboard/resume': ['STUDENT'], '/dashboard/passport': ['STUDENT'], '/dashboard/copilot': ['STUDENT'], '/dashboard/applications': ['STUDENT'], '/dashboard/submissions': ['STUDENT'], '/dashboard/saved': ['STUDENT'], '/dashboard/mentoring': ['STUDENT', 'MENTOR'],
   '/dashboard/interviews': ['STUDENT', 'EMPLOYER'], '/dashboard/assessments': ['STUDENT', 'EMPLOYER'], '/dashboard/drives': ['STUDENT', 'EMPLOYER', 'COLLEGE_ADMIN'],
   '/dashboard/company': ['EMPLOYER'], '/dashboard/roles': ['EMPLOYER'], '/dashboard/challenges': ['EMPLOYER'], '/dashboard/talent': ['EMPLOYER'], '/dashboard/pipeline': ['EMPLOYER'], '/dashboard/analytics': ['EMPLOYER'], '/dashboard/jd-check': ['EMPLOYER'],
   '/dashboard/college': ['COLLEGE_ADMIN'],
@@ -33,7 +33,7 @@ for (const role of ROLES) {
     if (ok !== want) { bad++; console.log(`FAIL ${role} ${path}: expected ${want ? 'allowed' : 'blocked'}, got HTTP ${r.status()}`); }
   }
   // state-changing API must refuse anonymous callers
-  if (role === 'ANON') for (const [m, path] of [['POST', '/api/upload'], ['GET', '/api/account/export']]) { const r = await ctx.request.fetch(B + path, { method: m }); n++; if (![401, 403, 405].includes(r.status())) { bad++; console.log(`FAIL ANON ${m} ${path}: HTTP ${r.status()}`); } }
+  if (role === 'ANON') for (const [m, path] of [['POST', '/api/upload'], ['POST', '/api/upload/chunk?token=aaaaaaaaaaaaaaaaaaaa&i=0'], ['POST', '/api/resume'], ['POST', '/api/intro-video'], ['GET', '/api/docs/nonexistent'], ['GET', '/api/account/export']]) { const r = await ctx.request.fetch(B + path, { method: m }); n++; if (![401, 403, 405].includes(r.status())) { bad++; console.log(`FAIL ANON ${m} ${path}: HTTP ${r.status()}`); } }
   await ctx.close();
 }
 console.log(bad ? `\n${bad} of ${n} access checks FAILED` : `\nALL ${n} ACCESS CHECKS PASSED (${ROLES.length} roles x pages and APIs)`); await b.close(); process.exit(bad ? 1 : 0);

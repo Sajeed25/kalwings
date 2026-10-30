@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
+import { SharePanel } from "@/components/share-panel";
+import { shortUrl } from "@/lib/distribution";
 import { Block } from "@/components/pages/shell";
 import { Badge, SampleTag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +58,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <p className="mt-4 text-sm text-ink-soft">Taking part doesn&apos;t guarantee an interview or offer.</p>
         <div className="mt-8">
           {closed ? <Badge>Submissions closed</Badge>
-            : !user ? <Button asChild size="lg"><Link href="/login">Log in to take part</Link></Button>
+            : !user ? <><Button asChild size="lg"><Link href={`/login?next=${encodeURIComponent(`/challenges/${o.id}`)}`}>Log in to take part</Link></Button><Button asChild size="lg" variant="secondary"><Link href={`/join?role=STUDENT&next=${encodeURIComponent(`/challenges/${o.id}`)}`}>New here? Create a free account</Link></Button></>
             : user.role !== "STUDENT" ? <Badge>Only students can submit</Badge>
             : mine && mine.status !== "SUBMITTED" && mine.status !== "WITHDRAWN" ? <Badge tone="accent">Your submission was reviewed. See Submissions in your dashboard.</Badge>
             : (
@@ -70,6 +72,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </ActionForm></section>)}
         </div>
       </div>
+        {!closed && <SharePanel title={o.title} company={o.company.name} details={`Challenge · ${o.location} · ${o.payText}${o.unpaid ? " (Unpaid)" : ""} · Eligibility: ${o.eligibility}`} link={shortUrl(o)} heading="Share this challenge with friends" />}
     </Block>
   );
 }

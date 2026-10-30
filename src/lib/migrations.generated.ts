@@ -104,5 +104,15 @@ export const MIGRATIONS: { name: string; checksum: string; sql: string }[] = [
     "name": "20261020100000_role_change_requests",
     "checksum": "2ec70d9d8601d5e987dd823ed5f136611dbbc77925ceb421321e0385e4c1be41",
     "sql": "-- CreateTable\nCREATE TABLE `RoleChangeRequest` (\n    `id` VARCHAR(191) NOT NULL,\n    `userId` VARCHAR(191) NOT NULL,\n    `fromRole` ENUM('STUDENT', 'MENTOR', 'EMPLOYER', 'COLLEGE_ADMIN', 'PLATFORM_ADMIN') NOT NULL,\n    `requestedRole` ENUM('STUDENT', 'MENTOR', 'EMPLOYER', 'COLLEGE_ADMIN', 'PLATFORM_ADMIN') NOT NULL,\n    `reason` VARCHAR(500) NOT NULL,\n    `status` VARCHAR(12) NOT NULL DEFAULT 'PENDING',\n    `decidedById` VARCHAR(191) NULL,\n    `decisionNote` VARCHAR(300) NULL,\n    `decidedAt` DATETIME(3) NULL,\n    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n\n    INDEX `RoleChangeRequest_status_createdAt_idx`(`status`, `createdAt`),\n    INDEX `RoleChangeRequest_userId_idx`(`userId`),\n    PRIMARY KEY (`id`)\n) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n\n-- AddForeignKey\nALTER TABLE `RoleChangeRequest` ADD CONSTRAINT `RoleChangeRequest_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;\n\n"
+  },
+  {
+    "name": "20261101100000_resume_video_shortlinks",
+    "checksum": "552c76eaaa7ccf3d19c2c4030a837510205ac516c2bfbef85b36543cc2aa2964",
+    "sql": "-- Resume and intro video files (private uploads), per-application attachments, and short share codes for listings.\nALTER TABLE `Upload` MODIFY `mime` VARCHAR(100) NOT NULL, ADD COLUMN `name` VARCHAR(160) NULL;\n\nALTER TABLE `Opportunity` ADD COLUMN `shortCode` VARCHAR(12) NULL;\nUPDATE `Opportunity` SET `shortCode` = LOWER(SUBSTRING(MD5(CONCAT(`id`, 'kw')), 1, 10)) WHERE `shortCode` IS NULL;\nCREATE UNIQUE INDEX `Opportunity_shortCode_key` ON `Opportunity`(`shortCode`);\n\nALTER TABLE `StudentProfile` ADD COLUMN `resumeId` VARCHAR(191) NULL, ADD COLUMN `resumeName` VARCHAR(160) NULL, ADD COLUMN `introVideoId` VARCHAR(191) NULL, ADD COLUMN `introVideoAt` DATETIME(3) NULL;\n\nALTER TABLE `Application` ADD COLUMN `resumeId` VARCHAR(191) NULL, ADD COLUMN `introVideoId` VARCHAR(191) NULL;\n"
+  },
+  {
+    "name": "20261101110000_upload_chunks",
+    "checksum": "1068a27f68fa4656b6dcb005b9352e99753533f218361fddb5eda4775342c1d4",
+    "sql": "-- CreateTable\nCREATE TABLE `UploadChunk` (\n    `id` VARCHAR(191) NOT NULL,\n    `token` VARCHAR(40) NOT NULL,\n    `userId` VARCHAR(191) NOT NULL,\n    `idx` INTEGER NOT NULL,\n    `data` LONGBLOB NOT NULL,\n    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),\n\n    INDEX `UploadChunk_createdAt_idx`(`createdAt`),\n    INDEX `UploadChunk_userId_idx`(`userId`),\n    UNIQUE INDEX `UploadChunk_token_idx_key`(`token`, `idx`),\n    PRIMARY KEY (`id`)\n) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n\n"
   }
 ];
