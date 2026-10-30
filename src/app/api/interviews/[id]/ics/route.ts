@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/session";
+import { icsEscape as esc, icsStamp as stamp } from "@/lib/calendar";
 
-const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 
 /** Calendar file for an interview. Only the candidate or a recruiter at the hiring company can download it. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {

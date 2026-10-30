@@ -1,4 +1,5 @@
 import { sourceLabel } from "@/lib/distribution";
+import { JitsiButton } from "@/components/dash/jitsi-button";
 import { db } from "@/lib/db";
 import { requirePageRole } from "@/lib/session";
 import { ActionButton, ActionForm, Area, Field } from "@/components/dash/action-form";
@@ -95,6 +96,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
                             <Field label="Minutes" name="minutes" type="number" defaultValue={30} min={15} max={240} required />
                             <label className="block text-sm font-semibold">Mode<select name="mode" className={sel}><option value="VIDEO">Video</option><option value="PHONE">Phone</option><option value="ONSITE">On-site</option></select></label>
                             <Field label="Link, phone or address" name="detail" required />
+                            <JitsiButton />
                             <Field label="Note to candidate" name="notes" maxLength={500} />
                           </ActionForm>
                         </details>)}

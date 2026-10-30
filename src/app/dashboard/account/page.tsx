@@ -7,6 +7,7 @@ import { ConsoleForm, lbl } from "@/components/dash/console-form";
 import { inputCls } from "@/components/dash/action-form";
 import { ActionButton } from "@/components/dash/action-form";
 import { cancelRoleRequest, requestRoleChange } from "@/app/actions/console";
+import { InstallApp } from "@/components/install-app";
 import { Appearance } from "@/components/dash/appearance";
 import { deleteMyAccount, removePassword, setPassword } from "@/app/actions/account";
 import { sessionAgeSeconds } from "@/lib/session";
@@ -24,6 +25,7 @@ export default async function Page() {
       <PageTitle title="Settings" sub="Appearance, sign-in, and your data: download it any time, or delete it." />
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Appearance"><Appearance /></Panel>
+        <Panel title="Install the app"><p className="mb-3 text-sm text-ink-soft">Put Kalwings on your home screen or desktop. It opens full screen like an app and keeps working for the pages you have open when your connection drops.</p><InstallApp /></Panel>
         <Panel title="Password login (optional)">
           <p className="text-sm text-ink-soft">{hasPw ? "Password login is on. You can still always log in with an email code." : "Email codes always work. Add a password if you'd like to log in with your email and password instead."}</p>
           <ActionForm action={setPassword} reset submit={hasPw ? "Change password" : "Turn on password login"} success={hasPw ? "Password changed" : "Password login is on"} className="mt-4 space-y-3">

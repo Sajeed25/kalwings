@@ -47,6 +47,12 @@ Status key: **Done** (implemented and covered by an automated test or inspection
 - **Done**: share and return links: `?next=` accepts only same-site paths on an allow-list, never full URLs.
 - **Not done**: antivirus scanning of uploads; the camera permission prompt is the browser's.
 
+## Events, alerts and outside links
+- **Done**: an event's joining link is returned only to people who RSVP, the organiser and admins (not in the page, the structured data or the calendar file); posting is limited to verified organisers; events can be reported, cancelled and hidden.
+- **Done**: outside services are reached by links the visitor opens (with `noopener noreferrer`) or by a server call with a 4 s timeout, a cache and no secrets (GitHub public API). The Content-Security-Policy still forbids browser calls to other origins.
+- **Done**: job alerts are opt-in, owned by the student (10 maximum), and use the existing notification path with unsubscribe and an hourly cap; no email address is exposed to anyone.
+- **Not done**: web push notifications (needs keys); spam scoring of events beyond reports and the daily post limit.
+
 ## Dependencies and supply chain
 - **Done**: lockfile committed, CI builds from it, Dependabot enabled. Run `npm audit` before launch and review results.
 

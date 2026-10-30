@@ -913,6 +913,59 @@ ok(/Visible to the public now/.test(why) && /Waiting for your approval/.test(why
 await anon.goto(`${B}/opportunities?q=zz-nothing-${tag}`); ok(await anon.locator('[data-testid=nothing-open]').count() === 0 && await anon.locator('text=Nothing matches').count() > 0, 'a search with no match says so, and does not claim nothing is open');
 await anon.goto(B + oppHref); ok(await anon.locator('a:has-text("Log in to apply")').count() === 1 && (await anon.locator('a:has-text("Log in to apply")').getAttribute('href')).includes('next='), 'a visitor can read a listing, and applying asks them to log in, then returns to it');
 
+// --- engage and install: events, RSVP, calendar, job alerts, sharing impact, free helpers, install as an app
+const evWhen = (days, hm = '17:00') => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10) + 'T' + hm;
+const evTitle = `Resume Clinic ${tag}`, JOIN = `https://meet.jit.si/kalwings-e2e-${tag}`;
+await admin.goto(`${B}/dashboard/events`, { waitUntil: 'networkidle' });
+const postEvent = async (o) => { for (const [k, v] of Object.entries(o)) { const el = admin.locator(`form [name=${k}]`); if ((await el.evaluate((n) => n.tagName)) === 'SELECT') await el.selectOption(v); else await el.fill(String(v)); } await admin.click('button:has-text("Post event")'); };
+await postEvent({ title: `Bad Past ${tag}`, kind: 'WEBINAR', description: 'A description that is long enough to pass the length check here.', startsAt: '2020-01-01T10:00', mode: 'ONSITE', location: 'Hyderabad', price: 'FREE' });
+await admin.waitForSelector('p[role=alert]'); ok((await admin.locator('p[role=alert]').first().innerText()).includes('future'), 'an event in the past is refused');
+await postEvent({ title: `Bad Paid ${tag}`, startsAt: evWhen(3), price: 'PAID', priceText: '' }); await admin.waitForFunction(() => /costs/.test(document.body.innerText)); ok(true, 'a paid event must say what it costs');
+await postEvent({ title: `Bad Online ${tag}`, startsAt: evWhen(3), price: 'FREE', mode: 'REMOTE', location: 'Online', joinUrl: '' }); await admin.waitForFunction(() => /joining link/.test(document.body.innerText)); ok(true, 'an online event needs a joining link');
+await postEvent({ title: evTitle, kind: 'WORKSHOP', description: 'Bring your resume. Two mentors will review it live and show what recruiters notice first.', startsAt: evWhen(4), endsAt: evWhen(4, '18:30'), mode: 'REMOTE', location: 'Online', joinUrl: JOIN, price: 'FREE', capacity: '1' });
+await admin.waitForSelector('text=Posted. It is live'); ok(true, 'a verified poster publishes an event that goes live at once');
+await anon.goto(`${B}/events`, { waitUntil: 'networkidle' }); ok(await anon.locator(`text=${evTitle}`).count() > 0 && await anon.locator('text=Free').count() > 0, 'the public events page lists it with its price');
+await anon.locator('li', { hasText: evTitle }).locator('a:has-text("View and RSVP")').click(); await anon.waitForURL(/\/events\/.+/); const evUrl = new URL(anon.url()).pathname;
+ok(await anon.locator('a:has-text("Log in to RSVP")').count() === 1 && !(await anon.content()).includes(JOIN), 'a visitor sees the event and a login prompt, never the joining link');
+ok((await anon.locator('a:has-text("Add to Google Calendar")').getAttribute('href')).includes('calendar.google.com') && await anon.locator('script[type="application/ld+json"]').allInnerTexts().then((ts) => ts.some((t) => t.includes('"@type":"Event"') && !t.includes(JOIN))), 'the event has calendar links and structured data without the joining link');
+const evId = evUrl.split('/').pop(); const evIcs = await anon.request.get(`${B}/api/events/${evId}/ics`); const evIcsTxt = await evIcs.text();
+ok(evIcs.status() === 200 && evIcsTxt.includes(`SUMMARY:${evTitle}`) && evIcsTxt.includes('BEGIN:VEVENT') && !evIcsTxt.includes(JOIN), 'the calendar file has the event and not the joining link');
+const evShort = (await anon.locator('section[aria-label="Share this opportunity"] p.break-all').innerText()).match(/\/e\/([a-z0-9]+)/)?.[1]; await anon.goto(`${B}/e/${evShort}?src=whatsapp`); ok(anon.url().endsWith(`${evUrl}?src=whatsapp`), 'an event has a short share link too');
+// RSVP: the joining link appears only after RSVP; capacity is enforced
+await student.goto(B + evUrl); await student.click("button:has-text(\"RSVP: I'm going\")"); await student.waitForSelector("text=You're going"); ok(await student.locator(`a[href="${JOIN}"]`).count() === 1, 'after RSVP the student sees the joining link');
+await rec3.goto(B + evUrl); ok(await rec3.locator('text=This event is full').count() === 1, 'a full event closes RSVPs');
+await student.click('button:has-text("Cancel my RSVP")'); await student.waitForSelector("button:has-text(\"RSVP: I'm going\")"); ok(await student.locator(`a[href="${JOIN}"]`).count() === 0, 'cancelling an RSVP hides the joining link again');
+// reports and admin control
+await student.click('summary:has-text("Report this event")'); await student.fill('textarea[name=reason]', 'This looks like spam to me, please check it.'); await student.click('button:has-text("Send report")'); await student.waitForSelector('text=Thanks');
+await admin.goto(`${B}/dashboard/reports`); ok(await admin.locator('li', { hasText: 'event ·' }).locator('button:has-text("Hide event")').count() > 0, 'an admin can hide a reported event');
+await admin.goto(B + evUrl); await admin.click('button:has-text("Hide from the public")'); await admin.waitForSelector('text=Hidden by an admin'); ok((await anon.goto(B + evUrl)).status() === 404, 'a hidden event is gone for the public');
+await admin.click('button:has-text("Show again")'); await admin.waitForTimeout(1000);
+// calendar
+await anon.goto(`${B}/calendar`, { waitUntil: 'networkidle' }); ok(await anon.locator(`text=${evTitle}`).count() > 0 && await anon.locator('text=Apply by:').count() > 0 && await anon.locator('text=Deadline').count() > 0 && await anon.locator('text=Event').count() > 0, 'the calendar shows events and listing deadlines together');
+await anon.goto(B + oppHref); ok((await anon.locator('a:has-text("add the deadline to Google Calendar")').getAttribute('href')).includes('calendar.google.com'), 'a listing offers a deadline reminder'); await anon.goto(`${B}/opportunities?q=${encodeURIComponent('Junior Java')}`); await anon.locator('article', { hasText: 'Junior Java' }).first().locator('a:has-text("View details")').click(); await anon.waitForURL(/\/opportunities\/.+/); ok(await anon.locator('a:has-text("on map")').count() === 1, 'an on-site or hybrid listing offers a map link'); await anon.goto(B + oppHref);
+const oppIdForIcs = oppHref.split('/').pop().split('?')[0]; const dlIcs = await (await anon.request.get(`${B}/api/opportunities/${oppIdForIcs}/ics`)).text(); ok(dlIcs.includes('DTSTART;VALUE=DATE:') && dlIcs.includes('Apply by today'), 'the deadline reminder file is an all-day entry');
+ok(await anon.locator('section[aria-label="Prepare for this role"] a[href^="https://"]').count() > 0, 'a listing links free learning resources for its skills');
+// job alerts
+const alertKw = `Welder${tag}`; await student.goto(`${B}/opportunities?q=${alertKw}`); await student.click('button:has-text("Alert me about new matches")'); await student.waitForSelector('text=Saved'); await student.goto(`${B}/dashboard/alerts`);
+ok(await student.locator(`text=${alertKw}`).count() > 0, 'a student saves the search they are looking at as an alert');
+await anon.goto(`${B}/opportunities?q=${alertKw}`); ok((await anon.locator('a:has-text("Log in to get alerts")').getAttribute('href')).includes('next='), 'a visitor is asked to log in to get alerts, and returns to the same search');
+await employer.goto(`${B}/dashboard/roles`); await employer.fill('input[name=title]', `${alertKw} Apprentice`); await employer.fill('textarea[name=description]', 'Learn arc welding on the shop floor with a senior welder, safety kit provided.'); await employer.fill('input[name=payText]', '₹14,000 / month'); await employer.fill('input[name=monthlyINR]', '14000'); await employer.fill('input[name=location]', 'Hyderabad'); await employer.fill('input[name=deadline]', '2027-03-01'); await employer.fill('input[name=eligibility]', 'Any graduate'); await employer.fill('input[name=gradYears]', '2026'); await employer.fill('input[name=skills]', 'Welding'); await employer.click('button:has-text("Submit for review")'); await employer.waitForSelector('text=Submitted for review');
+await student.goto(`${B}/dashboard/notifications`); ok(await student.locator(`text=New match: ${alertKw} Apprentice`).count() === 0, 'a listing that is not approved yet triggers no alert');
+await admin.goto(`${B}/dashboard/moderation`); await admin.locator('li', { hasText: `${alertKw} Apprentice` }).locator('button:has-text("Approve")').click(); await admin.waitForTimeout(1500);
+await student.goto(`${B}/dashboard/notifications`); ok(await student.locator(`text=New match: ${alertKw} Apprentice`).count() > 0, 'approving a matching listing sends the student an alert');
+await student.goto(`${B}/dashboard/alerts`); student.once('dialog', (d) => d.accept()); await student.locator('li', { hasText: alertKw }).locator('button:has-text("Delete")').click(); await student.waitForTimeout(1000); await student.reload(); ok(await student.locator(`li:has-text("${alertKw}")`).count() === 0, 'an alert can be deleted');
+// sharing impact
+await student.goto(`${B}/dashboard/referrals`); ok(/Friends who applied/.test(await student.locator('main, body').first().innerText()) && await student.locator('text=Referred Friend').count() === 0, 'sharing impact shows counts without naming friends');
+// interviews: free video room
+await employer.goto(`${B}/dashboard/pipeline`); const ivSummary = employer.locator('summary:text-is("Interview")').first(); await ivSummary.click(); await employer.locator('button:has-text("Create a free video room")').first().click();
+ok((await employer.locator('input[name=detail]').first().inputValue()).startsWith('https://meet.jit.si/kalwings-'), 'a recruiter can create a free video room for an interview');
+// verified skills on LinkedIn, GitHub signal, install as an app
+await student.goto(`${B}/dashboard/passport`); ok(await student.locator('a:has-text("Add to LinkedIn")').count() > 0 && (await student.locator('a:has-text("Add to LinkedIn")').first().getAttribute('href')).startsWith('https://www.linkedin.com/profile/add?'), 'a verified skill can be added to LinkedIn');
+const tKey = await student.locator('a[href^="/talent/"]').first().getAttribute('href'); const tCard = await anon.goto(B + tKey); ok(tCard.status() === 200, 'the Talent Card still renders with the GitHub line present or absent');
+const manifest = await (await anon.request.get(`${B}/manifest.webmanifest`)).json(); ok(manifest.id === '/' && manifest.display === 'standalone' && manifest.shortcuts.length >= 3 && manifest.icons.some((i) => i.purpose === 'maskable'), 'the app manifest has an id, shortcuts and a maskable icon');
+await student.goto(`${B}/dashboard/account`); ok(await student.locator('text=Install the app').count() > 0, 'Settings offers to install the app');
+await anon.goto(`${B}/events`); ok(await anon.locator('nav a:has-text("Events")').count() > 0, 'Events is in the main menu');
+
 // --- admin audit
 await admin.goto(`${B}/dashboard/audit`); ok(await admin.locator('text=company.verified').count() > 0, 'audit log records admin decisions');
 

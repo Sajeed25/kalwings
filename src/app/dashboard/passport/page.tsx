@@ -6,6 +6,7 @@ import { Empty, PageTitle, Panel } from "@/components/dash/ui";
 import { addEntry, deleteEntry, requestEntryVerification, savePrivacy, saveUsername } from "@/app/actions/student";
 import { EntryLabel } from "@/components/passport/evidence";
 import { KIND_LABEL, canonicalKey } from "@/lib/passport";
+import { linkedinAddUrl } from "@/lib/linkedin";
 
 const sel = "mt-1.5 h-11 w-full rounded-lg border border-line bg-surface px-3 text-[15px]";
 const VIS = [["PUBLIC", "Anyone with the link"], ["RECRUITERS", "Verified recruiters only"], ["PRIVATE", "Only me"]] as const;
@@ -18,11 +19,17 @@ export default async function Page() {
   const u = await requirePageRole("STUDENT");
   const p = await db.studentProfile.findUniqueOrThrow({ where: { userId: u.id }, include: { entries: { orderBy: { createdAt: "desc" } } } });
   const key = canonicalKey(p);
+  const evidence = await db.skillEvidence.findMany({ where: { studentId: p.id }, orderBy: { awardedAt: "desc" }, take: 20 });
   return (
     <>
       <PageTitle title="Talent Passport" sub="Your shareable professional identity. You decide who sees each part." />
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
+          {evidence.length > 0 && (
+            <Panel title="Add your verified skills to LinkedIn">
+              <p className="text-sm text-ink-soft">Each skill below is tied to evidence a person checked. Pressing a link opens LinkedIn&apos;s add-certification form, pre-filled and pointing at your Passport. You choose whether to save it.</p>
+              <ul className="mt-3 space-y-2 text-sm">{evidence.map((e) => <li key={e.id} className="flex flex-wrap items-center justify-between gap-2"><span><b>{e.skill}</b></span><a href={linkedinAddUrl({ name: `${e.skill} (verified on Kalwings)`, certUrl: `${site.url}/talent/${key}`, certId: e.id, date: e.awardedAt })} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline">Add to LinkedIn</a></li>)}</ul>
+            </Panel>)}
           <Panel title="Your link">
             <p className="text-sm">Share: <a className="font-semibold underline" href={`/talent/${key}`}>{site.url}/talent/{key}</a></p>
             <p className="mt-1 text-sm"><a className="font-semibold underline" href={`/talent/${key}/resume`}>Open resume view</a> <span className="text-ink-soft">(print or save as PDF)</span></p>

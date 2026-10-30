@@ -4,11 +4,11 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (51)
+## Models (54)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
-| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived, roleRequests |
+| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived, roleRequests, events, eventRsvps, jobAlerts |
 | [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, referrals, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
 | [PassportEntry](#passportentry) | Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL. | student |
 | [Project](#project) |  | student |
@@ -59,6 +59,9 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [SiteSetting](#sitesetting) | Platform-wide settings an admin can change (announcement banner, contact email, which roles can sign up). |  |
 | [RoleChangeRequest](#rolechangerequest) | / A signed-in user asking a platform admin to change their role. An admin approves or declines; nothing changes until approved. | user |
 | [UploadChunk](#uploadchunk) | / Pieces of a file being uploaded (resume or intro video), sent in small requests so hosting proxies with small body limits cannot block it. |  |
+| [Event](#event) | / Webinars, workshops, hackathons and meetups posted by verified employers, colleges, mentors and admins. Free or priced (price always shown). | organiser, rsvps |
+| [EventRsvp](#eventrsvp) |  | event, user |
+| [JobAlert](#jobalert) | / A saved search. When a matching listing goes live the person gets an in-app notification and, if enabled, an email. | user |
 
 ### User
 
@@ -91,6 +94,9 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | blocksMade | Block[] | @relation("blocker") |  |
 | blocksReceived | Block[] | @relation("blocked") |  |
 | roleRequests | RoleChangeRequest[] |  |  |
+| events | Event[] |  |  |
+| eventRsvps | EventRsvp[] |  |  |
+| jobAlerts | JobAlert[] |  |  |
 
 ### StudentProfile
 
@@ -929,6 +935,67 @@ Indexes and constraints: `@@index([status, createdAt])`, `@@index([userId])`
 | createdAt | DateTime | @default(now()) |  |
 
 Indexes and constraints: `@@unique([token, idx])`, `@@index([createdAt])`, `@@index([userId])`
+
+### Event
+
+/ Webinars, workshops, hackathons and meetups posted by verified employers, colleges, mentors and admins. Free or priced (price always shown).
+/ The join link is shown only to people who RSVP, the organiser and admins.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| title | String | @db.VarChar(140) |  |
+| kind | String | @db.VarChar(20) | WEBINAR | WORKSHOP | HACKATHON | MEETUP | CAMPUS | OTHER |
+| description | String | @db.Text |  |
+| startsAt | DateTime |  |  |
+| endsAt | DateTime? |  |  |
+| mode | WorkMode |  | REMOTE = online |
+| location | String | @db.VarChar(160) |  |
+| joinUrl | String? | @db.VarChar(400) |  |
+| organiserId | String |  |  |
+| organiser | User | @relation(fields: [organiserId], references: [id], onDelete: Cascade) |  |
+| organiserName | String | @db.VarChar(120) |  |
+| free | Boolean | @default(true) |  |
+| priceText | String? | @db.VarChar(80) |  |
+| capacity | Int? |  |  |
+| shortCode | String? | @unique @db.VarChar(12) |  |
+| status | String | @default("LIVE") @db.VarChar(10) | LIVE | CANCELLED | HIDDEN |
+| rsvps | EventRsvp[] |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([status, startsAt])`, `@@index([organiserId])`
+
+### EventRsvp
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| eventId | String |  |  |
+| event | Event | @relation(fields: [eventId], references: [id], onDelete: Cascade) |  |
+| userId | String |  |  |
+| user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@unique([eventId, userId])`, `@@index([userId])`
+
+### JobAlert
+
+/ A saved search. When a matching listing goes live the person gets an in-app notification and, if enabled, an email.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| userId | String |  |  |
+| user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
+| label | String | @db.VarChar(100) |  |
+| q | String? | @db.VarChar(80) |  |
+| type | String? | @db.VarChar(20) |  |
+| mode | String? | @db.VarChar(10) |  |
+| location | String? | @db.VarChar(60) |  |
+| lastSentAt | DateTime? |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([userId])`
 
 ## Enums
 

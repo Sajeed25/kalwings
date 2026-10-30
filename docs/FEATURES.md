@@ -54,6 +54,16 @@ Any signed-in user can ask for a different role under Settings > Change my role.
 - **Local jobs:** `/jobs-in` and `/jobs-in/<city>` list the cities with open roles right now; city chips on the opportunities page.
 - See `docs/JOURNEYS.md` for the full aspirant and employer journeys and how this compares with Apna, Job Hai and Naukri.
 
+## Engage and install (events, alerts, calendar)
+
+Chosen from the comparison in `docs/PRODUCT-RESEARCH.md`.
+- **Events** (`/events`): webinars, workshops, hackathons, meetups and campus events posted by verified employers, verified colleges, verified mentors and admins; live at once; time, place and price always shown; RSVP for any signed-in person; the joining link is shown only after RSVP; calendar links (`.ics` and Google); short share link `/e/<code>`; report button; organisers can cancel (RSVPed people are told); admins can hide. Poster page: Dashboard > Events.
+- **Job alerts** (`/dashboard/alerts`): save a search (keyword, city, type, mode), or save the one you are looking at on the Opportunities page. When a matching listing is approved or posted by an admin, the student gets an in-app notification and, if notification emails are on, an email (one-click unsubscribe, capped per hour).
+- **Calendar** (`/calendar`): deadlines and events for the next 60 days. Listing pages offer the deadline as a calendar reminder and a map link for on-site and hybrid roles; listing pages and the career copilot link free learning sources for the skills they mention.
+- **Sharing impact** (`/dashboard/referrals`): how many friends applied through your links (counts only).
+- **Free helpers**: one-click free video room (Jitsi) when scheduling an interview; public GitHub activity line on the Talent Card (labelled public and unverified); "Add to LinkedIn" for evidence-backed skills.
+- **Install as an app**: Install button in Settings and the footer (Android and desktop), iPhone steps, manifest id, shortcuts and a maskable icon.
+
 No feature was removed because it overlapped; overlapping screens were merged into tabs so each job has one place.
 
 ## Look and feel

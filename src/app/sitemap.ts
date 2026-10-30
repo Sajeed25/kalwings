@@ -4,7 +4,7 @@ import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-const paths = ["/opportunities", "/mentors", "/challenges", "/community", "/contact", "/help", "/privacy", "/terms", "/trust"];
+const paths = ["/opportunities", "/mentors", "/challenges", "/community", "/events", "/calendar", "/jobs-in", "/contact", "/help", "/privacy", "/terms", "/trust"];
 
 /** Static pages plus REAL (non-sample) verified opportunities and mentors. If the database is down, only static pages are listed. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

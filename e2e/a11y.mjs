@@ -8,12 +8,12 @@ const axeSrc = fs.readFileSync(new URL('../node_modules/axe-core/axe.min.js', im
 const IGNORE = {}; // e.g. { 'rule-id': 'reason' }
 const SAMPLE = { student: 'student@sample.kalwings.test', employer: 'sample-co-a@sample.kalwings.test', admin: 'admin@sample.kalwings.test', college: 'college@sample.kalwings.test', mentor: 'sample-mentor-1@sample.kalwings.test' };
 const PAGES = {
-  anon: ['/jobs-in', '/login', '/join', '/opportunities', '/opportunities?nl=remote+internship+paid', '/challenges', '/community', '/mentors', '/contact', '/help', '/privacy', '/terms', '/trust', '/talent/sample-student'],
-  student: ['/dashboard', '/dashboard/resume', '/dashboard/profile', '/dashboard/portfolio', '/dashboard/passport', '/dashboard/copilot', '/dashboard/applications', '/dashboard/interviews', '/dashboard/submissions', '/dashboard/assessments', '/dashboard/drives', '/dashboard/mentoring', '/dashboard/saved', '/dashboard/notifications', '/dashboard/account', '/community', '/community/teammates'],
+  anon: ['/events', '/calendar', '/jobs-in', '/login', '/join', '/opportunities', '/opportunities?nl=remote+internship+paid', '/challenges', '/community', '/mentors', '/contact', '/help', '/privacy', '/terms', '/trust', '/talent/sample-student'],
+  student: ['/dashboard', '/dashboard/resume', '/dashboard/alerts', '/dashboard/referrals', '/dashboard/profile', '/dashboard/portfolio', '/dashboard/passport', '/dashboard/copilot', '/dashboard/applications', '/dashboard/interviews', '/dashboard/submissions', '/dashboard/assessments', '/dashboard/drives', '/dashboard/mentoring', '/dashboard/saved', '/dashboard/notifications', '/dashboard/account', '/community', '/community/teammates'],
   employer: ['/dashboard', '/dashboard/company', '/dashboard/roles', '/dashboard/challenges', '/dashboard/assessments', '/dashboard/talent', '/dashboard/pipeline', '/dashboard/interviews', '/dashboard/analytics', '/dashboard/jd-check', '/dashboard/drives'],
   admin: ['/dashboard', '/dashboard/moderation', '/dashboard/credentials', '/dashboard/plans', '/dashboard/insights', '/dashboard/reports', '/dashboard/users', '/dashboard/audit', '/dashboard/inbox', '/dashboard/errors'],
   college: ['/dashboard', '/dashboard/college', '/dashboard/drives'],
-  mentor: ['/dashboard', '/dashboard/mentoring'],
+  mentor: ['/dashboard', '/dashboard/mentoring', '/dashboard/events'],
 };
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 let bad = 0; const seen = new Map();

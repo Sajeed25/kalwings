@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 // Passports are not search-indexed; students share the link/QR themselves.
 export const metadata: Metadata = { title: "Talent Passport", robots: { index: false, follow: false } };
 
+import { githubSignal } from "@/lib/github-signal";
 export default async function Page({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
   const p = await loadPassport(username);
@@ -31,6 +32,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
     );
   }
   const url = `${site.url}/talent/${key}`;
+  const gh = await githubSignal(p.githubUrl);
   const qr = await QRCode.toString(url, { type: "svg", margin: 1, color: { dark: "#000000", light: "#FFFFFF" } });
   const showProjects = canSee(p.projectsVisibility, v);
   const showEndorse = canSee(p.endorsementsVisibility, v);
@@ -65,6 +67,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
             {p.skills.length > 0 && <details className="mt-3 text-sm text-ink-soft"><summary className="cursor-pointer font-semibold">Why these are shown</summary><ul className="mt-2 space-y-1">{p.skills.map((s) => <li key={s.id}><b>{s.skill}:</b> {s.explanation}</li>)}</ul></details>}
           </section>
           {asList(p.skillsClaimed).length > 0 && <section><h2 className="text-xl">Self-declared skills</h2><ul className="mt-3 flex flex-wrap gap-2">{asList(p.skillsClaimed).map((s) => <li key={s}><Badge>{s}</Badge></li>)}</ul><p className="mt-2 text-xs text-ink-soft">Not independently verified.</p></section>}
+          {gh && <p className="text-sm text-ink-soft" data-testid="github-signal"><b className="text-ink">GitHub</b> (public data, not verified by Kalwings): <a href={`https://github.com/${gh.user}`} target="_blank" rel="noopener noreferrer nofollow" className="text-accent underline">{gh.user}</a> · {gh.repos} own public {gh.repos === 1 ? "repository" : "repositories"}{gh.languages.length > 0 && <> · mostly {gh.languages.join(", ")}</>}{gh.lastPush && <> · last pushed {new Date(gh.lastPush).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</>}</p>}
           {showEntries && kinds.map((k) => (
             <section key={k}><h2 className="text-xl">{KIND_LABEL[k]}</h2>
               <ul className="mt-3 space-y-3">{entries.filter((e) => e.kind === k).map((e) => (

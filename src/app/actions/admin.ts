@@ -6,6 +6,7 @@ import { audit, notify } from "@/lib/audit";
 import { fail, obj, type Result } from "./_shared";
 import { adminUserSchema } from "@/lib/validation";
 import { emailAccountReady } from "@/lib/account-email";
+import { fireAlerts } from "@/lib/alerts";
 import { uniqueSlug } from "@/lib/slug";
 
 type Decision = "VERIFIED" | "REJECTED";
@@ -46,6 +47,7 @@ export async function moderateOpportunity(id: string, d: Decision) {
   await Promise.all(o.company.members.map((m) => notify(m.userId, `Listing ${d.toLowerCase()}`, o.title)));
   revalidatePath("/dashboard", "layout");
   revalidatePath("/opportunities");
+  if (d === "VERIFIED") await fireAlerts(id);
 }
 
 export async function resolveReport(id: string) {

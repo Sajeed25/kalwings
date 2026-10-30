@@ -197,6 +197,9 @@ model User {
   blocksMade        Block[]             @relation("blocker")
   blocksReceived    Block[]             @relation("blocked")
   roleRequests      RoleChangeRequest[]
+  events            Event[]
+  eventRsvps        EventRsvp[]
+  jobAlerts         JobAlert[]
 }
 
 model StudentProfile {
@@ -935,5 +938,60 @@ model UploadChunk {
 
   @@unique([token, idx])
   @@index([createdAt])
+  @@index([userId])
+}
+
+/// Webinars, workshops, hackathons and meetups posted by verified employers, colleges, mentors and admins. Free or priced (price always shown).
+/// The join link is shown only to people who RSVP, the organiser and admins.
+model Event {
+  id            String      @id @default(cuid())
+  title         String      @db.VarChar(140)
+  kind          String      @db.VarChar(20) // WEBINAR | WORKSHOP | HACKATHON | MEETUP | CAMPUS | OTHER
+  description   String      @db.Text
+  startsAt      DateTime
+  endsAt        DateTime?
+  mode          WorkMode // REMOTE = online
+  location      String      @db.VarChar(160)
+  joinUrl       String?     @db.VarChar(400)
+  organiserId   String
+  organiser     User        @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+  organiserName String      @db.VarChar(120)
+  free          Boolean     @default(true)
+  priceText     String?     @db.VarChar(80)
+  capacity      Int?
+  shortCode     String?     @unique @db.VarChar(12)
+  status        String      @default("LIVE") @db.VarChar(10) // LIVE | CANCELLED | HIDDEN
+  rsvps         EventRsvp[]
+  createdAt     DateTime    @default(now())
+
+  @@index([status, startsAt])
+  @@index([organiserId])
+}
+
+model EventRsvp {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+/// A saved search. When a matching listing goes live the person gets an in-app notification and, if enabled, an email.
+model JobAlert {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String    @db.VarChar(100)
+  q          String?   @db.VarChar(80)
+  type       String?   @db.VarChar(20)
+  mode       String?   @db.VarChar(10)
+  location   String?   @db.VarChar(60)
+  lastSentAt DateTime?
+  createdAt  DateTime  @default(now())
+
   @@index([userId])
 }

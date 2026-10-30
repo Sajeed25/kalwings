@@ -61,7 +61,7 @@ export const feedbackSchema = z.object({
 });
 export const templateSchema = z.object({ name: text(60).min(2, "Give the template a name"), body: text(1000).min(10, "Write the message") });
 export const messageSchema = z.object({ applicationId: z.string().cuid(), body: text(1000).min(1) });
-export const reportSchema = z.object({ targetType: z.enum(["OPPORTUNITY", "MENTOR", "STUDENT", "COMPANY", "POST", "COMMENT", "GROUP"]), targetId: z.string().cuid(), reason: text(500).min(10) });
+export const reportSchema = z.object({ targetType: z.enum(["OPPORTUNITY", "MENTOR", "STUDENT", "COMPANY", "POST", "COMMENT", "GROUP", "EVENT"]), targetId: z.string().cuid(), reason: text(500).min(10) });
 
 export const csv = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 15);
 

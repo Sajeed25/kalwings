@@ -12,3 +12,12 @@ export async function uniqueShortCode(): Promise<string> {
   }
   throw new Error("Could not allocate a short link");
 }
+
+/** Same, for events (/e/<code>). */
+export async function uniqueEventCode(): Promise<string> {
+  for (let i = 0; i < 8; i++) {
+    const code = Array.from(randomBytes(8), (b) => ALPHABET[b % ALPHABET.length]).join("");
+    if (!(await db.event.findUnique({ where: { shortCode: code }, select: { id: true } }))) return code;
+  }
+  throw new Error("Could not allocate a short link");
+}
