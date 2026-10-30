@@ -7,6 +7,8 @@ import { PageHero, Block } from "@/components/pages/shell";
 import { getUser } from "@/lib/session";
 import { openListingCount, searchOpportunities, SORTS, type OppQuery, type SortKey } from "@/lib/public-data";
 import Link from "next/link";
+import { ActionForm } from "@/components/dash/action-form";
+import { createAlert } from "@/app/actions/alerts";
 import { liveCities } from "@/lib/cities";
 import { OpportunityBrowser } from "@/components/pages/opportunity-browser";
 
@@ -51,6 +53,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
           <input id="nl" name="nl" placeholder="Describe what you want, e.g. remote React internship, paid, class of 2026" className="h-11 min-w-[260px] flex-1 rounded-lg border border-line bg-surface px-3" />
           <button className="h-11 rounded-lg bg-primary px-5 font-semibold text-on-primary">Find</button></form>
         {cityChips.length > 0 && <nav aria-label="Browse by city" className="mb-6 flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-ink-soft">Near you:</span>{cityChips.map((c) => <Link key={c.slug} href={`/jobs-in/${c.slug}`} className="rounded-full border border-line px-3 py-1.5 font-semibold hover:border-accent">{c.name} <span className="text-ink-soft">{c.count}</span></Link>)}<Link href="/jobs-in" className="font-semibold text-accent underline">All cities</Link></nav>}
+        {await (async () => {
+          const me = await getUser(); const active = !!(query.q || query.type || query.mode || query.location);
+          const cur = `/opportunities${active ? `?${new URLSearchParams(Object.entries({ q: query.q, type: query.type, mode: query.mode, location: query.location }).filter(([, v]) => v) as [string, string][]).toString()}` : ""}`;
+          if (me?.role === "STUDENT") return active
+            ? <ActionForm action={createAlert} submit="Alert me about new matches" success="Saved: we will tell you when one goes live" className="mb-6 flex flex-wrap items-center gap-3"><input type="hidden" name="q" value={query.q ?? ""} /><input type="hidden" name="type" value={query.type ?? ""} /><input type="hidden" name="mode" value={query.mode ?? ""} /><input type="hidden" name="location" value={query.location ?? ""} /><span className="text-sm text-ink-soft">Not what you want yet? Save this search.</span></ActionForm>
+            : <p className="mb-6 text-sm"><Link href="/dashboard/alerts" className="font-semibold text-accent underline">Set up job alerts</Link> <span className="text-ink-soft">and we will tell you when a matching role goes live.</span></p>;
+          if (!me) return <p className="mb-6 text-sm"><Link href={`/login?next=${encodeURIComponent(cur)}`} className="font-semibold text-accent underline">Log in to get alerts</Link> <span className="text-ink-soft">when a role like this goes live.</span></p>;
+          return null;
+        })()}
         {interpreted && <p className="mb-4 text-sm text-ink-soft" role="status">We read that as: {interpreted}. Adjust the filters below if that is not what you meant.</p>}
         {unavailable && <p role="status" className="mb-6 rounded-xl border border-dashed border-line p-4 text-sm text-ink-soft">Listings are temporarily unavailable. Please check back in a few minutes.</p>}
         <OpportunityBrowser items={res.items} total={res.total} page={res.page} pages={res.pages} query={query} nothingOpen={nothingOpen && !unavailable} isAdmin={nothingOpen ? (await getUser())?.role === "PLATFORM_ADMIN" : false} />

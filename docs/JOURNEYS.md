@@ -16,7 +16,8 @@ How a fresher and a hiring team move through Kalwings, step by step, and which s
 | 8 | **Track** | Applied, Under review, Shortlisted, Interview, Offer, Hired. The tracker says exactly what was sent. Messages, interviews and offers sit on the same card. | Application tracker |
 | 9 | **Take a challenge** | Real tasks with a public rubric; a person scores the work against it; the awarded skill appears on the public profile with the reason. | Challenges |
 | 10 | **Share it onward** | After applying, the same share panel invites the student to pass the role on. A signed-in student's link carries a referral the employer can see. It never changes how anyone is assessed. | New |
-| 11 | **Find local roles** | `/jobs-in` lists cities with open roles right now; `/jobs-in/hyderabad` opens that city's list; city chips sit on the opportunities page. | New: local jobs |
+| 11 | **Never miss one** | Save a search as a job alert, add deadlines to a calendar, browse events, and install the app on the phone. | New: alerts, calendar, events, install |
+| 12 | **Find local roles** | `/jobs-in` lists cities with open roles right now; `/jobs-in/hyderabad` opens that city's list; city chips sit on the opportunities page. | New: local jobs |
 
 ## The employer (HR, recruiter, founder)
 
@@ -45,6 +46,9 @@ We read the public descriptions of Apna and Job Hai (their own pages, so treat a
 | Upload a resume (PDF, DOC, DOCX, RTF, about 2 MB) | Naukri and others | Built, with content checks |
 | Audio or video introduction | Job Hai (audio intro) | Built as a selfie video at a 100% profile, shared only by choice |
 | Free for job seekers | Apna, Job Hai | Yes |
+| Events and webinars | Unstop, Student Tribe, Beep | Built: verified organisers, RSVP, calendar |
+| Job alerts | GradConnection, Apna, Naukri | Built: in-app and email |
+| Install as an app | most | Built: install button, iPhone steps, shortcuts |
 | Share jobs on WhatsApp | common | Built: short link plus a ready message |
 | Call the HR directly | Apna and others | **Not built.** Student and recruiter phone numbers stay private; messages are the channel |
 | Regional-language app | Job Hai (10 languages) | **Not built yet.** A candidate for the roadmap |

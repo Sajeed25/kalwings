@@ -9,6 +9,7 @@ export const site = {
 export const nav = [
   { label: "Opportunities", href: "/opportunities" },
   { label: "Challenges", href: "/challenges" },
+  { label: "Events", href: "/events" },
   { label: "Mentors", href: "/mentors" },
   { label: "Community", href: "/community" },
 ];

@@ -11,6 +11,7 @@ import { uniqueSlug } from "@/lib/slug";
 import { emailAccountReady } from "@/lib/account-email";
 import { SIGNUP_ROLES } from "@/lib/settings";
 import { uniqueShortCode } from "@/lib/short-code";
+import { fireAlerts } from "@/lib/alerts";
 
 /**
  * Platform admin console: everything an admin can create or change directly. Each action re-checks the role, validates its input,
@@ -148,6 +149,7 @@ export async function postListingFor(_: NoteResult, fd: FormData): Promise<NoteR
       moderated: "VERIFIED", shortCode: await uniqueShortCode(), questions: { create: questions.map((text, position) => ({ text, position })) },
     },
   });
+  await fireAlerts(o.id);
   await audit(a.id, "listing.posted_by_admin", `${d.title} at ${company.name} (${o.id})`.slice(0, 190));
   return done(`Posted “${d.title}” for ${company.name}. It is live now.`);
 }

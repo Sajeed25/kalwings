@@ -11,6 +11,10 @@ import { cleanTag } from "../src/lib/tags";
 import { normaliseIdentifier } from "../src/lib/identifier";
 import { sniffResume, sniffVideo, safeFileName, MAX_RESUME_BYTES } from "../src/lib/files";
 import { safeNext } from "../src/lib/next-path";
+import { buildIcs, googleCalendarUrl, mapsUrl } from "../src/lib/calendar";
+import { learningLinks } from "../src/lib/learn";
+import { githubUsername, summariseRepos } from "../src/lib/github-parse";
+import { alertMatches } from "../src/lib/alerts-match";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -140,5 +144,40 @@ t("return links: only same-site paths on the allow-list survive", () => {
   for (const ok of ["/challenges/xyz", "/j/ab12cd34", "/jobs-in/hyderabad", "/dashboard/resume", "/dashboard"]) assert.equal(safeNext(ok), ok);
   for (const bad of ["https://evil.example", "//evil.example", "/\\evil.example", "javascript:alert(1)", "/api/auth/google", "/login", "", "opportunities/x", "/opportunities/\nx", "/dashboardx".padEnd(400, "a")]) assert.equal(safeNext(bad), null, String(bad).slice(0, 30));
   assert.equal(safeNext(undefined), null);
+});
+
+// ---- calendar, learning links, GitHub signal, alerts ----
+t("calendar files: all-day deadlines and timed events, with escaping and line folding", () => {
+  const ics = buildIcs({ uid: "x1", title: "Closing: React, Intern; Acme", start: new Date("2026-11-20T00:00:00Z"), allDay: true, location: "Hyderabad", description: "Line1\nLine2", url: "https://app.kalwings.com/j/abc" });
+  assert.ok(ics.startsWith("BEGIN:VCALENDAR\r\n") && ics.endsWith("END:VCALENDAR\r\n"));
+  assert.ok(ics.includes("DTSTART;VALUE=DATE:20261120") && ics.includes("DTEND;VALUE=DATE:20261121"));
+  assert.ok(ics.includes("SUMMARY:Closing: React\\, Intern\\; Acme") && ics.includes("DESCRIPTION:Line1\\nLine2"));
+  const timed = buildIcs({ uid: "x2", title: "Webinar", start: new Date("2026-11-20T10:00:00Z"), end: new Date("2026-11-20T11:30:00Z") });
+  assert.ok(timed.includes("DTSTART:20261120T100000Z") && timed.includes("DTEND:20261120T113000Z"));
+  assert.ok(buildIcs({ uid: "x3", title: "T".repeat(300), start: new Date() }).split("\r\n").every((l) => l.length <= 75));
+  const g = googleCalendarUrl({ uid: "x", title: "Webinar & Q&A", start: new Date("2026-11-20T10:00:00Z") });
+  assert.ok(g.startsWith("https://calendar.google.com/calendar/render?action=TEMPLATE") && g.includes("dates=20261120T100000Z%2F20261120T110000Z") && g.includes("Webinar+%26+Q%26A"));
+  assert.equal(mapsUrl("Hitech City, Hyderabad"), "https://www.google.com/maps/search/?api=1&query=Hitech%20City%2C%20Hyderabad");
+});
+t("free learning links: known skills get curated sources, unknown skills get none unless asked", () => {
+  assert.ok(learningLinks("Python")[0].url.startsWith("https://"));
+  assert.ok(learningLinks("react").some((r) => r.url.includes("react.dev")));
+  assert.equal(learningLinks("Underwater basket weaving").length, 0);
+  assert.ok(learningLinks("Underwater basket weaving", true).length >= 2);
+});
+t("GitHub: username from profile or repo URLs only; repos, languages and last push are summarised from public data", () => {
+  assert.equal(githubUsername("https://github.com/octocat"), "octocat");
+  assert.equal(githubUsername("https://www.github.com/octo-cat/hello-world?tab=repositories"), "octo-cat");
+  for (const bad of ["https://evil.example/octocat", "https://github.com.evil.example/x", "ftp://github.com/x", "javascript:alert(1)", "https://github.com/", "https://github.com/-bad", "", null]) assert.equal(githubUsername(bad as string), null);
+  const s = summariseRepos("octocat", [{ language: "TypeScript", pushed_at: "2026-10-01T00:00:00Z" }, { language: "TypeScript", pushed_at: "2026-10-20T00:00:00Z" }, { language: "Python", pushed_at: "2026-09-01T00:00:00Z" }, { fork: true, language: "Go", pushed_at: "2026-10-25T00:00:00Z" }, { language: null }]);
+  assert.deepEqual(s, { user: "octocat", repos: 4, languages: ["TypeScript", "Python"], lastPush: "2026-10-20T00:00:00.000Z" });
+  assert.equal(summariseRepos("x", { message: "rate limited" }), null);
+});
+t("job alerts: need a filter, every filter must match, nothing matches an empty alert", () => {
+  const o = { title: "React Developer Intern", type: "INTERNSHIP", workMode: "HYBRID", location: "Hyderabad, Telangana", skills: ["React", "CSS"], company: "Acme Labs" };
+  assert.equal(alertMatches({}, o), false); assert.equal(alertMatches({ q: "  " }, o), false);
+  assert.equal(alertMatches({ location: "hyderabad" }, o), true); assert.equal(alertMatches({ location: "Chennai" }, o), false);
+  assert.equal(alertMatches({ q: "react", type: "INTERNSHIP", mode: "HYBRID", location: "Hyderabad" }, o), true);
+  assert.equal(alertMatches({ q: "react", type: "JOB" }, o), false); assert.equal(alertMatches({ q: "acme" }, o), true); assert.equal(alertMatches({ q: "css" }, o), true); assert.equal(alertMatches({ mode: "REMOTE" }, o), false);
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

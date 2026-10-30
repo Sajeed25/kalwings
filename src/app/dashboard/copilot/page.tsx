@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { learningLinks } from "@/lib/learn";
 import { db } from "@/lib/db";
 import { asList } from "@/lib/lists";
 import { requirePageRole } from "@/lib/session";
@@ -32,7 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ l
           <p className="text-sm text-ink-soft">{o.company.name} · {TYPE_LABEL[o.type]} · {o.payText} · apply by {fmt(o.deadline)}</p></div>
           {m.score !== null && <Badge tone="accent" title="Advisory indicator only">Match {m.score}/100</Badge>}</div>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">{m.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
-        {m.missing.length > 0 && <details className="mt-3 text-sm"><summary className="cursor-pointer font-semibold">How to close the gap</summary><ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft">{m.missing.map((s) => <li key={s}><b>{s}:</b> {closeGapTip(s)}</li>)}</ul></details>}
+        {m.missing.length > 0 && <details className="mt-3 text-sm"><summary className="cursor-pointer font-semibold">How to close the gap</summary><ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft">{m.missing.map((s) => <li key={s}><b>{s}:</b> {closeGapTip(s)}{learningLinks(s).length > 0 && <> Free: {learningLinks(s).map((r, i) => <span key={r.url}>{i > 0 && ", "}<a href={r.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">{r.label}</a></span>)}.</>}</li>)}</ul></details>}
         <details className="mt-2 text-sm"><summary className="cursor-pointer font-semibold">Practice questions</summary>
           <p className="mt-2 text-xs text-ink-soft">Fixed practice prompts, not predictions of what this employer will ask.</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">{prompts.general.slice(0, 3).map((q) => <li key={q}>{q}</li>)}</ul>

@@ -16,6 +16,8 @@ import { site } from "@/lib/site";
 import { cleanSource, shortUrl } from "@/lib/distribution";
 import { SharePanel } from "@/components/share-panel";
 import { liveProfileScore } from "@/lib/profile-score";
+import { googleCalendarUrl, mapsUrl } from "@/lib/calendar";
+import { learningLinks } from "@/lib/learn";
 
 export const dynamic = "force-dynamic";
 const MODE = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" } as const;
@@ -53,6 +55,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     }
   }
   const closed = !!o.closedAt || o.deadline < new Date();
+  const prep = asList(o.skills).map((skill) => ({ skill, links: learningLinks(skill) })).filter((x) => x.links.length > 0).slice(0, 4);
   const qs = [src ? `src=${encodeURIComponent(src)}` : "", ref ? `ref=${encodeURIComponent(ref)}` : ""].filter(Boolean).join("&");
   const here = `/opportunities/${o.id}${qs ? `?${qs}` : ""}`;
   const enc = encodeURIComponent(here);
@@ -79,6 +82,16 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         </dl>
         <p className="mt-6 whitespace-pre-line text-ink-soft">{o.description}</p>
         <p className="mt-4 text-sm text-ink-soft">Applying doesn&apos;t guarantee an interview or offer.</p>
+        {!closed && (
+          <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+            <a href={googleCalendarUrl({ uid: `deadline-${o.id}`, title: `Apply by today: ${o.title} at ${o.company.name}`, start: o.deadline, allDay: true, location: o.location, description: `${o.payText}${o.unpaid ? " (unpaid)" : ""} · Eligibility: ${o.eligibility}`, url: shortUrl(o) })} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline">Remind me: add the deadline to Google Calendar</a>
+            <a href={`/api/opportunities/${o.id}/ics`} className="font-semibold text-accent underline">Calendar file (.ics)</a>
+            {o.workMode !== "REMOTE" && <a href={mapsUrl(o.location)} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline">View {o.location} on map</a>}
+          </p>)}
+        {prep.length > 0 && (
+          <section aria-label="Prepare for this role" className="mt-6 rounded-card border border-line p-5"><h2 className="text-lg font-bold">Prepare for this role (free resources)</h2>
+            <ul className="mt-2 space-y-1 text-sm">{prep.map((p) => <li key={p.skill}><b>{p.skill}:</b> {p.links.map((r, i) => <span key={r.url}>{i > 0 && ", "}<a href={r.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">{r.label}</a></span>)}</li>)}</ul>
+            <p className="mt-2 text-xs text-ink-soft">Free, public sources we picked. Kalwings earns nothing from these links.</p></section>)}
         <div className="mt-8 flex flex-wrap items-center gap-3">
           {closed ? <Badge>Applications closed</Badge>
             : !user ? <><Button asChild size="lg"><Link href={`/login?next=${enc}`}>Log in to apply</Link></Button><Button asChild size="lg" variant="secondary"><Link href={`/join?role=STUDENT&next=${enc}`}>New here? Create a free account</Link></Button></>

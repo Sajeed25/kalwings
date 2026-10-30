@@ -14,6 +14,7 @@ const student: Section[] = [
     { label: "Opportunities", icon: "briefcase", href: "/opportunities", desc: "Verified jobs and internships. Pay, work mode, location and eligibility are always shown." },
     { label: "Challenges", icon: "trophy", href: "/challenges", desc: "Real tasks set by employers, scored by a person against a published rubric." },
     { label: "Campus drives", icon: "school", href: "/dashboard/drives", desc: "Placement drives your college has opened to you." },
+    { label: "Events", icon: "calendar", href: "/events", desc: "Webinars, workshops, hackathons and meetups from verified colleges, employers and mentors." },
     { label: "Saved roles", icon: "bookmark", href: "/dashboard/saved", desc: "Roles you bookmarked to come back to." },
   ] },
   { title: "Applications", items: [
@@ -28,6 +29,8 @@ const student: Section[] = [
     ] },
   ] },
   { title: "Grow", items: [
+    { label: "Job alerts", icon: "inbox", href: "/dashboard/alerts", desc: "Get told when a listing you care about goes live." },
+    { label: "Sharing impact", icon: "sparkles", href: "/dashboard/referrals", desc: "How many friends applied through the links you shared." },
     { label: "Career copilot", icon: "sparkles", href: "/dashboard/copilot", desc: "Explains how well you match a role, reviews your profile and checks what is missing." },
     { label: "Mentor sessions", icon: "users", href: "/dashboard/mentoring", desc: "Book and track one-to-one sessions with verified mentors." },
     { label: "Community", icon: "chat", href: "/community", desc: "Groups, discussions and teammates for projects." },
@@ -53,12 +56,14 @@ const employer: Section[] = [
   ] },
   { title: "Campus", items: [
     { label: "Campus drives", icon: "school", href: "/dashboard/drives", desc: "Run drives with partner colleges and invite eligible students with their consent." },
+    { label: "Events", icon: "calendar", href: "/dashboard/events", desc: "Post webinars, workshops and meetups for students and see who is coming." },
   ] },
 ];
 
 const mentor: Section[] = [
   { title: "Mentoring", items: [
     { label: "Mentor profile", icon: "user", href: "/dashboard/mentoring", desc: "Your profile, availability and session requests." },
+    { label: "Events", icon: "calendar", href: "/dashboard/events", desc: "Post webinars, workshops and meetups for students and see who is coming." },
     { label: "Community", icon: "chat", href: "/community", desc: "Groups and discussions." },
   ] },
 ];
@@ -67,6 +72,7 @@ const college: Section[] = [
   { title: "Placements", items: [
     { label: "College", icon: "building", href: "/dashboard/college", desc: "Departments, student progress for those who share it, and reports." },
     { label: "Placement drives", icon: "calendar", href: "/dashboard/drives", desc: "Create drives, set eligibility and invite students." },
+    { label: "Events", icon: "calendar", href: "/dashboard/events", desc: "Post webinars, workshops and meetups for students and see who is coming." },
   ] },
 ];
 
@@ -82,6 +88,7 @@ const admin: Section[] = [
     { label: "Mentors", icon: "sparkles", href: "/dashboard/mentors", desc: "Add mentors with full profile details, or edit them." },
     { label: "Users", icon: "users", href: "/dashboard/users", desc: "Add people, find, suspend or restore accounts." },
     { label: "Bulk upload", icon: "file", href: "/dashboard/bulk", desc: "Add many students, companies or mentors from an Excel or CSV file." },
+    { label: "Events", icon: "calendar", href: "/dashboard/events", desc: "See every event, hide ones that break the rules, post your own." },
   ] },
   { title: "Platform", items: [
     { label: "Employer plans", icon: "card", href: "/dashboard/plans", desc: "Rename plans, change prices and limits, assign plans." },
