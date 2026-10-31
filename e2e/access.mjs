@@ -7,14 +7,14 @@ const ROLES = ['ANON', ...Object.keys(SAMPLE)];
 const ALL = ['STUDENT', 'EMPLOYER', 'PLATFORM_ADMIN', 'COLLEGE_ADMIN', 'MENTOR'];
 const PAGES = {
   '/dashboard': ALL, '/dashboard/notifications': ALL, '/dashboard/account': ALL,
-  '/dashboard/profile': ['STUDENT'], '/dashboard/portfolio': ['STUDENT'], '/dashboard/resume': ['STUDENT'], '/dashboard/alerts': ['STUDENT'], '/dashboard/referrals': ['STUDENT'], '/dashboard/events': ['EMPLOYER', 'COLLEGE_ADMIN', 'MENTOR', 'PLATFORM_ADMIN'], '/dashboard/passport': ['STUDENT'], '/dashboard/copilot': ['STUDENT'], '/dashboard/applications': ['STUDENT'], '/dashboard/submissions': ['STUDENT'], '/dashboard/saved': ['STUDENT'], '/dashboard/mentoring': ['STUDENT', 'MENTOR'],
+  '/dashboard/profile': ['STUDENT'], '/dashboard/portfolio': ['STUDENT'], '/dashboard/resume': ['STUDENT'], '/dashboard/alerts': ['STUDENT'], '/dashboard/practice': ['STUDENT'], '/dashboard/practice/python-basics': ['STUDENT'], '/dashboard/referrals': ['STUDENT'], '/dashboard/events': ['EMPLOYER', 'COLLEGE_ADMIN', 'MENTOR', 'PLATFORM_ADMIN'], '/dashboard/passport': ['STUDENT'], '/dashboard/copilot': ['STUDENT'], '/dashboard/applications': ['STUDENT'], '/dashboard/submissions': ['STUDENT'], '/dashboard/saved': ['STUDENT'], '/dashboard/mentoring': ['STUDENT', 'MENTOR'],
   '/dashboard/interviews': ['STUDENT', 'EMPLOYER'], '/dashboard/assessments': ['STUDENT', 'EMPLOYER'], '/dashboard/drives': ['STUDENT', 'EMPLOYER', 'COLLEGE_ADMIN'],
   '/dashboard/company': ['EMPLOYER'], '/dashboard/roles': ['EMPLOYER'], '/dashboard/challenges': ['EMPLOYER'], '/dashboard/talent': ['EMPLOYER'], '/dashboard/pipeline': ['EMPLOYER'], '/dashboard/analytics': ['EMPLOYER'], '/dashboard/jd-check': ['EMPLOYER'],
   '/dashboard/college': ['COLLEGE_ADMIN'],
   '/dashboard/moderation': ['PLATFORM_ADMIN'], '/dashboard/credentials': ['PLATFORM_ADMIN'], '/dashboard/plans': ['PLATFORM_ADMIN'], '/dashboard/insights': ['PLATFORM_ADMIN'], '/dashboard/reports': ['PLATFORM_ADMIN'], '/dashboard/users': ['PLATFORM_ADMIN'], '/dashboard/audit': ['PLATFORM_ADMIN'], '/dashboard/inbox': ['PLATFORM_ADMIN'], '/dashboard/errors': ['PLATFORM_ADMIN'],
   '/community/teammates': ['STUDENT', 'EMPLOYER', 'PLATFORM_ADMIN', 'COLLEGE_ADMIN', 'MENTOR'],
 };
-const APIS = { '/api/college/report?type=roster': ['COLLEGE_ADMIN'], '/api/college/report?type=drives': ['COLLEGE_ADMIN'], '/api/account/export': ALL, '/api/interviews/nonexistent/ics': [] , '/api/sessions/nonexistent/ics': [] };
+const APIS = { '/api/college/report?type=roster': ['COLLEGE_ADMIN'], '/api/college/report?type=drives': ['COLLEGE_ADMIN'], '/api/account/export': ALL, '/api/push/key': ALL, '/api/interviews/nonexistent/ics': [] , '/api/sessions/nonexistent/ics': [] };
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 let bad = 0, n = 0;
 for (const role of ROLES) {

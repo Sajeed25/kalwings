@@ -53,6 +53,12 @@ Status key: **Done** (implemented and covered by an automated test or inspection
 - **Done**: job alerts are opt-in, owned by the student (10 maximum), and use the existing notification path with unsubscribe and an hourly cap; no email address is exposed to anyone.
 - **Not done**: web push notifications (needs keys); spam scoring of events beyond reports and the daily post limit.
 
+## Push, practice tests, PIN lookup, languages
+- Push subscriptions are accepted only over HTTPS from a signed-in person, same-origin, rate limited, capped at 5 per person, and stored by a hash of the endpoint. Payloads carry a title, a short body and a same-site path only (never an off-site link). Subscriptions that the push service reports gone are deleted. The signing key never leaves the server.
+- Practice answers and explanations stay on the server until a test is submitted; attempts are visible only to their owner.
+- The PIN route validates the PIN before any outside call, uses a timeout and a cache, and strips markup from what comes back. The browser never talks to the outside service (the content security policy still allows only our own origin).
+- The language cookie only holds one of three fixed codes.
+
 ## Dependencies and supply chain
 - **Done**: lockfile committed, CI builds from it, Dependabot enabled. Run `npm audit` before launch and review results.
 

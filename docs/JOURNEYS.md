@@ -49,6 +49,10 @@ We read the public descriptions of Apna and Job Hai (their own pages, so treat a
 | Events and webinars | Unstop, Student Tribe, Beep | Built: verified organisers, RSVP, calendar |
 | Job alerts | GradConnection, Apna, Naukri | Built: in-app and email |
 | Install as an app | most | Built: install button, iPhone steps, shortcuts |
+| Push notifications | Apna, Unstop | Built: opt-in per device in Settings |
+| Practice tests | Unstop, Beep | Built: private, explained, no ranking |
+| PIN code search | Job Hai | Built: PIN to district to open listings |
+| Regional languages | Job Hai | Beta: Hindi and Telugu menus; pages still English |
 | Share jobs on WhatsApp | common | Built: short link plus a ready message |
 | Call the HR directly | Apna and others | **Not built.** Student and recruiter phone numbers stay private; messages are the channel |
 | Regional-language app | Job Hai (10 languages) | **Not built yet.** A candidate for the roadmap |

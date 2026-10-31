@@ -4,11 +4,11 @@ Generated from `prisma/schema.prisma` by `npm run docs:db`. Do not edit by hand.
 
 MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `asList()`. Long text is `TEXT`; uploaded images are `LONGBLOB`. Timestamps are UTC. Cascade rules are shown per relation.
 
-## Models (54)
+## Models (56)
 
 | Model | Purpose / notes | Relations |
 | --- | --- | --- |
-| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived, roleRequests, events, eventRsvps, jobAlerts |
+| [User](#user) |  | student, mentor, employer, college, notifications, auditLogs, messages, interviewFeedback, reports, groupMemberships, posts, comments, blocksMade, blocksReceived, roleRequests, events, eventRsvps, jobAlerts, practiceAttempts, pushSubscriptions |
 | [StudentProfile](#studentprofile) |  | entries, user, college, projects, skills, applications, referrals, savedRoles, sessions, endorsements, shortlistedBy, submissions, assessmentAttempts, department, driveInvites |
 | [PassportEntry](#passportentry) | Experience, achievements, hackathons and certificates. Self-declared unless an admin VERIFIED it after checking the evidence URL. | student |
 | [Project](#project) |  | student |
@@ -62,6 +62,8 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | [Event](#event) | / Webinars, workshops, hackathons and meetups posted by verified employers, colleges, mentors and admins. Free or priced (price always shown). | organiser, rsvps |
 | [EventRsvp](#eventrsvp) |  | event, user |
 | [JobAlert](#jobalert) | / A saved search. When a matching listing goes live the person gets an in-app notification and, if enabled, an email. | user |
+| [PracticeAttempt](#practiceattempt) | / A signed-in student's attempt at a practice test (private to them: never shown to employers or ranked). Questions live in code (src/lib/practice-bank.ts). | user |
+| [PushSubscription](#pushsubscription) | / A browser or phone that opted in to push notifications. Removed automatically when the push service says it is gone. | user |
 
 ### User
 
@@ -97,6 +99,8 @@ MySQL 8 / MariaDB 10.6+. Lists (skills, tags) are stored as JSON and read with `
 | events | Event[] |  |  |
 | eventRsvps | EventRsvp[] |  |  |
 | jobAlerts | JobAlert[] |  |  |
+| practiceAttempts | PracticeAttempt[] |  |  |
+| pushSubscriptions | PushSubscription[] |  |  |
 
 ### StudentProfile
 
@@ -993,6 +997,39 @@ Indexes and constraints: `@@unique([eventId, userId])`, `@@index([userId])`
 | mode | String? | @db.VarChar(10) |  |
 | location | String? | @db.VarChar(60) |  |
 | lastSentAt | DateTime? |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([userId])`
+
+### PracticeAttempt
+
+/ A signed-in student's attempt at a practice test (private to them: never shown to employers or ranked). Questions live in code (src/lib/practice-bank.ts).
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| userId | String |  |  |
+| user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
+| testSlug | String | @db.VarChar(60) |  |
+| score | Int |  |  |
+| total | Int |  |  |
+| createdAt | DateTime | @default(now()) |  |
+
+Indexes and constraints: `@@index([userId, testSlug])`
+
+### PushSubscription
+
+/ A browser or phone that opted in to push notifications. Removed automatically when the push service says it is gone.
+
+| Field | Type | Constraints | Note |
+| --- | --- | --- | --- |
+| id | String | @id @default(cuid()) |  |
+| userId | String |  |  |
+| user | User | @relation(fields: [userId], references: [id], onDelete: Cascade) |  |
+| endpointHash | String | @unique @db.VarChar(64) | sha-256 of the endpoint, so it can be a unique key |
+| endpoint | String | @db.Text |  |
+| p256dh | String | @db.VarChar(200) |  |
+| auth | String | @db.VarChar(100) |  |
 | createdAt | DateTime | @default(now()) |  |
 
 Indexes and constraints: `@@index([userId])`

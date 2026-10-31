@@ -61,5 +61,8 @@ APIs marked "Later" or "Not" were not tested; check their current terms before u
 5. Referral impact: how many friends opened and applied through your links.
 6. Learning links and map links on listings; Jitsi interview rooms; GitHub public signal; LinkedIn add.
 
-## Later
-Web push on installed apps; mock tests and practice streaks without rankings; regional languages; PIN lookup; college list seeding; open badges.
+## Built from the later list
+Web push on installed apps, practice tests without rankings, PIN lookup and Hindi and Telugu menus (beta) are now built; see `docs/FEATURES.md`.
+
+## Still later
+Full-page translations, practice streaks, college list seeding, open badges.
