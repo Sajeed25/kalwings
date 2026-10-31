@@ -19,7 +19,7 @@ export async function fireAlerts(opportunityId: string): Promise<number> {
     const seen = new Set<string>(); let sent = 0;
     for (const a of hits) {
       if (seen.has(a.userId)) continue; seen.add(a.userId);
-      await notify(a.userId, `New match: ${o.title} at ${o.company.name}`, `${o.location} · ${o.payText}${o.unpaid ? " (unpaid)" : ""} · Eligibility: ${o.eligibility}. Apply: ${shortUrl(o, "alert")}`);
+      await notify(a.userId, `New match: ${o.title} at ${o.company.name}`, `${o.location} · ${o.payText}${o.unpaid ? " (unpaid)" : ""} · Eligibility: ${o.eligibility}. Apply: ${shortUrl(o, "alert")}`, `/opportunities/${o.id}?src=alert`);
       await db.jobAlert.update({ where: { id: a.id }, data: { lastSentAt: new Date() } }); sent++;
     }
     return sent;

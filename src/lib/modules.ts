@@ -31,6 +31,7 @@ const student: Section[] = [
   { title: "Grow", items: [
     { label: "Job alerts", icon: "inbox", href: "/dashboard/alerts", desc: "Get told when a listing you care about goes live." },
     { label: "Sharing impact", icon: "sparkles", href: "/dashboard/referrals", desc: "How many friends applied through the links you shared." },
+    { label: "Practice tests", icon: "clipboard", href: "/dashboard/practice", desc: "Short private quizzes in Python, SQL, JavaScript and aptitude, with the reasoning for every answer." },
     { label: "Career copilot", icon: "sparkles", href: "/dashboard/copilot", desc: "Explains how well you match a role, reviews your profile and checks what is missing." },
     { label: "Mentor sessions", icon: "users", href: "/dashboard/mentoring", desc: "Book and track one-to-one sessions with verified mentors." },
     { label: "Community", icon: "chat", href: "/community", desc: "Groups, discussions and teammates for projects." },

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { emailConfigured, sendEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { unsubToken } from "@/lib/unsub";
+import { sendPush } from "@/lib/push";
 
 export const audit = (actorId: string, action: string, target: string) => db.auditLog.create({ data: { actorId, action, target } });
 
@@ -10,8 +11,13 @@ export const audit = (actorId: string, action: string, target: string) => db.aud
  * In-app notification, plus an email when the user has an address, hasn't opted out, and email is configured.
  * Email is best-effort and capped at 10/hour per user; it never makes the calling action fail.
  */
-export async function notify(userId: string, title: string, body?: string) {
+export async function notify(userId: string, title: string, body?: string, url?: string) {
   await db.notification.create({ data: { userId, title, body } });
+  await emailNotice(userId, title, body);
+  await sendPush(userId, { title, body, url }); // devices the person turned on; best effort
+}
+
+async function emailNotice(userId: string, title: string, body?: string) {
   try {
     if (!emailConfigured()) return;
     const u = await db.user.findUnique({ where: { id: userId }, select: { email: true, emailNotifications: true } });

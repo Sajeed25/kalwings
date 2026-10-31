@@ -200,6 +200,8 @@ model User {
   events            Event[]
   eventRsvps        EventRsvp[]
   jobAlerts         JobAlert[]
+  practiceAttempts  PracticeAttempt[]
+  pushSubscriptions PushSubscription[]
 }
 
 model StudentProfile {
@@ -992,6 +994,33 @@ model JobAlert {
   location   String?   @db.VarChar(60)
   lastSentAt DateTime?
   createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// A signed-in student's attempt at a practice test (private to them: never shown to employers or ranked). Questions live in code (src/lib/practice-bank.ts).
+model PracticeAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testSlug  String   @db.VarChar(60)
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, testSlug])
+}
+
+/// A browser or phone that opted in to push notifications. Removed automatically when the push service says it is gone.
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpointHash String   @unique @db.VarChar(64) // sha-256 of the endpoint, so it can be a unique key
+  endpoint     String   @db.Text
+  p256dh       String   @db.VarChar(200)
+  auth         String   @db.VarChar(100)
+  createdAt    DateTime @default(now())
 
   @@index([userId])
 }

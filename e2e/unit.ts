@@ -15,6 +15,10 @@ import { buildIcs, googleCalendarUrl, mapsUrl } from "../src/lib/calendar";
 import { learningLinks } from "../src/lib/learn";
 import { githubUsername, summariseRepos } from "../src/lib/github-parse";
 import { alertMatches } from "../src/lib/alerts-match";
+import { parsePin, validPin } from "../src/lib/pincode";
+import { TESTS, forTaking, grade } from "../src/lib/practice-bank";
+import { parseSubscription, pushPayload } from "../src/lib/push-parse";
+import { LANGS, isLang, tr } from "../src/lib/i18n";
 import { fakeVerify, hashPassword, passwordProblem, verifyPassword } from "../src/lib/password";
 
 let n = 0; const t = (name: string, fn: () => void) => { fn(); n++; console.log("PASS " + name); };
@@ -179,5 +183,34 @@ t("job alerts: need a filter, every filter must match, nothing matches an empty 
   assert.equal(alertMatches({ location: "hyderabad" }, o), true); assert.equal(alertMatches({ location: "Chennai" }, o), false);
   assert.equal(alertMatches({ q: "react", type: "INTERNSHIP", mode: "HYBRID", location: "Hyderabad" }, o), true);
   assert.equal(alertMatches({ q: "react", type: "JOB" }, o), false); assert.equal(alertMatches({ q: "acme" }, o), true); assert.equal(alertMatches({ q: "css" }, o), true); assert.equal(alertMatches({ mode: "REMOTE" }, o), false);
+});
+t("PIN codes: six digits not starting with 0; India Post replies are read defensively", () => {
+  for (const ok of ["500081", "110001"]) assert.ok(validPin(ok));
+  for (const bad of ["050001", "12345", "1234567", "abcdef", "50008 ", ""]) assert.ok(!validPin(bad));
+  assert.deepEqual(parsePin([{ Status: "Success", PostOffice: [{ Name: "Madhapur", District: "Hyderabad", State: "Telangana" }] }]), { district: "Hyderabad", area: "Madhapur", state: "Telangana" });
+  for (const bad of [null, [], [{ Status: "Error", PostOffice: null }], [{ Status: "Success", PostOffice: [] }], [{ Status: "Success", PostOffice: [{ Name: "x" }] }], "<script>"]) assert.equal(parsePin(bad), null);
+  assert.equal(parsePin([{ Status: "Success", PostOffice: [{ Name: "A", District: "<b>Pune</b>", State: "MH" }] }])?.district, "bPuneb"); // markup characters are stripped, never rendered
+});
+t("practice tests: every question has one valid answer and a reason; grading is server-side and ignores bad input", () => {
+  assert.ok(TESTS.length >= 4 && new Set(TESTS.map((x) => x.slug)).size === TESTS.length);
+  for (const x of TESTS) for (const q of x.questions) { assert.ok([0, 1, 2, 3].includes(q.answer) && q.why.length > 10 && new Set(q.options).size === 4); }
+  const x = TESTS[0], taking = JSON.stringify(forTaking(x));
+  assert.ok(!taking.includes("\"answer\"") && !taking.includes("\"why\""));
+  const all = grade(x, x.questions.map((q) => q.answer)); assert.equal(all.score, x.questions.length);
+  assert.equal(grade(x, []).score, 0); assert.equal(grade(x, x.questions.map(() => 99 as number)).score, 0);
+});
+t("push: only https subscriptions with plausible keys; payloads are trimmed and links stay on the site", () => {
+  const key = "B" + "x".repeat(86), auth = "y".repeat(22);
+  const good = { endpoint: "https://fcm.googleapis.com/fcm/send/abc123def456ghi789", keys: { p256dh: key, auth } };
+  assert.ok(parseSubscription(good));
+  for (const bad of [null, {}, { ...good, endpoint: "http://fcm.googleapis.com/x/abcdefghijklmn" }, { ...good, endpoint: "https://localhost/abcdefghijklmnop" }, { ...good, keys: { p256dh: "short", auth } }, { ...good, keys: { p256dh: key, auth: "<>" } }]) assert.equal(parseSubscription(bad), null);
+  const p = JSON.parse(pushPayload("T".repeat(200), "b".repeat(400), "/opportunities/1"));
+  assert.ok(p.title.length <= 80 && p.body.length <= 160 && p.url === "/opportunities/1");
+  for (const u of ["//evil.example", "https://evil.example", "javascript:alert(1)", undefined]) assert.equal(JSON.parse(pushPayload("t", "b", u)).url, "/dashboard/notifications");
+});
+t("languages: Hindi and Telugu cover the same keys as English and unknown languages are refused", () => {
+  assert.deepEqual(LANGS.map((l) => l.code), ["en", "hi", "te"]);
+  assert.ok(isLang("hi") && !isLang("xx") && !isLang(undefined));
+  for (const l of ["hi", "te"] as const) { assert.notEqual(tr(l, "auth.login"), tr("en", "auth.login")); assert.notEqual(tr(l, "nav.events"), "nav.events"); }
 });
 Promise.all(asyncTests).then(() => console.log(`\n${n} unit tests passed`)).catch((e) => { console.error(e); process.exit(1); });

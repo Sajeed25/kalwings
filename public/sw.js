@@ -1,8 +1,9 @@
 /* Kalwings service worker — deliberately minimal and safe.
  * - Caches immutable build assets (/_next/static/*) and icons.
  * - HTML/data are NEVER cached (dashboards are private); a failed navigation falls back to /offline.
+ * - Shows push notifications the person opted in to, and opens the right page when one is tapped.
  * Bump VERSION to drop old caches. */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `kw-static-${VERSION}`;
 const OFFLINE = "/offline";
 
@@ -33,4 +34,21 @@ self.addEventListener("fetch", (e) => {
       return res;
     }));
   }
+});
+
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { /* plain text or empty: show a generic notice */ }
+  const title = typeof d.title === "string" && d.title ? d.title : "Kalwings";
+  const url = typeof d.url === "string" && d.url.startsWith("/") && !d.url.startsWith("//") ? d.url : "/dashboard/notifications";
+  e.waitUntil(self.registration.showNotification(title, { body: typeof d.body === "string" ? d.body : "", icon: "/pwa-icon/192", badge: "/pwa-icon/192", data: { url } }));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/dashboard/notifications";
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+    for (const c of cs) if ("focus" in c) { c.navigate(url).catch(() => {}); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });

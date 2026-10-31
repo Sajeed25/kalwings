@@ -64,6 +64,13 @@ Chosen from the comparison in `docs/PRODUCT-RESEARCH.md`.
 - **Free helpers**: one-click free video room (Jitsi) when scheduling an interview; public GitHub activity line on the Talent Card (labelled public and unverified); "Add to LinkedIn" for evidence-backed skills.
 - **Install as an app**: Install button in Settings and the footer (Android and desktop), iPhone steps, manifest id, shortcuts and a maskable icon.
 
+## Later list, built (push, practice tests, PIN lookup, languages)
+
+- **Push notifications** (Settings > Notifications on this device): opt-in per device. Every in-app notification (new matches, replies, interview updates, plan changes) is also pushed to devices the person turned on; tapping opens the right page. Free, no account with a push vendor. The server makes its own signing keys the first time they are needed and keeps them in site settings (or reads `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` if you set them). Up to 5 devices per person, 20 pushes an hour, dead devices are removed automatically.
+- **Practice tests** (`/dashboard/practice`, students): four short multiple-choice tests (Python, SQL, JavaScript, aptitude), graded on the server with the reason for every answer. Scores are private, retakes are free, and there are no certificates, no streaks that punish, no leaderboards, and employers never see them.
+- **PIN code search** (`/jobs-in`): type a PIN, see the district and whether anything is open there. The lookup uses India Post's free public service from our server only (4 second timeout, cached a day, 30 lookups an hour per visitor); if it is down the page says so and the city list still works.
+- **Languages, beta**: Hindi and Telugu for the menu, footer and the language picker (footer and Settings). Everything else stays English and the picker says so. The choice is a plain cookie, so pages stay cacheable. Translations should be checked by a native speaker before you promote this.
+
 No feature was removed because it overlapped; overlapping screens were merged into tabs so each job has one place.
 
 ## Look and feel
